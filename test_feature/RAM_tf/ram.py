@@ -39,7 +39,8 @@ animate = 0 # visualize the glimpses, glimpse trajectory, and the digits
 
 # conditions
 translateMnist = 1
-eyeCentered = 0
+eyeCentered = 0  # use eye centered system (under development, just fixed max-min thresholding, haven't tested)
+
 
 preTraining = 1
 preTraining_epoch = 20000
@@ -79,7 +80,7 @@ else:
 
 # model parameters
 channels = 1                # mnist are grayscale images, i have no idea if the code works on colored images
-totalSensorBandwidth = depth * channels * (sensorBandwidth **2)
+totalSensorBandwidth = depth * channels * (sensorBandwidth **2)  # (int) the dimension of the input
 nGlimpses = 6               # number of glimpses
 loc_sd = 0.11               # std when setting the location
 
@@ -111,7 +112,13 @@ def weight_variable(shape, myname, train):
 
 # get local glimpses
 def glimpseSensor(img, normLoc):
-    loc = tf.round(((normLoc + 1) / 2.0) * img_size)  # normLoc coordinates are between -1 and 1
+    '''
+    :param img:
+    :param normLoc: a location between -1.0 and 1.0
+    :return:  zooms is batch of zoom image
+    '''
+    loc = tf.round(((normLoc + 1) / 2.0) * img_size)  # normLoc coordinates are between -1 and 1.
+    # example: if img_size =60. then loc is from 0.0 to 60.0
     loc = tf.cast(loc, tf.int32)
 
     img = tf.reshape(img, (batch_size, img_size, img_size, channels))
@@ -121,27 +128,33 @@ def glimpseSensor(img, normLoc):
     for k in range(batch_size):
         imgZooms = []
         one_img = img[k,:,:,:]
-        max_radius = minRadius * (2 ** (depth - 1))
-        offset = 2 * max_radius
 
-        # pad image with zeros
+        # if depth = 4 , totally 4 pic will generate, then 2 ** 3 = 8 times minRadius is max_radius
+        max_radius = minRadius * (2 ** (depth - 1))  # minRadius : the radius for the smallest zoom. It will be automatically figured out by the code
+        offset = 2 * max_radius  # offset is pad fill offset 0 rows and cols number(how many rows and cols to fill 0?
+        # width pad 2 * max_radius on the left, so is height on the top. radius is half of the diameter ????
+
+        # pad image with zeros  target size is : max_radius * 4 + img_size in each dimention
+        # padding 0 to bigger the image size
         one_img = tf.image.pad_to_bounding_box(one_img, offset, offset, \
                                                max_radius * 4 + img_size, max_radius * 4 + img_size)
 
-        for i in range(depth):
-            r = int(minRadius * (2 ** (i)))
+        for i in range(depth):  # if depth = 3 i is from 0 to 2
+            r = int(minRadius * (2 ** (i)))  # current radius
 
             d_raw = 2 * r
             d = tf.constant(d_raw, shape=[1])
-            d = tf.tile(d, [2])
-            loc_k = loc[k,:]
-            adjusted_loc = offset + loc_k - r
+            d = tf.tile(d, [2])  # replicate d to 2 times in dimention 1, just used as slice
+            loc_k = loc[k,:] # k is bach index
+            # each image is first resize to biggest radius img: one_img2, then offset + loc_k - r is the adjust location
+            adjusted_loc = offset + loc_k - r  # 2 * max_radius + loc_k - current_radius
             one_img2 = tf.reshape(one_img, (one_img.get_shape()[0].value, one_img.get_shape()[1].value))
 
             # crop image to (d x d)
-            zoom = tf.slice(one_img2, adjusted_loc, d)
+            zoom = tf.slice(one_img2, adjusted_loc, d) # slice start from adjusted_loc
 
             # resize cropped image to (sensorBandwidth x sensorBandwidth)
+            # note that sensorBandwidth is side length for the smallest zoom (finest granularity)
             zoom = tf.image.resize_bilinear(tf.reshape(zoom, (1, d_raw, d_raw, 1)), (sensorBandwidth, sensorBandwidth))
             zoom = tf.reshape(zoom, (sensorBandwidth, sensorBandwidth))
             imgZooms.append(zoom)
@@ -154,17 +167,17 @@ def glimpseSensor(img, normLoc):
 
     return zooms
 
-# implements the input network
+# implements the input glimpse network
 def get_glimpse(loc):
     # get input using the previous location
-    glimpse_input = glimpseSensor(inputs_placeholder, loc)
-    glimpse_input = tf.reshape(glimpse_input, (batch_size, totalSensorBandwidth))
+    glimpse_input = glimpseSensor(inputs_placeholder, loc)  # image is stored in a placeholder
+    glimpse_input = tf.reshape(glimpse_input, (batch_size, totalSensorBandwidth))  #each input image is reshape to a vector
 
     # the hidden units that process location & the input
     act_glimpse_hidden = tf.nn.relu(tf.matmul(glimpse_input, Wg_g_h) + Bg_g_h)
     act_loc_hidden = tf.nn.relu(tf.matmul(loc, Wg_l_h) + Bg_l_h)
 
-    # the hidden units that integrates the location & the glimpses
+    # the hidden units that integrates the location & the glimpses  !!
     glimpseFeature1 = tf.nn.relu(tf.matmul(act_glimpse_hidden, Wg_hg_gf1) + tf.matmul(act_loc_hidden, Wg_hl_gf1) + Bg_hlhg_gf1)
     # return g
     # glimpseFeature2 = tf.matmul(glimpseFeature1, Wg_gf1_gf2) + Bg_gf1_gf2
@@ -172,8 +185,10 @@ def get_glimpse(loc):
 
 
 def get_next_input(output):
+    # output is core network's output
     # the next location is computed by the location network
-    baseline = tf.sigmoid(tf.matmul(output,Wb_h_b) + Bb_h_b)
+    # baseline is between 0 and 1.0
+    baseline = tf.sigmoid(tf.matmul(output,Wb_h_b) + Bb_h_b) # Wb_h_b 1 shape, Bb_h_b is also 1 shape output
     baselines.append(baseline)
     # compute the next location, then impose noise
     if eyeCentered:
@@ -181,7 +196,7 @@ def get_next_input(output):
         # TODO max(-1, min(1, u + N(output, sigma) + prevLoc))
         mean_loc = tf.maximum(-1.0, tf.minimum(1.0, tf.matmul(output, Wl_h_l) + sampled_locs[-1] ))
     else:
-        mean_loc = tf.matmul(output, Wl_h_l)
+        mean_loc = tf.add(tf.matmul(output, Wl_h_l), Bl_h_l)  # W1_h_1 is core_cell_out x 2 matrix
 
     mean_loc = tf.stop_gradient(mean_loc)
     mean_locs.append(mean_loc)
@@ -189,6 +204,7 @@ def get_next_input(output):
     # add noise
     # sample_loc = tf.tanh(mean_loc + tf.random_normal(mean_loc.get_shape(), 0, loc_sd))
     sample_loc = tf.maximum(-1.0, tf.minimum(1.0, mean_loc + tf.random_normal(mean_loc.get_shape(), 0, loc_sd)))
+    # sample_loc is between -1.0 and 1.0 via mix min operate
 
     # don't propagate throught the locations
     sample_loc = tf.stop_gradient(sample_loc)
@@ -209,8 +225,10 @@ def affineTransform(x,output_dim):
 
 def model():
     # initialize the location under unif[-1,1], for all example in the batch
+    # tf.random_uniform generate a batch_size's location, each is 2 dimension represent x and y
     initial_loc = tf.random_uniform((batch_size, 2), minval=-1, maxval=1)
     mean_locs.append(initial_loc)
+    # initial_loc is tanh which is between -1.0 and 1.0
     initial_loc = tf.tanh(initial_loc + tf.random_normal(initial_loc.get_shape(), 0, loc_sd))
     sampled_locs.append(initial_loc)
 
@@ -224,14 +242,15 @@ def model():
     REUSE = None
     for t in range(nGlimpses):
         if t == 0:  # initialize the hidden state to be the zero vector
-            hiddenState_prev = tf.zeros((batch_size, cell_size))
+            hiddenState_prev = tf.zeros((batch_size, cell_size))  # machen : core net 's input and output has same dimension
         else:
             hiddenState_prev = outputs[t-1]
 
-        # forward prop
-        with tf.variable_scope("coreNetwork", reuse=REUSE):
+        # forward prop, core network!
+        with tf.variable_scope("coreNetwork", reuse=REUSE):  # RNN must use reuse = Ture
             # the next hidden state is a function of the previous hidden state and the current glimpse
             hiddenState = tf.nn.relu(affineTransform(hiddenState_prev, cell_size) + (tf.matmul(glimpse, Wc_g_h) + Bc_g_h))
+            # note that Wc_g_h's shape : cell_size, g_size, TODO BUG?  the affine dimension cell_size, but Bc_g_h is g_size
 
         # save the current glimpse and the hidden state
         inputs[t] = glimpse
@@ -239,8 +258,8 @@ def model():
         # get the next input glimpse
         if t != nGlimpses -1:
             glimpse = get_next_input(hiddenState)
-        else:
-            baseline = tf.sigmoid(tf.matmul(hiddenState, Wb_h_b) + Bb_h_b)
+        else:  # last glimpse
+            baseline = tf.sigmoid(tf.matmul(hiddenState, Wb_h_b) + Bb_h_b) # TODO BUG? Wb_h_b is g_size * 1
             baselines.append(baseline)
         REUSE = True  # share variables for later recurrence
 
@@ -251,6 +270,7 @@ def dense_to_one_hot(labels_dense, num_classes=10):
     """Convert class labels from scalars to one-hot vectors."""
     # copied from TensorFlow tutorial
     num_labels = labels_dense.shape[0]
+    # >>> np.arange(4) * 3 ==> array([0, 3, 6, 9])
     index_offset = np.arange(num_labels) * num_classes
     labels_one_hot = np.zeros((num_labels, num_classes))
     labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
@@ -270,7 +290,7 @@ def calc_reward(outputs):
     outputs = outputs[-1] # look at ONLY THE END of the sequence
     outputs = tf.reshape(outputs, (batch_size, cell_out_size))
 
-    # get the baseline
+    # get the baseline, baseline is each time's hidden state which output from core net, then sigmoid it to produce that
     b = tf.stack(baselines)
     b = tf.concat(axis=2, values=[b, b])
     b = tf.reshape(b, (batch_size, (nGlimpses) * 2))
@@ -282,8 +302,8 @@ def calc_reward(outputs):
     correct_y = tf.cast(labels_placeholder, tf.int64)
 
     # reward for all examples in the batch
-    R = tf.cast(tf.equal(max_p_y, correct_y), tf.float32)
-    reward = tf.reduce_mean(R) # mean reward
+    R = tf.cast(tf.equal(max_p_y, correct_y), tf.float32)  # tf.equal returns A `Tensor` of type `bool`.
+    reward = tf.reduce_mean(R) # mean reward, which is accuracy
     R = tf.reshape(R, (batch_size, 1))
     R = tf.tile(R, [1, (nGlimpses)*2])
 
@@ -293,9 +313,10 @@ def calc_reward(outputs):
     p_loc_orig = p_loc
     p_loc = tf.reshape(p_loc, (batch_size, (nGlimpses) * 2))
 
-    # define the cost function
-    J = tf.concat(axis=1, values=[tf.log(p_y + SMALL_NUM) * (onehot_labels_placeholder), tf.log(p_loc + SMALL_NUM) * (R - no_grad_b)])
-    J = tf.reduce_sum(J, 1)
+    # define the cost function, onehot_labels_placeholder's shape is batch_size x class_num
+    J = tf.concat(values=[tf.log(p_y + SMALL_NUM) * (onehot_labels_placeholder), tf.log(p_loc + SMALL_NUM) * (R - no_grad_b)]
+                  ,axis=1)  # axis = 1 acctually concat columns
+    J = tf.reduce_sum(J, axis=1)  # axis = 1 indicate sum over all columns
     J = J - tf.reduce_sum(tf.square(R - b), 1)
     J = tf.reduce_mean(J, 0)
     cost = -J
@@ -313,7 +334,7 @@ def preTrain(outputs):
     outputs = outputs[-1] # look at ONLY THE END of the sequence
     outputs = tf.reshape(outputs, (batch_size, cell_out_size))
     # if preTraining:
-    reconstruction = tf.sigmoid(tf.matmul(outputs, Wr_h_r) + Br_h_r)
+    reconstruction = tf.sigmoid(tf.matmul(outputs, Wr_h_r) + Br_h_r) # output is batch_size * img_size**2 column vector
     reconstructionCost = tf.reduce_mean(tf.square(inputs_placeholder - reconstruction))
 
     train_op_r = tf.train.RMSPropOptimizer(lr_r).minimize(reconstructionCost)
@@ -406,7 +427,7 @@ with tf.Graph().as_default():
     # preallocate x, y, baseline
     labels = tf.placeholder("float32", shape=[batch_size, n_classes])
     labels_placeholder = tf.placeholder(tf.float32, shape=(batch_size), name="labels_raw")
-    onehot_labels_placeholder = tf.placeholder(tf.float32, shape=(batch_size, 10), name="labels_onehot")
+    onehot_labels_placeholder = tf.placeholder(tf.float32, shape=(batch_size, n_classes), name="labels_onehot")
     inputs_placeholder = tf.placeholder(tf.float32, shape=(batch_size, img_size * img_size), name="images")
 
     # declare the model parameters, here're naming rule:
@@ -434,6 +455,7 @@ with tf.Graph().as_default():
     Bb_h_b = weight_variable((1,1), "baselineNet_bias_hiddenState_baseline", True)
 
     Wl_h_l = weight_variable((cell_out_size, 2), "locationNet_wts_hidden_location", True)
+    Bl_h_l = weight_variable((1, 2), "locationNet_bias_hidden_location", True)
 
     Wa_h_a = weight_variable((cell_out_size, n_classes), "actionNet_wts_hidden_action", True)
     Ba_h_a = weight_variable((1,n_classes),  "actionNet_bias_hidden_action", True)
@@ -447,7 +469,7 @@ with tf.Graph().as_default():
     sampled_locs = tf.transpose(sampled_locs, [1, 0, 2])
     mean_locs = tf.concat(axis=0, values=mean_locs)
     mean_locs = tf.reshape(mean_locs, (nGlimpses, batch_size, 2))
-    mean_locs = tf.transpose(mean_locs, [1, 0, 2])
+    mean_locs = tf.transpose(mean_locs, [1, 0, 2])  # ?
     glimpse_images = tf.concat(axis=0, values=glimpse_images)
 
 
