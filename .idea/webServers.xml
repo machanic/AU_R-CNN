@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="2edcbc00-2feb-4b0e-bebd-cab609aaf52b" name="Redoop" url="http://223.223.188.69">
+        <fileTransfer host="223.223.188.69" port="22" rootFolder="/home/machen" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

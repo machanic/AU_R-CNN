@@ -9,10 +9,12 @@ from logging.handlers import TimedRotatingFileHandler
 
 class LogUtils(object):
     def __init__(self,fileName):
-        logging.basicConfig(level=logging.DEBUG,format='%(asctime)s %(name)-12s %(levelname)-6s %(message)s',datefmt='%y-%m-%d %H:%M:%S')
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s %(name)-12s %(levelname)-6s %(message)s',
+                            datefmt='%y-%m-%d %H:%M:%S')
         self.logger = logging.getLogger(fileName)
         self.logger.setLevel(logging.DEBUG)
-        fileTimeHandler = TimedRotatingFileHandler(filename=fileName,when='D',interval=1)#every 2 days to rotate
+        fileTimeHandler = TimedRotatingFileHandler(filename=fileName, when='D', interval=1)#every 2 days to rotate
         fileTimeHandler.setLevel(logging.INFO)
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         fileTimeHandler.setFormatter(formatter)

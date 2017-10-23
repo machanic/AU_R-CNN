@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://D:/work/face_expr/.idea/face_expr.iml" filepath="D:/work/face_expr/.idea/face_expr.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/S-RNN++.iml" filepath="$PROJECT_DIR$/.idea/S-RNN++.iml" />
+      <module fileurl="file://D:\work\face_expr\.idea\face_expr.iml" filepath="D:\work\face_expr\.idea\face_expr.iml" />
     </modules>
   </component>
 </project>

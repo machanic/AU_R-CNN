@@ -1,11 +1,6 @@
-import sys
-import numpy as np
-import cv2
 import h5py
-import lmdb
-import caffe
+import numpy as np
 
-from caffe.proto import caffe_pb2
 from config import *
 
 
@@ -16,8 +11,8 @@ def gen_hd5(filename, data_set):
     '''
     setname = filename
     sample_size = len(data_set)
-    imgs = numpy.zeros((sample_size, 1,) + IMG_SIZE, dtype=numpy.float32)
-    labels = numpy.zeros(sample_size, dtype=numpy.int32)
+    imgs = np.zeros((sample_size, 1,) + IMG_SIZE, dtype=np.float32)
+    labels = np.zeros(sample_size, dtype=np.int32)
     h5_filename = '{0}/{1}.h5'.format(BACKEND_DIR,setname)
     with h5py.File(h5_filename, 'w') as h:
         for i, (abs_path, label) in enumerate(data_set.values()):
@@ -35,11 +30,9 @@ def gen_hd5(filename, data_set):
     with open('{0}/{1}_h5.txt'.format(BACKEND_DIR, setname), 'w') as f:
         f.write(h5_filename)
 
-
+'''
 def gen_lmdb(filename, data_set):
-    '''
-    Note that lmdb use incremental index as key
-    '''
+    # Note that lmdb use incremental index as key
     setname = filename
     sample_size = len(data_set)
     db_path = "{0}/{1}.lmdb".format(BACKEND_DIR,setname)
@@ -65,3 +58,4 @@ def gen_lmdb(filename, data_set):
             
     lmdb_txn.commit()
     lmdb_env.close()
+'''

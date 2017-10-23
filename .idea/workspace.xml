@@ -1,23 +1,155 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a15c7e7e-4963-4d24-9903-41204a5fe181" name="Default" comment="first commit. not done yet">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-    </list>
     <list id="8f4ed7cd-6dea-4137-bf3c-226bb66d75fb" name="first commit. not done yet" comment="first commit. not done yet" />
-    <list id="1fc129f1-64d2-4319-9d0c-ec5e6e791e20" name="Failed commit: first commit. not done yet" comment="first commit. not done yet">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test_feature/RAM_tf/ram.py" afterPath="$PROJECT_DIR$/test_feature/RAM_tf/ram.py" />
+    <list default="true" id="a15c7e7e-4963-4d24-9903-41204a5fe181" name="Default" comment="before modify the factor graph to support pickle">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/plotter.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer/plotter.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/keras/Custom_layers.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer/infer.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/clutter_mnist_generator.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/infer.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/dataset_toolkit/dataset_generator.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_othermod/glimpse.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/DataSet.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/boot_main.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/keras/alex_net.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/dataset_toolkit/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/design_pattern/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/keras/alex_net2.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/caffe/cnn_extractor.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/feature_extract/REINFORCE_MD.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer/ram.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/face_imgproc_toolkit/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/ram.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/keras/micro_facial_cnn.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/img_toolkit/image_tools.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/multi_label_accuracy.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/train.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/keras/vgg16_test.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_othermod/README.md" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/robust_pca/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_othermod/utils.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/crop.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/nesterov_ag.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tensorflow_toolkit/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer/nesterov_ag.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/keras/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/design_pattern/decorator.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_othermod/__init__.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer/train.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_tf/ram_korean.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/ram - 副本.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_chainer/crop.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_othermod/ram.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/img_toolkit/optical_flow.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/RAM_othermod/config_mod.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/keras/mnist_test.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_feature/keras/tf_mnist_loader.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_suitcase/__init__.py" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/img_toolkits/image_tools.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/img_toolkits/fequence_tools.py" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/io_utils.py" afterPath="$PROJECT_DIR$/io_utils.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/img_toolkits/LBP_feature.py" afterPath="$PROJECT_DIR$/img_toolkit/LBP_feature.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/img_toolkits/__init__.py" afterPath="$PROJECT_DIR$/img_toolkit/__init__.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/feature_extract/alignment.py" afterPath="$PROJECT_DIR$/test_feature/alignment.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/config.py" afterPath="$PROJECT_DIR$/config.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test_feature/RAM_tf/tf_mnist_loader.py" afterPath="$PROJECT_DIR$/test_feature/RAM_tf/tf_mnist_loader.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/face_landmark.py" afterPath="$PROJECT_DIR$/face_imgproc_toolkit/face_landmark.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/test_feature/robust_pca.py" afterPath="$PROJECT_DIR$/test_feature/robust_pca/robust_pca.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/test_feature/RAM_tf/ram.py" afterPath="$PROJECT_DIR$/test_feature/RAM_tf/ram_modify.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/geometry_utils.py" afterPath="$PROJECT_DIR$/img_toolkit/geometry_utils.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/face_expr.iml" afterPath="$PROJECT_DIR$/.idea/face_expr.iml" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/img_toolkits/other_alignment.py" afterPath="$PROJECT_DIR$/img_toolkit/face_alignment.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/img_toolkits/optical_flow_feature.py" afterPath="$PROJECT_DIR$/img_toolkit/optical_flow_feature.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/data_reader.py" afterPath="$PROJECT_DIR$/dataset_toolkit/data_reader.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/log_utils.py" afterPath="$PROJECT_DIR$/log_utils.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/feature_extract/MDMO.py" afterPath="$PROJECT_DIR$/feature_extract/MDMO.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/faceppapi.py" afterPath="$PROJECT_DIR$/face_imgproc_toolkit/faceppapi.py" />
     </list>
+    <list id="1fc129f1-64d2-4319-9d0c-ec5e6e791e20" name="Failed commit: first commit. not done yet" comment="first commit. not done yet" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
-    <file path="$PROJECT_DIR$/test_feature/RAM_tf/ram.py" ignored="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CoverageDataManager">
+    <SUITE FILE_PATH="coverage/face_expr$train_opencrf.coverage" NAME="train_opencrf Coverage Results" MODIFIED="1508690851696" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/" />
+    <SUITE FILE_PATH="coverage/face_expr$Unittests_in_test_lstm_img_py.coverage" NAME="Unittests in lstm_img.py Coverage Results" MODIFIED="1504705906709" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/suitcase" />
+    <SUITE FILE_PATH="coverage/face_expr$action_unit_graphic_lasso.coverage" NAME="action_unit_graphic_lasso Coverage Results" MODIFIED="1506326487242" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/script" />
+    <SUITE FILE_PATH="coverage/face_expr$figure_script.coverage" NAME="figure_script Coverage Results" MODIFIED="1507636658398" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/paper_stuff/latex_toolkit" />
+    <SUITE FILE_PATH="coverage/S_RNN__$train_opencrf.coverage" NAME="train_opencrf Coverage Results" MODIFIED="1508735973508" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/" />
+    <SUITE FILE_PATH="coverage/face_expr$train.coverage" NAME="train Coverage Results" MODIFIED="1508505676964" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/AU_rcnn" />
+    <SUITE FILE_PATH="coverage/face_expr$Unittests_in_test_py.coverage" NAME="Unittests in test.py Coverage Results" MODIFIED="1504700113092" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiment_code" />
+    <SUITE FILE_PATH="coverage/S_RNN__$setup.coverage" NAME="setup Coverage Results" MODIFIED="1508735935592" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/face_expr$adaptive_config.coverage" NAME="adaptive_config Coverage Results" MODIFIED="1500992210430" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$DISFA_image_generator.coverage" NAME="DISFA_image_generator Coverage Results" MODIFIED="1500705481348" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/scripts" />
+    <SUITE FILE_PATH="coverage/face_expr$check_multi_label.coverage" NAME="check_multi_label Coverage Results" MODIFIED="1501422611323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/checker" />
+    <SUITE FILE_PATH="coverage/face_expr$networkx_graph.coverage" NAME="networkx_graph Coverage Results" MODIFIED="1502203586644" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/graph" />
+    <SUITE FILE_PATH="coverage/face_expr$action_unit_graphic_lasso__1_.coverage" NAME="action_unit_graphic_lasso (1) Coverage Results" MODIFIED="1506481191781" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/script" />
+    <SUITE FILE_PATH="coverage/face_expr$train_lstm.coverage" NAME="train_lstm Coverage Results" MODIFIED="1508644053983" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/AU_lstm" />
+    <SUITE FILE_PATH="coverage/face_expr$train_structural_rnn_plus.coverage" NAME="train_structural_rnn_plus Coverage Results" MODIFIED="1506489204349" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn" />
+    <SUITE FILE_PATH="coverage/face_expr$shift_box.coverage" NAME="shift_box Coverage Results" MODIFIED="1507606808762" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiment_code/image_transform" />
+    <SUITE FILE_PATH="coverage/face_expr$data_index_file_gen.coverage" NAME="data_index_file_gen Coverage Results" MODIFIED="1500539470863" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$data_index_file_gen_new.coverage" NAME="data_index_file_gen_new Coverage Results" MODIFIED="1508211373888" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/scripts" />
+    <SUITE FILE_PATH="coverage/face_expr$compute_mean.coverage" NAME="compute_mean Coverage Results" MODIFIED="1501045384321" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/scripts" />
+    <SUITE FILE_PATH="coverage/face_expr$Unittests_in_shift_box_py.coverage" NAME="Unittests in shift_box.py Coverage Results" MODIFIED="1507471597198" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiment_code/image_transform" />
+    <SUITE FILE_PATH="coverage/face_expr$label_stats.coverage" NAME="label_stats Coverage Results" MODIFIED="1500702540209" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/checker" />
+    <SUITE FILE_PATH="coverage/face_expr$Figure_script.coverage" NAME="Figure_script Coverage Results" MODIFIED="1502890326202" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/latex_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$convert_toy_script.coverage" NAME="convert_toy_script Coverage Results" MODIFIED="1503822626078" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/script" />
+    <SUITE FILE_PATH="coverage/face_expr$face_mask_cropper.coverage" NAME="face_mask_cropper Coverage Results" MODIFIED="1508076870567" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/img_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$Unittests_in_lstm_img_py.coverage" NAME="Unittests in lstm_img.py Coverage Results" MODIFIED="1504842437153" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/suitcase" />
+    <SUITE FILE_PATH="coverage/face_expr$combine_label_dict_generator.coverage" NAME="combine_label_dict_generator Coverage Results" MODIFIED="1507465209478" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/scripts" />
+    <SUITE FILE_PATH="coverage/face_expr$graph_data_set.coverage" NAME="graph_data_set Coverage Results" MODIFIED="1504527249209" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/graph" />
+    <SUITE FILE_PATH="coverage/face_expr$show_box.coverage" NAME="show_box Coverage Results" MODIFIED="1500179999236" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/checker" />
+    <SUITE FILE_PATH="coverage/face_expr$compress_utils.coverage" NAME="compress_utils Coverage Results" MODIFIED="1502203884311" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$Unittests_for_lstm_img_train_and_test.coverage" NAME="Unittests for lstm_img.train_and_test Coverage Results" MODIFIED="1505233104842" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/suitcase" />
+    <SUITE FILE_PATH="coverage/face_expr$numpy_toolkit.coverage" NAME="numpy_toolkit Coverage Results" MODIFIED="1508248069219" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/collections_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$data_index_file_gen__1_.coverage" NAME="data_index_file_gen (1) Coverage Results" MODIFIED="1501313382156" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/scripts" />
+    <SUITE FILE_PATH="coverage/face_expr$process_monitor.coverage" NAME="process_monitor Coverage Results" MODIFIED="1505281921541" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train_monitor" />
+    <SUITE FILE_PATH="coverage/face_expr$face_landmark.coverage" NAME="face_landmark Coverage Results" MODIFIED="1508076886675" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/img_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$ordered_set.coverage" NAME="ordered_set Coverage Results" MODIFIED="1500978288555" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/collections_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$bbox_iou.coverage" NAME="bbox_iou Coverage Results" MODIFIED="1499347112761" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/chainercv/utils/bbox" />
+    <SUITE FILE_PATH="coverage/face_expr$chainercv.coverage" NAME="chainercv Coverage Results" MODIFIED="1499739358005" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/chainercv/trainer" />
+    <SUITE FILE_PATH="coverage/face_expr$AU_balance_toolkit.coverage" NAME="AU_balance_toolkit Coverage Results" MODIFIED="1507539158870" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$structural_RNN_dataset.coverage" NAME="structural_RNN_dataset Coverage Results" MODIFIED="1503821503518" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/dataset" />
+    <SUITE FILE_PATH="coverage/face_expr$data_reader.coverage" NAME="data_reader Coverage Results" MODIFIED="1497581771343" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$label_balance.coverage" NAME="label_balance Coverage Results" MODIFIED="1500988976942" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/scripts" />
+    <SUITE FILE_PATH="coverage/face_expr$test_remote.coverage" NAME="test_remote Coverage Results" MODIFIED="1497410591790" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_suitcase" />
+    <SUITE FILE_PATH="coverage/face_expr$data_index_file_gen_lstm.coverage" NAME="data_index_file_gen_lstm Coverage Results" MODIFIED="1504086689237" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/scripts" />
+    <SUITE FILE_PATH="coverage/face_expr$open_crf_layer.coverage" NAME="open_crf_layer Coverage Results" MODIFIED="1505893206663" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/model/open_crf" />
+    <SUITE FILE_PATH="coverage/face_expr$setup.coverage" NAME="setup Coverage Results" MODIFIED="1508690684999" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/face_expr$demo_metric.coverage" NAME="demo_metric Coverage Results" MODIFIED="1506155382762" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/action_unit_metric" />
+    <SUITE FILE_PATH="coverage/face_expr$gen_data_json.coverage" NAME="gen_data_json Coverage Results" MODIFIED="1508663762138" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/script" />
+    <SUITE FILE_PATH="coverage/face_expr$roi_sift.coverage" NAME="roi_sift Coverage Results" MODIFIED="1508071816173" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/handcraft_feature" />
+    <SUITE FILE_PATH="coverage/face_expr$email_utils.coverage" NAME="email_utils Coverage Results" MODIFIED="1505274349595" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train_monitor" />
+    <SUITE FILE_PATH="coverage/face_expr$trainer.coverage" NAME="trainer Coverage Results" MODIFIED="1497579821835" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cnn_chainer" />
+    <SUITE FILE_PATH="coverage/face_expr$gen_label_count_dict.coverage" NAME="gen_label_count_dict Coverage Results" MODIFIED="1507618919020" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/scripts" />
+    <SUITE FILE_PATH="coverage/face_expr$call_cython.coverage" NAME="call_cython Coverage Results" MODIFIED="1505463985375" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiment_code" />
+    <SUITE FILE_PATH="coverage/face_expr$face_crop.coverage" NAME="face_crop Coverage Results" MODIFIED="1499336846311" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/img_toolkit" />
+    <SUITE FILE_PATH="coverage/face_expr$gen_label_imbalance_dict.coverage" NAME="gen_label_imbalance_dict Coverage Results" MODIFIED="1504858709884" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/script" />
+    <SUITE FILE_PATH="coverage/face_expr$check_feature.coverage" NAME="check_feature Coverage Results" MODIFIED="1504697099767" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/checker" />
+    <SUITE FILE_PATH="coverage/face_expr$graph_desc_file_generator.coverage" NAME="graph_desc_file_generator Coverage Results" MODIFIED="1507044281559" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/script" />
+  </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
+  </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_TABLE_DETAILS" value="true" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FavoritesManager">
@@ -25,93 +157,103 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="ram.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/test_feature/RAM_tf/ram.py">
+      <file leaf-file-name="crf_pact_structure.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="414">
-              <caret line="18" column="8" lean-forward="true" selection-start-line="18" selection-start-column="8" selection-end-line="18" selection-end-column="8" />
+            <state relative-caret-position="255">
+              <caret line="78" column="31" lean-forward="false" selection-start-line="78" selection-start-column="31" selection-end-line="78" selection-end-column="31" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="factor_graph.pyx" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/model_1/factor_graph.pyx">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-2673">
+              <caret line="343" column="55" lean-forward="false" selection-start-line="343" selection-start-column="55" selection-end-line="343" selection-end-column="55" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="factor_graph.pyx" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/model_2/factor_graph.pyx">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-308">
+              <caret line="415" column="70" lean-forward="false" selection-start-line="415" selection-start-column="70" selection-end-line="415" selection-end-column="70" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="factor_graph.pyx" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pyx">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="252">
+              <caret line="219" column="77" lean-forward="false" selection-start-line="219" selection-start-column="77" selection-end-line="219" selection-end-column="77" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="open_crf.pyx" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/model_2/open_crf.pyx">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-900">
+              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="s_rnn_plus.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="101">
+              <caret line="19" column="0" lean-forward="false" selection-start-line="19" selection-start-column="0" selection-end-line="19" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/.gitignore">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="492">
+              <caret line="40" column="5" lean-forward="false" selection-start-line="40" selection-start-column="5" selection-end-line="40" selection-end-column="5" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="structural_RNN_dataset.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/structural_RNN_dataset.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="150">
+              <caret line="36" column="21" lean-forward="false" selection-start-line="36" selection-start-column="21" selection-end-line="36" selection-end-column="21" />
               <folding>
-                <element signature="e#0#23#0" expanded="true" />
+                <element signature="e#0#9#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="tf_mnist_loader.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test_feature/RAM_tf/tf_mnist_loader.py">
+      <file leaf-file-name="factor_graph.pxd" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pxd">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2461">
-              <caret line="110" column="6" lean-forward="false" selection-start-line="110" selection-start-column="6" selection-end-line="110" selection-end-column="6" />
+            <state relative-caret-position="33">
+              <caret line="27" column="43" lean-forward="false" selection-start-line="27" selection-start-column="43" selection-end-line="27" selection-end-column="43" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="random_ops.py" pinned="false" current-in-tab="false">
-        <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/random_ops.py">
+      <file leaf-file-name="setup.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/setup.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3910">
-              <caret line="183" column="23" lean-forward="false" selection-start-line="183" selection-start-column="23" selection-end-line="183" selection-end-column="23" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ops.py" pinned="false" current-in-tab="false">
-        <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/framework/ops.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="6808">
-              <caret line="324" column="6" lean-forward="false" selection-start-line="324" selection-start-column="6" selection-end-line="324" selection-end-column="6" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="array_ops.py" pinned="false" current-in-tab="false">
-        <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/array_ops.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="27370">
-              <caret line="1213" column="4" lean-forward="false" selection-start-line="1213" selection-start-column="4" selection-end-line="1213" selection-end-column="4" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="gen_math_ops.py" pinned="false" current-in-tab="false">
-        <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/gen_math_ops.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="16261">
-              <caret line="718" column="4" lean-forward="false" selection-start-line="718" selection-start-column="4" selection-end-line="718" selection-end-column="30" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="image_ops_impl.py" pinned="false" current-in-tab="false">
-        <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/image_ops_impl.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="8257">
-              <caret line="379" column="24" lean-forward="false" selection-start-line="379" selection-start-column="24" selection-end-line="379" selection-end-column="24" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="math_ops.py" pinned="false" current-in-tab="false">
-        <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/math_ops.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="26059">
-              <caret line="1159" column="4" lean-forward="false" selection-start-line="1159" selection-start-column="4" selection-end-line="1159" selection-end-column="4" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="gen_array_ops.py" pinned="false" current-in-tab="false">
-        <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/gen_array_ops.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="86618">
-              <caret line="3777" column="25" lean-forward="false" selection-start-line="3777" selection-start-column="25" selection-end-line="3777" selection-end-column="25" />
+            <state relative-caret-position="-108">
+              <caret line="41" column="26" lean-forward="false" selection-start-line="41" selection-start-column="26" selection-end-line="41" selection-end-column="26" />
               <folding />
             </state>
           </provider>
@@ -128,50 +270,204 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>depth</find>
-      <find>channels</find>
-      <find>img_size</find>
+      <find>lru</find>
+      <find>set_variable_state_factor</find>
+      <find>FactorGraph</find>
+      <find>num_attr</find>
+      <find>structural_rnn.dataset.crf_pact_structure</find>
+      <find>CRFPackageStructure</find>
+      <find>crf_pact_structure</find>
+      <find>S_RNNPlusDataset</find>
+      <find>num_label</find>
+      <find>log_likelihood</find>
+      <find>VariableNode</find>
+      <find>neighbor</find>
+      <find>belief</find>
+      <find>edge_type_func_list</find>
+      <find>add_edge</find>
+      <find>WX</find>
+      <find>np.eins</find>
+      <find>np.einsum</find>
+      <find>np.einsu</find>
+      <find>np.ein</find>
+      <find>np.ei</find>
+      <find>np.e</find>
+      <find>np.</find>
+      <find>np</find>
+      <find>n</find>
+      <find>einsum</find>
+      <find>einsu</find>
+      <find>eins</find>
+      <find>ein</find>
+      <find>e</find>
     </findStrings>
+    <replaceStrings>
+      <replace>tf.stack</replace>
+      <replace>keras.applicaions</replace>
+      <replace>Conv2D</replace>
+      <replace>MaxPool2D</replace>
+      <replace>/</replace>
+      <replace>_video_seq</replace>
+      <replace>logger.log</replace>
+      <replace>config</replace>
+      <replace>NUM_CLASSES</replace>
+      <replace>NUM_CLASSES[&quot;CASE</replace>
+      <replace>self.xp.any</replace>
+      <replace>np</replace>
+      <replace>neg</replace>
+      <replace>BP4D</replace>
+      <replace>str(uuid.uuid1())</replace>
+      <replace>nco</replace>
+      <replace>extensions</replace>
+      <replace>np.float64</replace>
+      <replace>self.max_bp_iter</replace>
+      <replace>range</replace>
+      <replace>nodeRNN_id_dict</replace>
+      <replace>np.float32</replace>
+      <replace>node_in_size</replace>
+      <replace>(-20,20)</replace>
+      <replace>(-10,10)</replace>
+      <replace>padding=-99</replace>
+      <replace>sample.len_label_bin</replace>
+      <replace>label_bin_len</replace>
+      <replace>set_variable_state_factor_y</replace>
+    </replaceStrings>
+    <dirStrings>
+      <dir>D:\work\face_expr\chainercv\utils</dir>
+      <dir>D:\work\face_expr</dir>
+      <dir>D:\work\face_expr\img_toolkit</dir>
+    </dirStrings>
   </component>
   <component name="Git.Settings">
     <option name="PREVIOUS_COMMIT_AUTHORS">
       <list>
-        <option value="sharpstill" />
         <option value="machen" />
+        <option value="sharpstill" />
       </list>
     </option>
     <option name="ROOT_SYNC" value="DONT_SYNC" />
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/test_feature/RAM_tf/ram.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/experiment_code/RAM_tf/ram_korean.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/../tensor_flow_test/test_tf/matmul.py" />
-        <option value="$PROJECT_DIR$/face_landmark.py" />
-        <option value="$PROJECT_DIR$/geometry_utils.py" />
-        <option value="$PROJECT_DIR$/data_reader.py" />
-        <option value="$PROJECT_DIR$/feature_extract/MDMO.py" />
-        <option value="$PROJECT_DIR$/feature_extract/alignment.py" />
-        <option value="$PROJECT_DIR$/img_toolkits/other_alignment.py" />
-        <option value="$PROJECT_DIR$/test_feature/RAM_tf/tf_mnist_loader.py" />
-        <option value="$PROJECT_DIR$/test_feature/RAM_tf/param_readme.txt" />
+        <option value="$PROJECT_DIR$/AU_rcnn/evaluator/legacy/eval_AU_label_occur.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/extensions/detection_AU_evaluator.py" />
+        <option value="$PROJECT_DIR$/action_unit_metric/F1_frame.py" />
+        <option value="$PROJECT_DIR$/action_unit_metric/confusion_mat.py" />
+        <option value="$PROJECT_DIR$/AU_R-CNN/extensions/AU_evaluator.py" />
+        <option value="$PROJECT_DIR$/AU_R-CNN/train.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/extensions/__init__.py" />
+        <option value="$PROJECT_DIR$/dataset_toolkit/adaptive_AU_config.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/datasets/bp4d/AU_dataset_speed_optimized.py" />
+        <option value="$PROJECT_DIR$/dataset_toolkit/scripts/data_index_file_gen_new.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/links/model/faster_rcnn/faster_rcnn_resnet101.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/links/model/faster_rcnn/faster_rcnn_vgg.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/links/model/faster_rcnn/faster_rcnn_train_chain.py" />
+        <option value="$PROJECT_DIR$/collections_toolkit/numpy_toolkit.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/extensions/AU_evaluator.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/open_crf_layer.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/crf_pact_structure.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/graph/graph_data_set.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/graph/graph_dataset_reader.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/openblas_toolkit/openblas_configure.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/handcraft_feature/roi_sift.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/datasets/__init__.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/links/model/faster_rcnn/faster_rcnn.py" />
+        <option value="$PROJECT_DIR$/AU_lstm/dataset/graph_desc_dataset.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/train.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/script/graph_desc_file_generator.py" />
+        <option value="$PROJECT_DIR$/suitcase/lstm_img.py" />
+        <option value="$PROJECT_DIR$/AU_lstm/dataset/AU_lstm_dataset.py" />
+        <option value="$PROJECT_DIR$/AU_lstm/model/AU_LSTM.py" />
+        <option value="$PROJECT_DIR$/AU_lstm/train_lstm.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pxd" />
+        <option value="$PROJECT_DIR$/structural_rnn/script/gen_data_json.py" />
+        <option value="$PROJECT_DIR$/AU_rcnn/extensions/AU_evaluator.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/open_crf_layer.py" />
+        <option value="$PROJECT_DIR$/setup.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/extensions/opencrf_evaluator.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/open_crf.pyx" />
+        <option value="$PROJECT_DIR$/config.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/open_crf.pyx" />
+        <option value="$PROJECT_DIR$/structural_rnn/dataset/structural_RNN_dataset.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/dataset/graph_dataset_reader.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/train_opencrf.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/pure_python/open_crf_layer.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/pure_python/factor_graph.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pyx" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/model_1/factor_graph.pyx" />
         <option value="$PROJECT_DIR$/.gitignore" />
-        <option value="$PROJECT_DIR$/test_feature/RAM_tf/ram.py" />
       </list>
     </option>
   </component>
+  <component name="JsBuildToolGruntFileManager" detection-done="true" sorting="DEFINITION_ORDER" />
+  <component name="JsBuildToolPackageJson" detection-done="true" sorting="DEFINITION_ORDER" />
+  <component name="JsFlowSettings">
+    <service-enabled>false</service-enabled>
+    <exe-path />
+    <annotation-enable>false</annotation-enable>
+    <other-services-enabled>false</other-services-enabled>
+  </component>
+  <component name="JsGulpfileManager">
+    <detection-done>true</detection-done>
+    <sorting>DEFINITION_ORDER</sorting>
+  </component>
   <component name="ProjectFrameBounds">
     <option name="x" value="-8" />
-    <option name="y" value="-8" />
-    <option name="width" value="1552" />
-    <option name="height" value="840" />
+    <option name="width" value="1924" />
+    <option name="height" value="1038" />
+  </component>
+  <component name="ProjectInspectionProfilesVisibleTreeState">
+    <entry key="Project Default">
+      <profile-state>
+        <expanded-state>
+          <State>
+            <id />
+          </State>
+          <State>
+            <id>Code style issuesJavaScript</id>
+          </State>
+          <State>
+            <id>DOM issuesJavaScript</id>
+          </State>
+          <State>
+            <id>ECMAScript 6 migration aidsJavaScript</id>
+          </State>
+          <State>
+            <id>GeneralJavaScript</id>
+          </State>
+          <State>
+            <id>JavaScript</id>
+          </State>
+          <State>
+            <id>Pyramid</id>
+          </State>
+          <State>
+            <id>Python</id>
+          </State>
+          <State>
+            <id>TypeScript</id>
+          </State>
+        </expanded-state>
+        <selected-state>
+          <State>
+            <id>PyCompatibilityInspection</id>
+          </State>
+        </selected-state>
+      </profile-state>
+    </entry>
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
-    <navigator proportions="" version="1">
+    <navigator currentView="ProjectPane" proportions="" version="1">
       <flattenPackages />
       <showMembers />
       <showModules />
@@ -184,21 +480,58 @@
       <manualOrder />
       <foldersAlwaysOnTop value="true" />
     </navigator>
-    <panes />
+    <panes>
+      <pane id="Scratches" />
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="S-RNN++" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="S-RNN++" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
+      </pane>
+    </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors.Font" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="WebServerToolWindowFactoryState" value="true" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.size" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.date" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.highlight.symlinks" value="true" />
+    <property name="WebServerToolWindowPanel.toolwindow.highlight.mappings" value="true" />
+    <property name="SearchEverywhereHistoryKey" value="&#9;FILE&#9;file://D:/work/face_expr/img_toolkit/face_crop.py" />
+  </component>
+  <component name="PyConsoleOptionsProvider">
+    <option name="myPythonConsoleState">
+      <console-settings module-name="face_expr" is-module-sdk="true">
+        <option name="myUseModuleSdk" value="true" />
+        <option name="myModuleName" value="face_expr" />
+      </console-settings>
+    </option>
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="D:\work\face_expr\test_feature\RAM_tf" />
-      <recent name="D:\work\face_expr" />
-      <recent name="D:\work\face_expr\data" />
-      <recent name="D:\work\face_expr\img_toolkits" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="D:\work\face_expr" />
+      <recent name="D:\work\S-RNN++\structural_rnn\model\open_crf\cython\backup" />
+      <recent name="D:\work\face_expr\structural_rnn\model\open_crf\pure_python" />
+      <recent name="D:\work\face_expr\structural_rnn\graph_backup" />
+      <recent name="D:\work\face_expr\structural_rnn\dataset" />
+      <recent name="D:\work\face_expr\structural_rnn\graph\backup" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\work\S-RNN++\structural_rnn\model\open_crf\cython" />
+      <recent name="D:\work\S-RNN++\structural_rnn\model\open_crf\cython\backup\model_2" />
+      <recent name="D:\work\S-RNN++\structural_rnn\model\open_crf\cython\backup\bakopencrf" />
+      <recent name="D:\work\face_expr\structural_rnn\model\open_crf\cython\backup" />
+      <recent name="D:\work\face_expr\structural_rnn\model\open_crf\cython" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -213,23 +546,167 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.matmul">
-    <configuration default="false" name="matmul" type="PythonConfigurationType" factoryName="Python" temporary="true">
+  <component name="RunManager" selected="Python.train_opencrf">
+    <configuration default="false" name="face_mask_cropper" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../tensor_flow_test/test_tf" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/img_toolkit" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="tensor_flow_test" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../tensor_flow_test/test_tf/matmul.py" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/img_toolkit/face_mask_cropper.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="face_landmark" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/img_toolkit" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/img_toolkit/face_landmark.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="numpy_toolkit" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/collections_toolkit" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/collections_toolkit/numpy_toolkit.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="gen_data_json" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/structural_rnn/script" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/structural_rnn/script/gen_data_json.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="train_lstm" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/AU_lstm" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/AU_lstm/train_lstm.py" />
+      <option name="PARAMETERS" value="--out /home/machen/face_expr/result/lstm_BP4D_3_fold_1 --valid E:/face_dataset/graph/valid  --train E:/face_dataset/graph/train -g 0 --epoch 1000" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="CompoundRunConfigurationType" factoryName="Compound Run Configuration">
+      <method />
+    </configuration>
+    <configuration default="true" type="DjangoTestsConfigurationType" factoryName="Django tests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="TARGET" value="" />
+      <option name="SETTINGS_FILE" value="" />
+      <option name="CUSTOM_SETTINGS" value="false" />
+      <option name="USE_OPTIONS" value="false" />
+      <option name="OPTIONS" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="JavaScriptTestRunnerJest" factoryName="Jest">
+      <node-interpreter value="project" />
+      <working-dir value="" />
+      <envs />
+      <scope-kind value="ALL" />
+      <method />
+    </configuration>
+    <configuration default="true" type="JavaScriptTestRunnerProtractor" factoryName="Protractor">
+      <config-file value="" />
+      <node-interpreter value="project" />
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug">
+      <method />
+    </configuration>
+    <configuration default="true" type="PyBehaveRunConfigurationType" factoryName="Behave">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="ADDITIONAL_ARGS" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="PyLettuceRunConfigurationType" factoryName="Lettuce">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="ADDITIONAL_ARGS" value="" />
       <method />
     </configuration>
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -244,6 +721,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="tensor_flow_test" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -259,7 +737,24 @@
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <module name="tensor_flow_test" />
+      <method />
+    </configuration>
+    <configuration default="true" type="js.build_tools.gulp" factoryName="Gulp.js">
+      <node-interpreter>project</node-interpreter>
+      <node-options />
+      <gulpfile />
+      <tasks />
+      <arguments />
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="true" type="js.build_tools.npm" factoryName="npm">
+      <command value="run" />
+      <scripts />
+      <node-interpreter value="project" />
+      <envs />
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="Doctests">
@@ -272,6 +767,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="tensor_flow_test" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="" />
       <option name="CLASS_NAME" value="" />
       <option name="METHOD_NAME" value="" />
@@ -291,6 +787,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="tensor_flow_test" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <option name="_new_regexPattern" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;.&quot;" />
@@ -303,10 +800,12 @@
       <envs />
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
+      <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="tensor_flow_test" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="_new_pattern" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;.&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
@@ -322,18 +821,171 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="tensor_flow_test" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;.&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method />
     </configuration>
-    <list size="1">
+    <configuration default="false" name="matmul" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../tensor_flow_test/test_tf" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="tensor_flow_test" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../tensor_flow_test/test_tf/matmul.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Unnamed" type="CompoundRunConfigurationType" factoryName="Compound Run Configuration">
+      <method />
+    </configuration>
+    <configuration default="false" name="data_index_file_gen (1)" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/dataset_toolkit/scripts" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/dataset_toolkit/scripts/data_index_file_gen.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="RAM" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_feature/RAM_chainer_multilabel/train.py" />
+      <option name="PARAMETERS" value="-g 0  -e 210 --max_obj 2 -f D:/2-obj --model $PROJECT_DIR$/test_feature/RAM_chainer_multilabel/2obj_epoch200.chainermodel --resume $PROJECT_DIR$/test_feature/RAM_chainer_multilabel/2obj_epoch200.chaineroptimizer --save_box" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="data_index_file_gen_new" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/dataset_toolkit/scripts" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/dataset_toolkit/scripts/data_index_file_gen_new.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="train" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/AU_rcnn" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="face_expr" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/AU_rcnn/train.py" />
+      <option name="PARAMETERS" value="--database BP4D  --pid /tmp/AU_R_CNN/BP4D_pretrain/ --need_validate --proc_num 1 --mean /home/machen/dataset/BP4D/idx/mean_no_enhance.npy --feature_model vgg --lr 0.0001 --extract_len 1000 --optimizer SGD --pretrained_model /home/machen/face_expr/result/BP4D_3_fold_1/3_fold_1_vgg_linear_model_snapshot_200000.npz --fold 3 --split_idx 1 --epoch 40 --batch_size 5 -g 1 --use_sigmoid_cross_entropy  --out /home/machen/face_expr/BP4D_pretrained --snap_individual --eval_mode --snapshot 100000 --use_memcached" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="train_opencrf" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="S-RNN++" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/structural_rnn/train_opencrf.py" />
+      <option name="PARAMETERS" value="--train /home/machen/dataset/toy/train --valid  /home/machen/dataset/toy/test --epoch 20 --database BP4D" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="setup" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="S-RNN++" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/setup.py" />
+      <option name="PARAMETERS" value="build_ext --inplace" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <list size="13">
       <item index="0" class="java.lang.String" itemvalue="Python.matmul" />
+      <item index="1" class="java.lang.String" itemvalue="Compound.Unnamed" />
+      <item index="2" class="java.lang.String" itemvalue="Python.data_index_file_gen (1)" />
+      <item index="3" class="java.lang.String" itemvalue="Python.RAM" />
+      <item index="4" class="java.lang.String" itemvalue="Python.data_index_file_gen_new" />
+      <item index="5" class="java.lang.String" itemvalue="Python.train" />
+      <item index="6" class="java.lang.String" itemvalue="Python.train_opencrf" />
+      <item index="7" class="java.lang.String" itemvalue="Python.face_mask_cropper" />
+      <item index="8" class="java.lang.String" itemvalue="Python.face_landmark" />
+      <item index="9" class="java.lang.String" itemvalue="Python.numpy_toolkit" />
+      <item index="10" class="java.lang.String" itemvalue="Python.gen_data_json" />
+      <item index="11" class="java.lang.String" itemvalue="Python.train_lstm" />
+      <item index="12" class="java.lang.String" itemvalue="Python.setup" />
     </list>
     <recent_temporary>
-      <list size="1">
-        <item index="0" class="java.lang.String" itemvalue="Python.matmul" />
+      <list size="5">
+        <item index="0" class="java.lang.String" itemvalue="Python.gen_data_json" />
+        <item index="1" class="java.lang.String" itemvalue="Python.train_lstm" />
+        <item index="2" class="java.lang.String" itemvalue="Python.numpy_toolkit" />
+        <item index="3" class="java.lang.String" itemvalue="Python.face_landmark" />
+        <item index="4" class="java.lang.String" itemvalue="Python.face_mask_cropper" />
       </list>
     </recent_temporary>
     <configuration default="true" type="tests" factoryName="Attests">
@@ -402,57 +1054,106 @@
     <option name="localTasksCounter" value="5" />
     <servers />
   </component>
+  <component name="TestHistory">
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.12 at 23h 51m 59s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.12 at 23h 54m 19s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.12 at 23h 55m 22s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.12 at 23h 57m 12s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.13 at 00h 02m 55s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.13 at 00h 03m 45s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.13 at 00h 16m 49s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.13 at 00h 18m 23s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_lstm_img_train_and_test - 2017.09.13 at 00h 25m 32s.xml">
+      <configuration name="Unittests for lstm_img.train_and_test" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_in_shift_box_py - 2017.10.08 at 22h 06m 41s.xml">
+      <configuration name="Unittests in shift_box.py" configurationId="tests" />
+    </history-entry>
+  </component>
   <component name="TodoView">
-    <todo-panel id="selected-file">
-      <is-autoscroll-to-source value="true" />
-    </todo-panel>
     <todo-panel id="all">
       <are-packages-shown value="true" />
       <is-autoscroll-to-source value="true" />
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1552" height="840" extended-state="6" />
+    <frame x="-8" y="0" width="1924" height="1038" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.1796875" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32992035" sideWeight="0.49375" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32992035" sideWeight="0.5041973" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.05688282" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32992035" sideWeight="0.49580273" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32580262" sideWeight="0.47567567" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.38644472" sideWeight="0.23567568" order="8" side_tool="true" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24375743" sideWeight="0.26108107" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.6575505" sideWeight="0.48702702" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.43638524" sideWeight="0.46756756" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25208086" sideWeight="0.7643243" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28537455" sideWeight="0.67189187" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32939914" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3535135" sideWeight="0.85255647" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24732462" sideWeight="0.46972972" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.26540542" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2664865" sideWeight="0.14744352" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3507729" sideWeight="0.66864866" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.19297297" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32992035" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
     <layout-to-restore>
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32992035" sideWeight="0.49375" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32580262" sideWeight="0.47567567" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32992035" sideWeight="0.5041973" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.38644472" sideWeight="0.23567568" order="8" side_tool="true" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32992035" sideWeight="0.49580273" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.05688282" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1796875" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24375743" sideWeight="0.26108107" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32699168" sideWeight="0.48702702" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.43638524" sideWeight="0.46756756" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.41736028" sideWeight="0.7643243" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28537455" sideWeight="0.67189187" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32939914" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33891892" sideWeight="0.85255647" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32992035" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24732462" sideWeight="0.46972972" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.26540542" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2664865" sideWeight="0.14744352" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3507729" sideWeight="0.66864866" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.19297297" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
     </layout-to-restore>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="processedProjectFiles" value="true" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ORDER">
+      <list>
+        <option value="0" />
+        <option value="2" />
+        <option value="3" />
+        <option value="1" />
+      </list>
+    </option>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
@@ -466,6 +1167,25 @@
               <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
                 <collection />
               </option>
+              <option name="FILTERS">
+                <map>
+                  <entry key="text">
+                    <value>
+                      <list>
+                        <option value="einsum" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
             </State>
           </value>
         </entry>
@@ -477,300 +1197,492 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first commit. not done yet" />
-    <option name="LAST_COMMIT_MESSAGE" value="first commit. not done yet" />
+    <MESSAGE value="before modify the factor graph to support pickle" />
+    <option name="LAST_COMMIT_MESSAGE" value="before modify the factor graph to support pickle" />
+    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager />
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/history/feature_extract/REINFORCE_MD.py</url>
+          <line>46</line>
+          <option name="timeStamp" value="98" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/experiment_code/RAM_tf/ram_korean.py</url>
+          <line>421</line>
+          <option name="timeStamp" value="140" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/experiment_code/test_theano.py</url>
+          <line>20</line>
+          <option name="timeStamp" value="142" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/micro_flow_ram_main.py</url>
+          <option name="timeStamp" value="234" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/experiment_code/RAM_chainer_multilabel/clutter_mnist_generator.py</url>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/chainer/dataset/convert.py</url>
+          <line>90</line>
+          <option name="timeStamp" value="286" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/experiment_code/test.py</url>
+          <line>24</line>
+          <option name="timeStamp" value="390" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/223174296/chainer/functions/evaluation/accuracy.py</url>
+          <line>100</line>
+          <option name="timeStamp" value="396" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/chainer/functions/evaluation/accuracy.py</url>
+          <line>26</line>
+          <option name="timeStamp" value="475" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/action_unit_metric/demo_metric.py</url>
+          <line>27</line>
+          <option name="timeStamp" value="500" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/img_toolkit/face_landmark.py</url>
+          <line>35</line>
+          <option name="timeStamp" value="662" />
+        </line-breakpoint>
+        <line-breakpoint suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/AU_rcnn/links/model/faster_rcnn/faster_rcnn.py</url>
+          <line>266</line>
+          <option name="timeStamp" value="756" />
+        </line-breakpoint>
+      </breakpoints>
+      <breakpoints-dialog>
+        <breakpoints-dialog />
+      </breakpoints-dialog>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+      <option name="time" value="816" />
+    </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_01/img64.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/chainer/variable.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="10600">
+          <caret line="437" column="0" lean-forward="false" selection-start-line="437" selection-start-column="0" selection-end-line="437" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_01/img65.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/AU_lstm/dataset/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_01/img66.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/chainer/training/extensions/evaluator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3225">
+          <caret line="139" column="0" lean-forward="false" selection-start-line="139" selection-start-column="0" selection-end-line="139" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img104.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/chainer/iterators/serial_iterator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="775">
+          <caret line="35" column="8" lean-forward="false" selection-start-line="35" selection-start-column="8" selection-end-line="35" selection-end-column="8" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img105.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/AU_lstm/dataset/AU_lstm_dataset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="15" column="52" lean-forward="false" selection-start-line="14" selection-start-column="8" selection-end-line="15" selection-end-column="52" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img106.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/script/graph_desc_file_generator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="10475">
+          <caret line="419" column="30" lean-forward="false" selection-start-line="419" selection-start-column="30" selection-end-line="419" selection-end-column="30" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img110.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/suitcase/lstm_img.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1750">
+          <caret line="75" column="10" lean-forward="false" selection-start-line="75" selection-start-column="10" selection-end-line="75" selection-end-column="10" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img111.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/chainer/links/model/classifier.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="725">
+          <caret line="32" column="8" lean-forward="false" selection-start-line="32" selection-start-column="8" selection-end-line="32" selection-end-column="8" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img112.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/chainer/training/trainer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="7150">
+          <caret line="295" column="0" lean-forward="false" selection-start-line="295" selection-start-column="0" selection-end-line="295" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img113.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/chainer/optimizer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="13275">
+          <caret line="541" column="0" lean-forward="false" selection-start-line="541" selection-start-column="0" selection-end-line="541" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img114.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="36" column="12" lean-forward="false" selection-start-line="36" selection-start-column="12" selection-end-line="38" selection-end-column="64" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img119.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/AU_lstm/model/AU_LSTM.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-350">
+          <caret line="10" column="30" lean-forward="false" selection-start-line="10" selection-start-column="30" selection-end-line="10" selection-end-column="30" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img120.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/AU_lstm/train_lstm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="63">
+          <caret line="56" column="61" lean-forward="false" selection-start-line="56" selection-start-column="50" selection-end-line="56" selection-end-column="61" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img121.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/python_stubs/-1282051629/structural_rnn/model/open_crf/cython/factor_graph.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="131">
+          <caret line="521" column="8" lean-forward="false" selection-start-line="521" selection-start-column="8" selection-end-line="521" selection-end-column="8" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img122.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/openblas_toolkit/openblas_configure.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="8" column="55" lean-forward="false" selection-start-line="8" selection-start-column="14" selection-end-line="8" selection-end-column="55" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img123.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/functions/array/copy.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="342">
+          <caret line="85" column="0" lean-forward="false" selection-start-line="85" selection-start-column="0" selection-end-line="85" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img124.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/utils/type_check.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="185">
+          <caret line="508" column="0" lean-forward="false" selection-start-line="508" selection-start-column="0" selection-end-line="508" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img130.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/function.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="235">
+          <caret line="201" column="0" lean-forward="false" selection-start-line="201" selection-start-column="0" selection-end-line="201" selection-end-column="0" />
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img131.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/h5py/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="54">
+          <caret line="33" column="0" lean-forward="false" selection-start-line="33" selection-start-column="0" selection-end-line="33" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img136.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/script/gen_data_json.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="224">
+          <caret line="34" column="81" lean-forward="false" selection-start-line="34" selection-start-column="52" selection-end-line="34" selection-end-column="81" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img139.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/reporter.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="125">
+          <caret line="11" column="0" lean-forward="true" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img147.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/AU_rcnn/train.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8625">
+          <caret line="345" column="44" lean-forward="false" selection-start-line="344" selection-start-column="8" selection-end-line="345" selection-end-column="44" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img148.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2575">
+          <caret line="104" column="4" lean-forward="false" selection-start-line="104" selection-start-column="4" selection-end-line="105" selection-end-column="42" />
+          <folding>
+            <element signature="e#0#15#0" expanded="false" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img149.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/Cython/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img153.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/extensions/opencrf_evaluator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2300">
+          <caret line="99" column="28" lean-forward="false" selection-start-line="99" selection-start-column="20" selection-end-line="99" selection-end-column="28" />
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img154.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/open_crf.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="116">
+          <caret line="152" column="46" lean-forward="false" selection-start-line="152" selection-start-column="37" selection-end-line="152" selection-end-column="46" />
+          <folding>
+            <element signature="e#1#19#0" expanded="false" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img156.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/open_crf_layer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="275">
+          <caret line="11" column="6" lean-forward="false" selection-start-line="11" selection-start-column="6" selection-end-line="11" selection-end-column="6" />
+          <folding>
+            <element signature="e#0#11#0" expanded="false" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img157.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/open_crf.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="195" column="36" lean-forward="true" selection-start-line="195" selection-start-column="8" selection-end-line="195" selection-end-column="36" />
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img161.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/AU_rcnn/extensions/AU_evaluator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="125">
+          <caret line="33" column="25" lean-forward="true" selection-start-line="33" selection-start-column="25" selection-end-line="33" selection-end-column="25" />
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img81.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/dataset_toolkit/adaptive_AU_config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#13#0" expanded="false" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img82.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/training/updater.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1822">
+          <caret line="147" column="13" lean-forward="false" selection-start-line="147" selection-start-column="13" selection-end-line="147" selection-end-column="13" />
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img89.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="6225">
+          <caret line="249" column="111" lean-forward="false" selection-start-line="249" selection-start-column="96" selection-end-line="249" selection-end-column="111" />
+          <folding>
+            <element signature="e#0#9#0" expanded="false" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img90.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/updater/bptt_updater.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="6" column="4" lean-forward="false" selection-start-line="6" selection-start-column="4" selection-end-line="6" selection-end-column="4" />
+          <folding>
+            <element signature="e#0#14#0" expanded="false" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img91.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/graph_dataset_reader.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="75">
+          <caret line="3" column="63" lean-forward="true" selection-start-line="3" selection-start-column="63" selection-end-line="3" selection-end-column="63" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img92.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/pure_python/open_crf_layer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1371">
+          <caret line="148" column="17" lean-forward="true" selection-start-line="148" selection-start-column="17" selection-end-line="148" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#11#0" expanded="false" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img93.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/graph_backup/networkx_graph.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2328">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#15#0" expanded="false" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img98.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/train_opencrf.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="250">
+          <caret line="49" column="0" lean-forward="false" selection-start-line="49" selection-start-column="0" selection-end-line="49" selection-end-column="0" />
+          <folding>
+            <element signature="e#1#16#0" expanded="true" />
+          </folding>
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP19_03f/img99.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/factor_graph.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="145">
+          <caret line="390" column="17" lean-forward="false" selection-start-line="390" selection-start-column="17" selection-end-line="390" selection-end-column="17" />
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/CASME2/CASME2_RAW_selected/sub01/EP02_01f/img47.jpg">
-      <provider selected="true" editor-type-id="images">
-        <state />
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/factor_graph.pyx.memtype">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1500">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/factor_graph.backup">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pxd">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="33">
+          <caret line="27" column="43" lean-forward="false" selection-start-line="27" selection-start-column="43" selection-end-line="27" selection-end-column="43" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/structural_RNN_dataset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="36" column="21" lean-forward="false" selection-start-line="36" selection-start-column="21" selection-end-line="36" selection-end-column="21" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="101">
+          <caret line="19" column="0" lean-forward="false" selection-start-line="19" selection-start-column="0" selection-end-line="19" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="78" column="31" lean-forward="false" selection-start-line="78" selection-start-column="31" selection-end-line="78" selection-end-column="31" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/pure_python/factor_graph.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="286">
+          <caret line="149" column="13" lean-forward="false" selection-start-line="149" selection-start-column="13" selection-end-line="149" selection-end-column="13" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="252">
+          <caret line="219" column="77" lean-forward="false" selection-start-line="219" selection-start-column="77" selection-end-line="219" selection-end-column="77" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/model_1/factor_graph.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2673">
+          <caret line="343" column="55" lean-forward="false" selection-start-line="343" selection-start-column="55" selection-end-line="343" selection-end-column="55" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/model_2/open_crf.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-900">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/backup/model_2/factor_graph.pyx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-308">
+          <caret line="415" column="70" lean-forward="false" selection-start-line="415" selection-start-column="70" selection-end-line="415" selection-end-column="70" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/setup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-108">
+          <caret line="41" column="26" lean-forward="false" selection-start-line="41" selection-start-column="26" selection-end-line="41" selection-end-column="26" />
+          <folding />
+        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="789">
-          <caret line="46" column="5" lean-forward="true" selection-start-line="46" selection-start-column="5" selection-end-line="46" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/framework/constant_op.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1350">
-          <caret line="64" column="61" lean-forward="false" selection-start-line="64" selection-start-column="52" selection-end-line="64" selection-end-column="61" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/framework/ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="6808">
-          <caret line="324" column="6" lean-forward="false" selection-start-line="324" selection-start-column="6" selection-end-line="324" selection-end-column="6" />
+        <state relative-caret-position="492">
+          <caret line="40" column="5" lean-forward="false" selection-start-line="40" selection-start-column="5" selection-end-line="40" selection-end-column="5" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/image_ops_impl.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8257">
-          <caret line="379" column="24" lean-forward="false" selection-start-line="379" selection-start-column="24" selection-end-line="379" selection-end-column="24" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/gen_math_ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="16261">
-          <caret line="718" column="4" lean-forward="false" selection-start-line="718" selection-start-column="4" selection-end-line="718" selection-end-column="30" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/gen_array_ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="86618">
-          <caret line="3777" column="25" lean-forward="false" selection-start-line="3777" selection-start-column="25" selection-end-line="3777" selection-end-column="25" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/math_ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="26059">
-          <caret line="1159" column="4" lean-forward="false" selection-start-line="1159" selection-start-column="4" selection-end-line="1159" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/gen_image_ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-23">
-          <caret line="781" column="30" lean-forward="false" selection-start-line="781" selection-start-column="30" selection-end-line="781" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/random_ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3910">
-          <caret line="183" column="23" lean-forward="false" selection-start-line="183" selection-start-column="23" selection-end-line="183" selection-end-column="23" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Program Files/Anaconda3/envs/tensorflow/Lib/site-packages/tensorflow/python/ops/array_ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="27370">
-          <caret line="1213" column="4" lean-forward="false" selection-start-line="1213" selection-start-column="4" selection-end-line="1213" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test_feature/RAM_tf/tf_mnist_loader.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2461">
-          <caret line="110" column="6" lean-forward="false" selection-start-line="110" selection-start-column="6" selection-end-line="110" selection-end-column="6" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test_feature/RAM_tf/ram.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="414">
-          <caret line="18" column="8" lean-forward="true" selection-start-line="18" selection-start-column="8" selection-end-line="18" selection-end-column="8" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
