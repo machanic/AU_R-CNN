@@ -39,11 +39,5 @@ cdef class FactorGraph:
     cpdef set_variable_state_factor(self, int u, np.ndarray[DTYPE_float_t, ndim=1] state_factor)
     cpdef public gen_propagate_order(self)
     cpdef belief_propagation(self, int max_iter, np.ndarray[DTYPE_float_t, ndim=1] weight)
-    # cpdef reconstruct_factor_graph(self, int n, int m, int num_label, bint labeled_given, int num_node, list var_node,
-    #                                list factor_node, np.ndarray[object, ndim=1] bfs_node, np.ndarray[object, ndim=1] p_node,
-    #                                int factor_node_used, DiffMax diff_max,
-    #          bint converged, list entry)
-
     cpdef calculate_marginal(self, np.ndarray[DTYPE_float_t, ndim=1] weight)
-    cpdef max_sum_propagation(self, int max_iter, np.ndarray[DTYPE_float_t, ndim=1] weight)
     cpdef clean(self)

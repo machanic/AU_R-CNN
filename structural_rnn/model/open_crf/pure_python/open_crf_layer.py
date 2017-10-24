@@ -116,8 +116,8 @@ class CRFFunction(Function):
         nonzero_tuple = np.nonzero(x)
         for i,j in zip(*nonzero_tuple):
             self.x_nonzero_attrib[i].append(j)
-
-        f = self.log_likelihood(x, W)
+        f = 0
+        # f = self.log_likelihood(x, W)  #FIXME 注释掉加快速度
         f *= -1.
         return utils.force_array(f, dtype=W.dtype),
 

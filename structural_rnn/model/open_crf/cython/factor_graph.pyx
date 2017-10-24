@@ -5,7 +5,7 @@ cimport cython
 from libc.math cimport exp, fabs
 DTYPE_float = np.float32
 DTYPE_int = np.int32
-
+import time
 
 cdef class DiffMax:
 
@@ -175,23 +175,6 @@ cdef class VariableNode(Node):
             f.get_message_from(self.id, self.msg, diff_max)  # f is i_th neighbor, it is factor_node
     '''
 
-    #FIXME, incorrect code. which is same as belief_propagation
-    cpdef max_sum_propagation(self, DiffMax diff_max, bint labeled_given, np.ndarray[DTYPE_float_t, ndim=1] weight):
-        cdef np.ndarray[DTYPE_float_t, ndim=1] product
-        cdef FactorNode f
-        cdef int i
-        cdef np.ndarray all_index = np.arange(len(self.neighbor)).astype(np.int32)
-        cdef np.ndarray[DTYPE_float_t, ndim=1] all_neighbor_product,filtered_index
-        for i in range(len(self.neighbor)):
-            f = self.neighbor[i]
-            filtered_index = np.delete(all_index,i,0)
-            all_neighbor_product = np.prod(np.asarray(self.belief)[filtered_index,:], axis=0,dtype=DTYPE_float)  # shape 1 x Y
-
-            product = np.asarray(self.state_factor) * all_neighbor_product  # element-wise multiplication, 《PRML》 p406的公式(8.69)，因为一个factor node只有两个variable node邻居，去掉公式中连乘符号，公式里所谓的x其实就是label
-            self.msg = product
-            self.normalize_message()
-            f.get_message_from(self.id, self.msg, diff_max)
-
     def __del__(self):
         if self.state_factor is not None:
             self.state_factor = None
@@ -202,12 +185,12 @@ cdef class VariableNode(Node):
 cdef class FactorNode(Node):
     cdef public int edge_type
     cdef public np.ndarray marginal
-    cdef public FactorFunction func
+    cdef public np.ndarray func_value
     def __init__(self):
         super(FactorNode, self).__init__()
         self.edge_type = -1
-        self.func = None
         self.marginal = None  # FactorNode's marginal is num_label x num_label 2-D array
+        self.func_value = None
 
     cpdef init(self, int num_label):
         super(FactorNode, self).basic_init(num_label)
@@ -225,10 +208,7 @@ cdef class FactorNode(Node):
         cdef np.ndarray[DTYPE_float_t, ndim=2] msg = np.zeros((2, self.num_label), dtype=DTYPE_float)
         cdef np.ndarray[DTYPE_float_t, ndim=2] belief = self.belief
         cdef np.ndarray[DTYPE_float_t, ndim=2] neighbor_belief = np.zeros((2, self.num_label), dtype=DTYPE_float)
-        cdef np.ndarray[DTYPE_float_t, ndim=2] func_values = np.zeros((self.num_label,self.num_label),dtype=DTYPE_float)
-        for y in range(self.num_label):
-            for y1 in range(self.num_label):
-                func_values[y, y1] = self.func.get_value(y, y1, weight)
+        cdef np.ndarray[DTYPE_float_t, ndim=2] func_values = self.func_value
 
         for i in range(2):  # each factor node has only 2 neighbor variable node
             var_neighbor = self.neighbor[i]
@@ -238,7 +218,7 @@ cdef class FactorNode(Node):
             else:
                 msg[i, :] = np.dot(func_values, belief[1-i,:])  # <PRML> p404 Eqn.(8.66)
         msg /= np.sum(msg,axis=1).reshape(-1,1) # normalize, reshape for broadcast in numpy, this is mainly for boost speed
-        for i in range(2):  # each factor node has only 2 neighbor variable node
+        for i in range(2):  # why we split to 2 times of loop, because np.sum only occur once will boost speed
             var_neighbor = self.neighbor[i]
             p = var_neighbor.neighbor_pos[self.id]
             neighbor_belief[i, :] = var_neighbor.belief[p,:]
@@ -263,26 +243,6 @@ cdef class FactorNode(Node):
             self.neighbor[i].get_message_from(self.id, self.msg, diff_max)  # neighbor[i]是variable_node
     '''
 
-
-    cpdef max_sum_propagation(self, DiffMax diff_max, bint labeled_given, np.ndarray[DTYPE_float_t, ndim=1]  weight):
-        cdef int i,y,y1
-        cdef double s
-        cdef int msg_index
-        for i in range(2):
-            if labeled_given and self.neighbor[i].label_type == LabelTypeEnum.KNOWN_LABEL:
-                self.msg[:] = 0
-                msg_index = self.neighbor[i].y
-                self.msg[msg_index] = 1.0
-            else:
-                for y in range(self.num_label):
-                    s = self.func.get_value(y, 0, weight) * self.belief[1-i, 0]
-                    for y1 in range(self.num_label):
-                        tmp = self.func.get_value(y, y1, weight) * self.belief[1-i, y1]
-                        if tmp > s:
-                            s = tmp # find max <PRML> p413 formular:（8.93）
-                    self.msg[y] = s
-                self.normalize_message()
-            self.neighbor[i].get_message_from(self.id, self.msg, diff_max)
 
     def __del__(self):
         if self.marginal is not None:
@@ -311,7 +271,7 @@ cdef class FactorGraph:
 
         p_node_id = 0
         for i in range(self.n):
-            self.var_node[i].id = p_node_id  # 这个id从0开始! 注意这个id不是Sample里的node的id
+            self.var_node[i].id = p_node_id  # id start from 0! note that this id is not Sample's node id
             self.p_node[p_node_id] = self.var_node[i]
             p_node_id += 1
             self.var_node[i].init(num_label)
@@ -348,14 +308,13 @@ cdef class FactorGraph:
         self.factor_node_used += 1
 
     cpdef add_edge_done(self):
-        cdef int i
+        cdef int i, edge_type
         cdef VariableNode var_node
         cdef Node p_node
         cdef np.ndarray[DTYPE_int_t, ndim=1] filtered_index, all_index
-        for factor_node in self.factor_node:
-            factor_node.func = self.edge_type_func_list[factor_node.edge_type]
+
         for p_node in self.p_node:
-            p_node.add_neighbor_done()
+            p_node.add_neighbor_done() # convert to np.ndarray
             self.all_diff_size += len(p_node.neighbor) * p_node.num_label
 
 
@@ -405,8 +364,9 @@ cdef class FactorGraph:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef belief_propagation(self, int max_iter, np.ndarray[DTYPE_float_t, ndim=1] weight):
-        cdef int start, end, dir,p,iter, i
+        cdef int start, end, dir,p,iter, i,y,y1,edge_type
         cdef FactorNode factor_node
+        cdef FactorFunction func
         start = 0
         end = 0
         dir = 0
@@ -417,6 +377,18 @@ cdef class FactorGraph:
         cdef np.ndarray[DTYPE_float_t, ndim=1] diff_neighbor_belief = np.zeros(self.all_diff_size, dtype=DTYPE_float)
         cdef np.ndarray[DTYPE_float_t, ndim=1] diff_msg = np.zeros(self.all_diff_size, dtype=DTYPE_float)
         cdef int current_start_diff
+        cdef dict func_value_dict = dict()
+        cdef np.ndarray[DTYPE_float_t, ndim=2] func_value
+
+        # cache for boost speed
+        for edge_type, func in enumerate(self.edge_type_func_list):
+            func_value = np.zeros((self.num_label,self.num_label),dtype=DTYPE_float)
+            for y in range(self.num_label):
+                for y1 in range(self.num_label):
+                    func_value[y, y1] = func.get_value(y, y1, weight)
+            func_value_dict[edge_type] = func_value
+        for factor_node in self.factor_node:
+            factor_node.func_value = func_value_dict[factor_node.edge_type]
 
         for iter in range(max_iter):
             current_start_diff = 0
@@ -443,9 +415,11 @@ cdef class FactorGraph:
     @cython.wraparound(False)
     cpdef calculate_marginal(self, np.ndarray[DTYPE_float_t, ndim=1] weight):
         cdef double sum_py, sump
-        cdef int i,a,b
+        cdef int i,a,b,y,y1,edge_type
+        cdef FactorFunction func
         cdef np.ndarray[DTYPE_float_t, ndim=2] belief
         cdef np.ndarray[DTYPE_float_t, ndim=1] prod_result
+        cdef np.ndarray[DTYPE_float_t, ndim=2] func_value
         cdef VariableNode var_node
         for i in range(self.n):
             var_node = self.var_node[i]
@@ -457,6 +431,28 @@ cdef class FactorGraph:
             sum_py = np.sum(var_node.marginal)
             var_node.marginal /= sum_py
 
+        # prepare cache the func_value to speed up because Y is large, we cannot let it occur inside for-loop of self.m
+        cdef dict func_value_dict = dict()
+        for edge_type, func in enumerate(self.edge_type_func_list):
+            func_value = np.zeros((self.num_label,self.num_label),dtype=DTYPE_float)
+            for y in range(self.num_label):
+                for y1 in range(self.num_label):
+                    func_value[y, y1] = func.get_value(y, y1, weight)
+            func_value_dict[edge_type] = func_value
+
+        cdef np.ndarray[DTYPE_float_t, ndim=2] neighbor_belief_0 = np.zeros(shape=(self.m, self.num_label), dtype=DTYPE_float) # shape = (m, Y), where Y denotes num_label
+        cdef np.ndarray[DTYPE_float_t, ndim=2] neighbor_belief_1 = np.zeros(shape=(self.m, self.num_label), dtype=DTYPE_float) # shape = (m, Y)
+        for i in range(self.m):  # in order to use np.einsum without for-loop, we divide for m-loop into 2 parts
+            neighbor_belief_0[i, :] = self.factor_node[i].belief[0,:]
+            neighbor_belief_1[i, :] = self.factor_node[i].belief[1,:]
+        cdef np.ndarray[DTYPE_float_t, ndim=3] neighbor_belief = np.einsum('ki,kj->kij', neighbor_belief_0, neighbor_belief_1)  # shape = (m, Y, Y) consume memory if Y is large
+        cdef np.ndarray[DTYPE_float_t, ndim=2] factor_node_marginal
+        for i in range(self.m):
+            factor_node_marginal = self.factor_node[i].marginal
+            factor_node_marginal += neighbor_belief[i,:,:] * func_value_dict[self.factor_node[i].edge_type]
+            factor_node_marginal /= np.sum(factor_node_marginal)
+
+        ''' original code is below, we split to two times of loops, because we want to use np.einsum only once, which we consume more memory but will speed up by numpy
         cdef np.ndarray[DTYPE_float_t, ndim=2] factor_node_marginal
         for i in range(self.m):
             factor_node_marginal = self.factor_node[i].marginal
@@ -469,27 +465,8 @@ cdef class FactorGraph:
                         * self.factor_node[i].func.get_value(a, b, weight)
                     sump += factor_node_marginal[a, b]
             factor_node_marginal /= sump
+        '''
 
-    cpdef max_sum_propagation(self, int max_iter, np.ndarray[DTYPE_float_t, ndim=1] weight):
-        cdef int start,end, dir,p,iter
-        start = 0
-        end = 0
-        dir = 0
-        self.converged = False
-        for iter in range(max_iter):
-            self.diff_max.diff_max = 0
-            if iter % 2 == 0:
-                start = self.num_node - 1
-                end = -1
-                dir = -1
-            else:
-                start = 0
-                end = self.num_node
-                dir = 1
-            for p in range(start, end, dir):
-                self.bfs_node[p].max_sum_propagation(self.diff_max, self.labeled_given, weight)
-            if self.diff_max.diff_max < 1e-6:
-                break
 
     cpdef clean(self):
         if self.var_node:

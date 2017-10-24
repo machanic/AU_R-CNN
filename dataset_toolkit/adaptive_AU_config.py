@@ -6,12 +6,18 @@ import itertools
 
 
 # 后两个参数应该配合使用,用于添加CRF单label妥协方案用到的新增的组合label（视为一个新label）
-def adaptive_AU_database(database_name):
+def adaptive_AU_database(database_name, use_paper_only=False):
 
     if database_name == "BP4D":
-        database_use_AU = config.BP4D_use_AU
+        if use_paper_only:
+            database_use_AU = config.paper_use_BP4D
+        else:
+            database_use_AU = config.BP4D_use_AU
     elif database_name == "DISFA":
-        database_use_AU = config.DISFA_use_AU
+        if use_paper_only:
+            database_use_AU = config.paper_use_DISFA
+        else:
+            database_use_AU = config.DISFA_use_AU
     elif database_name == "BP4D_DISFA":
         database_use_AU = list(set(config.BP4D_use_AU + config.DISFA_use_AU))
     new_AU_ROI = OrderedDict()

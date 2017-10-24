@@ -84,7 +84,7 @@ class StructuralRNNPlus(chainer.Chain):
                     label = node.label
                     node_label_one_video.append(label)
             targets.append(np.asarray(node_label_one_video))
-        return xp.stack(targets)  # shape = B x N x D but B = 1 forever
+        return xp.stack(targets)  # shape = B x N x D but B = 1 forever and D is data_info specified number (picked index)
 
 
     def predict(self, x:np.ndarray, crf_pact_structure:CRFPackageStructure):
@@ -105,14 +105,11 @@ class StructuralRNNPlus(chainer.Chain):
                 h = hs.data[0]
                 pred_labels = self.open_crf.predict(h, crf_pact_structures[0])  # shape = N x 1
                 # this method can only inference label combination that already occur in training dataset
-                AU_bins = [] # AU_bins is labels in one video sequence
+                label_bins = [] # AU_bins is labels in one video sequence
                 for pred_label in pred_labels:  # pred_label is int id of combine AU. multiple AU combine regarded as one
-                    AU_list = self.label_dict.get_key(pred_label).split(",") #  actually, because Open-CRF only support single label prediction
-                    AU_bin = np.zeros(len(config.AU_SQUEEZE), dtype=np.int32)
-                    for AU in AU_list:
-                        np.put(AU_bin, config.AU_SQUEEZE.inv[AU], 1)
-                    AU_bins.append(AU_bin)
-                return xp.asarray(AU_bins)  # shape =N x D, where D = len(config.AU_SQUEEZE) = label_bin_len
+                    pred_idx_lst = self.label_dict.get_key(pred_label).split(",") #  actually, because Open-CRF only support single label prediction
+                    label_bins.append(pred_idx_lst)
+                return xp.asarray(label_bins)  # shape =N x D, where D = use_AU_len = label_bin_len
             else:
                 return self.structural_rnn.predict(x, crf_pact_structure, infered=False)  # 是binary形式的label. N x D
 

@@ -46,7 +46,7 @@ def main():
     parser.set_defaults(test=False)
     args = parser.parse_args()
     config.OPEN_CRF_CONFIG["use_pure_python"] = args.use_pure_python
-
+    # because we modify config.OPEN_CRF_CONFIG thus will influence the open_crf layer
     from structural_rnn.dataset.crf_pact_structure import CRFPackageStructure
     from structural_rnn.dataset.structural_RNN_dataset import S_RNNPlusDataset
     from structural_rnn.extensions.opencrf_evaluator import OpenCRFEvaluator
@@ -69,9 +69,9 @@ def main():
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=dataset.num_attrib_type, need_s_rnn=False)
     train_data = S_RNNPlusDataset(args.train, attrib_size=dataset.num_attrib_type,
                                   global_dataset=dataset,need_s_rnn=False)
-    # valid_data = OpenCRFDataset(args.valid)
+
     train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=False)
-    validate_iter = chainer.iterators.SerialIterator(train_data, 1, repeat=False, shuffle=False)
+
 
 
     model = OpenCRFLayer(node_in_size=dataset.num_attrib_type, weight_len=crf_pact_structure.num_feature)
@@ -92,7 +92,7 @@ def main():
          'main/loss',"opencrf_val/main/hit",#"opencrf_validation/main/U_hit",
          "opencrf_val/main/miss",#"opencrf_validation/main/U_miss",
          "opencrf_val/main/F1",#"opencrf_validation/main/U_F1"
-         'opencrf_val/main/accuracy'
+         'opencrf_val/main/accuracy',
          ]), trigger=print_interval)
     trainer.extend(chainer.training.extensions.observe_lr(),
                    trigger=print_interval)
@@ -106,7 +106,9 @@ def main():
         chainer.serializers.load_npz(args.resume, trainer)
     if chainer.training.extensions.PlotReport.available():
         trainer.extend(chainer.training.extensions.PlotReport(['main/loss']))
-
+    valid_data = S_RNNPlusDataset(args.valid, attrib_size=dataset.num_attrib_type,
+                                  global_dataset=dataset, need_s_rnn=False)
+    validate_iter = chainer.iterators.SerialIterator(valid_data, 1, repeat=False, shuffle=False)
     evaluator = OpenCRFEvaluator(
         iterator=validate_iter, target=model,  device=-1)
     trainer.extend(evaluator, trigger=val_interval)

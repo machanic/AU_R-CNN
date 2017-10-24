@@ -13,11 +13,12 @@ def get_F1_frame(label, pred):
     pred = reg(pred)
     # Compute confusion mat and f1
     cm = confmat(label, pred)
-    f1f, p, r = cm2f1f(cm)
+    f1f, p, r, accuracy = cm2f1f(cm)
     # packing
     met = Map()
     met.f1f = f1f
     met.p = p
     met.r = r
     met.cm = cm
+    met.accuracy = accuracy
     return met

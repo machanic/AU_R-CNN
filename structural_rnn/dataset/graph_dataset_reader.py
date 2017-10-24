@@ -4,7 +4,7 @@ if config.OPEN_CRF_CONFIG['use_pure_python']:
     from structural_rnn.model.open_crf.pure_python.constant_variable import LabelTypeEnum
 else:
     from structural_rnn.model.open_crf.cython.factor_graph import LabelTypeEnum
-import config
+
 from bidict import bidict
 
 from functools import lru_cache
@@ -72,12 +72,9 @@ class DataNode(object):
         self.id = id
         self.label_type = label_type
         self.label_num = len(label_bin)  # label_bin is np.ndarray
-        self.label_arr = np.array([non_zero_idx for non_zero_idx in np.nonzero(label_bin)[0]], dtype=np.int32)  # save memory
         self.label_dict = label_dict
-        label_str = []
-        for label_squeeze_idx in self.label_arr:
-            label_str.append(config.AU_SQUEEZE[label_squeeze_idx])
-        label_str = ",".join(sorted(label_str))
+        label_str = ",".join(map(str, label_bin))
+        self.label_bin = label_bin
         self.label_dict.get_id(label_str)
 
         self.feature = feature
@@ -85,23 +82,10 @@ class DataNode(object):
 
 
     @property
-    def label_bin(self):
-        label_bin = np.zeros(self.label_num, dtype=np.int32)
-        for non_zero_idx in self.label_arr:
-            np.put(label_bin, non_zero_idx, 1)
-        return label_bin
-
-    @label_bin.setter
-    def label_bin(self, label_bin):
-        self.label_arr = np.array([non_zero_idx for non_zero_idx in np.nonzero(label_bin)[0]], dtype=np.uint8)
-        self.label_num = len(label_bin)
-
-    @property
     @lru_cache(maxsize=1)
     def label(self):
-        label_str = [config.AU_SQUEEZE[label_squeeze_idx] for label_squeeze_idx in self.label_arr]
-        label_str = ",".join(sorted(label_str))
-        return self.label_dict.get_id_const(label_str)  #  e.g. key = 1,2 (AU1 & AU2), value = id
+        label_str = ",".join(map(str, self.label_bin))
+        return self.label_dict.get_id_const(label_str)  #  e.g. key = 1,2 which string represent of idx, value = id
 
     def __hash__(self):
         return hash(self.id)
@@ -120,7 +104,7 @@ class DataEdge(object):
 
 class DataSample(object):
 
-    def __init__(self, num_node=None, num_edge=None, num_label=None,  label_dict=None, label_bin_len=None):
+    def __init__(self, num_node=None, num_edge=None,  label_dict=None, label_bin_len=None):
         self.num_node = num_node   # note that the num_node attribute of FactorGraph is node count + edge count
         self.num_edge = num_edge
         self.node_list = []
@@ -147,11 +131,13 @@ class GlobalDataSet(object):
     def __init__(self, info_dict_path):
         self.num_edge_type = 0
         self.num_label = 0
-        self.label_dict = MappingDict()  # id:int => AU1,AU2 str
+        self.label_dict = MappingDict()  # id:int => AU_bin str
         self.edge_type_dict = MappingDict()
         self.num_attrib_type = 0
         self.info_json = None
+        self.use_label_idx = None
         self.load_data_info_dict(info_dict_path)  # {"num_label":233, "non_zero_attrib_index":[0,1,4,5,6,...] }
+
 
 
     def load_data_info_dict(self, info_dict_path):
@@ -159,6 +145,7 @@ class GlobalDataSet(object):
             self.info_json = json.loads(file_obj.read())
         self.num_label = self.info_json["num_label"]
         self.num_attrib_type = len(self.info_json["non_zero_attrib_index"])
+        self.use_label_idx = sorted(map(int,self.info_json["use_label_idx"].keys())) # a dict , key=label_idx, value= AU
 
     def load_data(self, path):
         curt_sample = DataSample()
@@ -186,10 +173,10 @@ class GlobalDataSet(object):
                         node_id = node_id[1:]
                     else:
                         label_type = LabelTypeEnum.KNOWN_LABEL
-                    node_id = curt_sample.nodeid_line_no_dict.get_id(node_id)  # nodeid 转成行号int，原始字符串的nodeid放入字典
-                    if node_labels.startswith("(") and node_labels.endswith(")"):  # opencrf无法使用这种类型的label，但是
-                        label_bin = np.asarray(list(map(int, node_labels[1:-1].split(","))), dtype=np.int32)
-
+                    node_id = curt_sample.nodeid_line_no_dict.get_id(node_id)   #nodeid convert to line number int，original string nodeid into dict
+                    if node_labels.startswith("(") and node_labels.endswith(")"):  #open-crf cannot use bin form label, but can combine as one to use, located in Node constructor
+                        label_bin = np.asarray(list(map(int,node_labels[1:-1].split(",") )), dtype=np.int32)
+                        label_bin = label_bin[self.use_label_idx]  # it will filter out not in actual use label
                     if tokens[2].startswith("features:"):
                         node_features = np.asarray(list(map(float, tokens[2][len("features:"):].split(","))), dtype=np.float32)
                         node_features = node_features[self.info_json["non_zero_attrib_index"]]
@@ -197,7 +184,7 @@ class GlobalDataSet(object):
                     else:
                         print("Data format wrong! Label must start with features:/np_file:")
                         return
-                    curt_node = DataNode(id=node_id, label_type=label_type, label_dict= self.label_dict, label_bin=label_bin,
+                    curt_node = DataNode(id=node_id, label_type=label_type, label_dict=self.label_dict, label_bin=label_bin,
                                          feature=node_features)
 
                     assert len(curt_sample.node_list) == node_id

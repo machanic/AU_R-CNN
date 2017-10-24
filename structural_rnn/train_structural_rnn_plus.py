@@ -57,7 +57,7 @@ def main():
 
     # for the StructuralRNN constuctor need first frame factor graph_backup
     dataset = GlobalDataSet(info_dict_path=os.path.dirname(args.train)+os.sep + "data_info.json")
-    sample = dataset.load_data(args.train + os.sep + os.listdir(args.train)[0])
+    sample = dataset.load_data(args.train + os.sep + os.listdir(args.train)[0])  # we load first sample for construct S-RNN, it must passed to constructor argument
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size)  # 只读取其中的一个视频的第一帧，由于node个数相对稳定，因此可以construct RNN
 
     print("in_size:{}".format(dataset.num_attrib_type))

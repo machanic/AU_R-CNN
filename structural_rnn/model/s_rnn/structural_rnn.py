@@ -143,7 +143,7 @@ class StructuralRNN(chainer.Chain):
             xs = self.__call__(xs, crf_pact_structures)
             pred = xs.data > 0.0
             pred = pred[0]
-        return pred.astype(xp.int32)
+        return pred.astype(xp.int32)  # return N x D, where N is number of nodes, D is out_size
 
 
     def __call__(self, xs, crf_pact_structures):  # xs is chainer.Variable
@@ -205,4 +205,4 @@ class StructuralRNN(chainer.Chain):
                 time_used[node_RNN_id] += 1
             print("one graph_backup done")
             nodes_output.append(F.stack(one_video_nodes_output, axis=0))
-        return F.stack(nodes_output)  # return shape B x N x D. B is batch_size, but can only deal with one, D is out_size
+        return F.stack(nodes_output)  # return shape B x N x D. B is batch_size,  but can only deal with one, N is number of variable nodes in graph D is out_size

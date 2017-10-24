@@ -44,21 +44,26 @@ class OpenCRFLayer(chainer.Link):
             factor_graph.set_variable_state_factor(i, variable_state_factor[i, :])
         factor_graph.belief_propagation(crf_pact_structure.max_bp_iter, self.W.data)
         inf_label = xp.zeros(n, dtype=xp.int32)
-        label_prob = xp.zeros(shape=(num_label, n), dtype=xp.float32)
+        label_prob = xp.zeros(shape=(n, num_label), dtype=xp.float32)
         for i in range(n):
-            y_best = -1
-            v_best = -999999.0
-            v_sum = 0.0
-            for y in range(num_label):
-                v = factor_graph.var_node[i].state_factor[y]
-                for t in range(len(factor_graph.var_node[i].neighbor)):
-                    v *= factor_graph.var_node[i].belief[t, y]
-                if v > v_best:
-                    y_best = y
-                    v_best = v
-                label_prob[y, i] = v
-                v_sum += v
+            # y_best = -1
+            # v_best = -999999.0
+            # v_sum = 0.0
+            y_best = np.argmax(factor_graph.var_node[i].state_factor)
+            prod_result = factor_graph.var_node[i].state_factor
+            if factor_graph.var_node[i].neighbor:
+                prod_result = factor_graph.var_node[i].state_factor * np.prod(factor_graph.var_node[i].belief, axis=0) # length=y
+                y_best = np.argmax(prod_result)
+
+            # for y in range(num_label):
+            #     v = factor_graph.var_node[i].state_factor[y] * np.prod(factor_graph.var_node[i].belief[:,y])
+            #     # for t in range(len(factor_graph.var_node[i].neighbor)):
+            #     #     v *= factor_graph.var_node[i].belief[t, y]
+            #     if v > v_best:
+            #         y_best = y
+            #         v_best = v
+            #     label_prob[i,y] = v
+            #     v_sum += v
             inf_label[i] = y_best
-            for y in range(num_label):
-                label_prob[y,i] /= v_sum
+            label_prob[i,:] = prod_result
         return inf_label

@@ -8,6 +8,7 @@ from action_unit_metric.get_ROC import get_ROC
 from action_unit_metric.F1_event import get_F1_event
 import config
 from collections import defaultdict
+from chainer import DictSummary
 
 class AUEvaluator(chainer.training.extensions.Evaluator):
     trigger = 1, "epoch"
@@ -39,7 +40,6 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
         all_pred_label = []
 
         for idx, batch in enumerate(it):
-            print("evaluate batch idx:{}".format(idx))
             batch = self.converter(batch, device=self.device)
             imgs, bbox, labels = batch
             if bbox.shape[1] != config.BOX_NUM[self.database]:
@@ -58,7 +58,7 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
             all_gt_index.update(list(zip(*pos_pred)))
             all_gt_index.update(list(zip(*pos_gt_labels)))
             accuracy = np.sum(preds[list(zip(*all_gt_index))[0], list(zip(*all_gt_index))[1]] == gt_labels[list(zip(*all_gt_index))[0], list(zip(*all_gt_index))[1]])/ len(all_gt_index)
-            print("current batch accuracy is :{}".format(accuracy))
+            print("batch idx:{0} current batch accuracy is :{1}".format(idx, accuracy))
             all_gt_label.extend(gt_labels)
             all_pred_label.extend(preds)
         all_gt_label = np.asarray(all_gt_label)  # shape = (N, len(AU_SQUEEZE))
@@ -68,23 +68,25 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
         report = defaultdict(dict)
 
         reporter = Reporter()
-        reporter.add_observer(target)
-        summary = reporter.DictSummary()
+        reporter.add_observer("main", target)
+        summary = DictSummary()
         for AU_squeeze_idx, pred_label in enumerate(AU_pred_label):
             AU = config.AU_SQUEEZE[AU_squeeze_idx]
             if AU in self.paper_use_AU:
                 gt_label = AU_gt_label[AU_squeeze_idx]
-                met_E = get_F1_event(gt_label, pred_label)
+                # met_E = get_F1_event(gt_label, pred_label)
                 met_F = get_F1_frame(gt_label, pred_label)
                 roc = get_ROC(gt_label, pred_label)
                 report["f1_frame"][AU] = met_F.f1f
                 report["AUC"][AU] = roc.auc
-                report["f1_event"][AU] = np.median(met_E.f1EventCurve)
+                report["accuracy"][AU] = met_F.accuracy
+                # report["f1_event"][AU] = np.median(met_E.f1EventCurve)
                 summary.add({"f1_frame_avg": met_F.f1f})
                 summary.add({"AUC_avg": roc.auc})
-                summary.add({"f1_event_avg": np.median(met_E.f1EventCurve)})
+                summary.add({"accuracy_avg": met_F.accuracy})
+                # summary.add({"f1_event_avg": np.median(met_E.f1EventCurve)})
         observation = {}
-        with reporter.report_scope(observation):
+        with reporter.scope(observation):
             reporter.report(report, target)
             reporter.report(summary.compute_mean(), target)
         return observation

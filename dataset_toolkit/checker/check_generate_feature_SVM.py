@@ -10,10 +10,11 @@ X = []
 Y = []
 label_dict = dict() # label_str => label_int
 attrib = dict()
-test_filename = "F001_T8.txt"
-file_names = list(filter(lambda e: e.endswith(".txt") and e!=test_filename, os.listdir("./")))
+trn_filename = ["F002_T1.txt", "M018_T3.txt", "M018_T7.txt"]
+root_dir = "/home/machen/face_expr/result/graph/BP4D_3_fold_1/train/"
+file_names = list(filter(lambda e: e.endswith(".txt") and e in trn_filename, os.listdir(root_dir)))
 for file_name in file_names:
-    with open(file_name, "r") as file_obj:
+    with open(root_dir+os.sep+file_name, "r") as file_obj:
         for line in file_obj:
             if line.startswith("#edge"):
                 continue
@@ -23,43 +24,28 @@ for file_name in file_names:
                 label_dict[label_str] = len(label_dict)
             label_str = label_str[1:-1]
             feature = lines[2][len("features:"):]
-            feature = np.array(list(map(float, feature.split(","))))
-            x  = dict()
-            for n_idx in np.nonzero(feature)[0]:
-                if n_idx not in attrib:
-                    attrib[n_idx] = len(attrib)
-                x[n_idx] = feature[n_idx]
-            y = np.array(list(map(int, label_str.split(","))))
-            if not np.any(y):
-                continue
-            Y.append(y)
-            X.append(x)
+            feature = np.array(list(map(float, feature.split(","))),dtype=np.float32)
 
+            y = np.array(list(map(int, label_str.split(","))))
+
+            Y.append(y)
+            X.append(feature)
+X = np.asarray(X)
 Y = np.array(Y)
 YT= np.transpose(Y)
 for idx, y in enumerate(YT):
     if not np.any(y):
         print("idx {} not occur!".format(idx))
 
-X_trn = []
-for e_dict in X:
-    x = np.zeros(len(attrib))
-    for idx, feature in e_dict.items():
-        x[attrib[idx]] = feature
-    X_trn.append(x)
 
-
-X = np.array(X_trn)
-
-print(Y)
 classif = OneVsRestClassifier(SVC(kernel='linear'))
-
+print("classify train begin")
 classif.fit(X,Y)
 print("classify train over")
 X = []
-Y = []
 
-file_name = test_filename
+Y = []
+file_name = "/home/machen/face_expr/result/graph/BP4D_3_fold_1/valid/M017_T1.txt"
 with open(file_name, "r") as file_obj:
     for line in file_obj:
         if line.startswith("#edge"):
@@ -70,26 +56,16 @@ with open(file_name, "r") as file_obj:
             label_dict[label_str] = len(label_dict)
         label_str = label_str[1:-1]
         feature = lines[2][len("features:"):]
-        feature = np.array(list(map(float, feature.split(","))))
-        x = dict()
-        for n_idx in np.nonzero(feature)[0]:
-            if n_idx not in attrib:
-                attrib[n_idx] = len(attrib)
-            x[n_idx] = feature[n_idx]
+        feature = np.array(list(map(float, feature.split(","))), dtype=np.float32)
+
         y = np.array(list(map(int, label_str.split(","))))
-        if not np.any(y): continue
+
         Y.append(y)
-        X.append(x)
-X_pred = []
-for e_dict in X:
-    x = np.zeros(len(attrib))
-    for idx, feature in e_dict.items():
-        x[attrib[idx]] = feature
-    X_pred.append(x)
-
-
-X = np.array(X_pred)
+        X.append(feature)
 gt_Y = np.array(Y)
+
+X = np.array(X)
+
 
 
 pred_Y = classif.predict(X)
