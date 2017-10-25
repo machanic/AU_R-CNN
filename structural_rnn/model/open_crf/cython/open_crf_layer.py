@@ -27,12 +27,12 @@ class OpenCRFLayer(chainer.Link):
             self)
         return f
 
-    def predict(self, x:np.ndarray, crf_pact_structure:CRFPackageStructure):  # x is one video's node feature
+    def predict(self, x:np.ndarray, crf_pact_structure:CRFPackageStructure, is_bin=False):  # x is one video's node feature
         xp = chainer.cuda.get_array_module(x)
-
+        label_dict = crf_pact_structure.label_dict
         factor_graph = crf_pact_structure.factor_graph
         factor_graph.clear_data_for_sum_product()
-        factor_graph.labeled_given = True
+        factor_graph.labeled_given = False
         sample = crf_pact_structure.sample
         n = sample.num_node
         m = sample.num_edge
@@ -43,8 +43,8 @@ class OpenCRFLayer(chainer.Link):
         for i in range(n):
             factor_graph.set_variable_state_factor(i, variable_state_factor[i, :])
         factor_graph.belief_propagation(crf_pact_structure.max_bp_iter, self.W.data)
-        inf_label = xp.zeros(n, dtype=xp.int32)
-        label_prob = xp.zeros(shape=(n, num_label), dtype=xp.float32)
+        inf_label = np.zeros(n, dtype=xp.int32)
+        label_prob = np.zeros(shape=(n, num_label), dtype=xp.float32)
         for i in range(n):
             # y_best = -1
             # v_best = -999999.0
@@ -64,6 +64,13 @@ class OpenCRFLayer(chainer.Link):
             #         v_best = v
             #     label_prob[i,y] = v
             #     v_sum += v
-            inf_label[i] = y_best
+            inf_label[i] = y_best  # N x 1
             label_prob[i,:] = prod_result
+
+        if is_bin:
+            bin_inf_label = []
+            for label in inf_label:
+                bin_inf_label.append(label_dict.get_key(label).split(","))
+            inf_label = np.asarray(bin_inf_label, dtype=np.int32)
+        inf_label = chainer.cuda.to_cpu(inf_label)
         return inf_label

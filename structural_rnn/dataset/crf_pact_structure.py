@@ -17,6 +17,7 @@ class CRFPackageStructure(object):
 
         self.sample = sample
         self.num_node = self.sample.num_node
+        self.label_dict = train_data.label_dict
         self.num_label = train_data.num_label
         if num_attrib is not None:
             self.num_attrib_type = num_attrib

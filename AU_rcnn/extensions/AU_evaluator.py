@@ -40,6 +40,7 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
         all_pred_label = []
 
         for idx, batch in enumerate(it):
+            if idx >= 5:break
             batch = self.converter(batch, device=self.device)
             imgs, bbox, labels = batch
             if bbox.shape[1] != config.BOX_NUM[self.database]:

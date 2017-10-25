@@ -54,11 +54,7 @@ class OpenCRFEvaluator(Evaluator):
     def evaluate(self):
         iterator = self._iterators['main']
         target = self._targets['main']
-        if hasattr(iterator, 'reset'):
-            iterator.reset()
-            it = iterator
-        else:
-            it = copy.copy(iterator)
+        it = copy.copy(iterator)
         hit = 0
         miss = 0
         hitu = 0
@@ -68,23 +64,30 @@ class OpenCRFEvaluator(Evaluator):
         pred_labels = []
         gt_labels = []
         for batch in it:
-            # batch = self.converter(batch, device=self.device)
-            for x, crf_pact_structure in batch:
+            if self.device >=0:
+                x = [chainer.cuda.to_gpu(x) for x,_ in batch]
+            else:
+                x = [chainer.cuda.to_cpu(x) for x,_ in batch]
+            pact =[p for _, p in batch]
+            batch = [x, pact]
+            for x, crf_pact_structure in zip(*batch):
                 sample = crf_pact_structure.sample
-                pred_labels.extend(target.predict(x, crf_pact_structure))
-
+                pred_label = target.predict(x, crf_pact_structure, is_bin=False)
+                pred_labels.extend(pred_label)
+                gt_label = []
                 # if cnt is None:
                 #     cnt = np.zeros(shape=(crf_pact_structure.num_label, crf_pact_structure.num_label), dtype=np.uint32)
                 # if ucnt is None:
                 #     ucnt = np.zeros(shape=(crf_pact_structure.num_label, crf_pact_structure.num_label), dtype=np.uint32)
-                for node in sample.node_list:
-                    gt_labels.append(node.label)
 
-                for i in range(len(sample.node_list)):
-                    if pred_labels[i] == gt_labels[i]:
+                for i, node in enumerate(sample.node_list):
+                    gt_label.append(node.label)
+                    if pred_label[i] == gt_label[i]:
                         hit += 1
                     else:
-                        miss += 1
+                        miss+=1
+                gt_labels.extend(gt_label)
+
                     # cnt[pred_labels[i], sample.node_list[i].label] += 1
                     # if sample.node_list[i].label_type == LabelTypeEnum.UNKNOWN_LABEL:
                     #     if pred_labels[i] == sample.node_list[i].label:

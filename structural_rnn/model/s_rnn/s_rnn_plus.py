@@ -52,7 +52,7 @@ class StructuralRNNPlus(chainer.Chain):
             frame_a = get_frame(sample.nodeid_line_no_dict.mapping_dict.inv[sample.edge_list[i].a])
             frame_b = get_frame(sample.nodeid_line_no_dict.mapping_dict.inv[sample.edge_list[i].b])
             if frame_a == frame_b == min_frame:  # 只要第一帧的factor_graph的edge，从而不考虑原始的S-RNN论文中自己到自己的边
-                factor_graph.add_edge(sample.edge_list[i].a, sample.edge_list[i].b, None)  # func用不到
+                factor_graph.add_edge(sample.edge_list[i].a, sample.edge_list[i].b, sample.edge_list[i].edge_type)  # func用不到
             else:
                 remove_factor_node_index_ls.append(i)
        # We don't need self link EdgeRNN here(in original paper self to self link), I assume this can be done via RNN inherent nature
@@ -83,11 +83,11 @@ class StructuralRNNPlus(chainer.Chain):
                 else:
                     label = node.label
                     node_label_one_video.append(label)
-            targets.append(np.asarray(node_label_one_video))
+            targets.append(xp.asarray(node_label_one_video))
         return xp.stack(targets)  # shape = B x N x D but B = 1 forever and D is data_info specified number (picked index)
 
 
-    def predict(self, x:np.ndarray, crf_pact_structure:CRFPackageStructure):
+    def predict(self, x:np.ndarray, crf_pact_structure:CRFPackageStructure,is_bin=False):
         '''
         :param xs:
         :param crf_pact_structures:
@@ -102,16 +102,12 @@ class StructuralRNNPlus(chainer.Chain):
                 xs = F.expand_dims(x,axis=0)
                 crf_pact_structures = [crf_pact_structure]
                 hs = self.structural_rnn(xs, crf_pact_structures)  # hs shape = B x N x D, B is batch_size
+                hs = F.copy(hs, -1) # data transfer to cpu
                 h = hs.data[0]
-                pred_labels = self.open_crf.predict(h, crf_pact_structures[0])  # shape = N x 1
-                # this method can only inference label combination that already occur in training dataset
-                label_bins = [] # AU_bins is labels in one video sequence
-                for pred_label in pred_labels:  # pred_label is int id of combine AU. multiple AU combine regarded as one
-                    pred_idx_lst = self.label_dict.get_key(pred_label).split(",") #  actually, because Open-CRF only support single label prediction
-                    label_bins.append(pred_idx_lst)
-                return xp.asarray(label_bins)  # shape =N x D, where D = use_AU_len = label_bin_len
+                pred_labels = self.open_crf.predict(h, crf_pact_structures[0],is_bin=is_bin)  # shape = N x 1
+                return np.asarray(pred_labels, dtype=xp.int32)  # shape =N x D, where D = use_AU_len = label_bin_len
             else:
-                return self.structural_rnn.predict(x, crf_pact_structure, infered=False)  # 是binary形式的label. N x D
+                return self.structural_rnn.predict(x, crf_pact_structure, infered=False,is_bin=is_bin)  # 是binary形式的label. N x D
 
 
 

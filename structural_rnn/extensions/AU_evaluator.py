@@ -51,14 +51,22 @@ class ActionUnitEvaluator(Evaluator):
         all_pred_batch = []
         all_gt_batch = []
         for batch in it:
-            xs, crf_pact_structures = self.converter(batch, device=self.device)
+
+            if self.device >=0:
+                x = [chainer.cuda.to_gpu(x) for x,_ in batch]
+            else:
+                x = [chainer.cuda.to_cpu(x) for x,_ in batch]
+            crf_pact_structures =[p for _, p in batch]
+            batch = [x, crf_pact_structures]
             pred_labels_batch = []
-            for x, crf_pact_structure in zip(xs, crf_pact_structures):
+
+            for x, crf_pact_structure in zip(*batch):
+                label_dict = crf_pact_structure.label_dict
                 pred_labels = target.predict(x, crf_pact_structure)  # pred_labels is  N x D, but open-crf predict only produce shape = N
                 if pred_labels.ndim == 1:
                     AU_bins = []  # AU_bins is labels in one video sequence
                     for pred_label in pred_labels:  # pred_label is int id of combine AU. multiple AU combine seem as one
-                        pred_bin = self.label_dict.get_key(pred_label).split(",")  # actually, because Open-CRF only support single label prediction
+                        pred_bin = label_dict.get_key(pred_label).split(",")  # actually, because Open-CRF only support single label prediction
                         pred_bin = np.asarray(pred_bin, dtype=np.int32)
                         AU_bins.append(pred_bin)
                     pred_labels = np.asarray(AU_bins)  # shape = N x D (D is json_info file use_label_idx number)

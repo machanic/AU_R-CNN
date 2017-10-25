@@ -49,29 +49,43 @@ def read_DISFA_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relatio
                 target_file_path = output_dir + os.sep + prefix + os.sep + video_name+"_"+ orientation + ".txt"
                 if os.path.exists(target_file_path):
                    continue
-            pool = mp.Pool(processes=proc_num)
-            procs = 0
-            one_file_name = os.listdir(label_file_dir + os.sep + video_name)[0]
-            with open(label_file_dir + os.sep + video_name + os.sep + one_file_name, "r") as file_obj:
-                for idx, line in enumerate(file_obj):
-                    line = line.strip()
-                    if line:
-                        frame = line.split(",")[0]
-                        img_path = img_folder + "/{0}/{1}.jpg".format(video_name,frame)
-
-                        pool.apply_async(func=delegate_mask_crop, args=(img_path, True, queue))
-                        procs += 1
             resultdict = dict()
-            for i in range(procs):
-                try:
-                    entry = queue.get(block=True, timeout=60)
-                    resultdict[entry[0]] = (entry[1], entry[2])
-                except Exception:
-                    print("queue block time out")
-                    break
-            pool.close()
-            pool.join()
-            del pool
+            if proc_num > 1:
+                pool = mp.Pool(processes=proc_num)
+                procs = 0
+                one_file_name = os.listdir(label_file_dir + os.sep + video_name)[0]
+                with open(label_file_dir + os.sep + video_name + os.sep + one_file_name, "r") as file_obj:
+                    for idx, line in enumerate(file_obj):
+                        line = line.strip()
+                        if line:
+                            frame = line.split(",")[0]
+                            img_path = img_folder + "/{0}/{1}.jpg".format(video_name,frame)
+
+                            pool.apply_async(func=delegate_mask_crop, args=(img_path, True, queue))
+                            procs += 1
+                for i in range(procs):
+                    try:
+                        entry = queue.get(block=True, timeout=60)
+                        resultdict[entry[0]] = (entry[1], entry[2])
+                    except Exception:
+                        print("queue block time out")
+                        break
+                pool.close()
+                pool.join()
+                del pool
+            else:  # only one process
+                one_file_name = os.listdir(label_file_dir + os.sep + video_name)[0]
+                with open(label_file_dir + os.sep + video_name + os.sep + one_file_name, "r") as file_obj:
+                    for idx, line in enumerate(file_obj):
+                        line = line.strip()
+                        if line:
+                            frame = line.split(",")[0]
+                            img_path = img_folder + "/{0}/{1}.jpg".format(video_name,frame)
+                            try:
+                                cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(img_path, True)
+                                resultdict[img_path] = (cropped_face, AU_mask_dict)
+                            except IndexError:
+                                pass
 
             frame_label = dict()
             video_info = []
@@ -138,6 +152,7 @@ def read_DISFA_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relatio
                 video_info.append({"frame": frame, "cropped_face": cropped_face,
                                    "all_couple_mask_dict": all_couple_mask_dict, "all_labels": all_labels,
                                    "video_id": video_name+"_"+orientation})
+            resultdict.clear()
             if video_info:
                 yield video_info, video_name
             else:
@@ -181,44 +196,63 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
             if os.path.exists(target_file_path):
                 continue
         print("pool create by proc num : {}".format(proc_num))
-        pool = mp.Pool(processes=proc_num)
-        one_image_path = os.listdir(config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[0]
-        zfill_len = len(one_image_path[:one_image_path.rindex(".")])
-
-        procs = 0
-        # read image file and crop and get AU mask
-
-        with open(label_file_dir + "/" + file_name, "r") as au_file_obj:  # each file is a video
-            for idx, line in enumerate(au_file_obj):
-                if idx == 0:
-                    continue
-                lines = line.split(",")
-                frame = lines[0].zfill(zfill_len)
-
-                img_path = config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
-                if not os.path.exists(img_path):
-                    print("not exists img_path:{}".format(img_path))
-                    continue
-
-                pool.apply_async(func=delegate_mask_crop, args=(img_path, True, queue))
-                procs += 1
-                # p = mp.Process(target=delegate_mask_crop, args=(img_path, True, queue))
-                # procs.append(p)
-                # p.start()
-
-
-
         resultdict = {}
-        for i in range(procs):
-            try:
-                entry = queue.get(block=True, timeout=60)
-                resultdict[entry[0]] = (entry[1], entry[2])
-            except Exception:
-                print("queue block time out")
-                break
-        pool.close()
-        pool.join()
-        del pool
+        if proc_num > 1:
+            pool = mp.Pool(processes=proc_num)
+            one_image_path = os.listdir(config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[0]
+            zfill_len = len(one_image_path[:one_image_path.rindex(".")])
+
+            procs = 0
+            # read image file and crop and get AU mask
+
+            with open(label_file_dir + "/" + file_name, "r") as au_file_obj:  # each file is a video
+                for idx, line in enumerate(au_file_obj):
+                    if idx == 0:
+                        continue
+                    lines = line.split(",")
+                    frame = lines[0].zfill(zfill_len)
+
+                    img_path = config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
+                    if not os.path.exists(img_path):
+                        print("not exists img_path:{}".format(img_path))
+                        continue
+
+                    pool.apply_async(func=delegate_mask_crop, args=(img_path, True, queue))
+                    procs += 1
+                    # p = mp.Process(target=delegate_mask_crop, args=(img_path, True, queue))
+                    # procs.append(p)
+                    # p.start()
+
+                    for i in range(procs):
+                        try:
+                            entry = queue.get(block=True, timeout=60)
+                            resultdict[entry[0]] = (entry[1], entry[2])
+                        except Exception:
+                            print("queue block time out")
+                            break
+                    pool.close()
+                    pool.join()
+                    del pool
+        else:  # only one process
+            one_image_path = os.listdir(config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[
+                0]
+            zfill_len = len(one_image_path[:one_image_path.rindex(".")])
+            with open(label_file_dir + "/" + file_name, "r") as au_file_obj:  # each file is a video
+                for idx, line in enumerate(au_file_obj):
+                    if idx == 0:
+                        continue
+                    lines = line.split(",")
+                    frame = lines[0].zfill(zfill_len)
+
+                    img_path = config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
+                    if not os.path.exists(img_path):
+                        print("not exists img_path:{}".format(img_path))
+                        continue
+                    try:
+                        cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(img_path, True)
+                        resultdict[img_path] = (cropped_face, AU_mask_dict)
+                    except IndexError:
+                        pass
         # for p in procs:
         #     p.join()
         AU_column_idx = {}
@@ -296,7 +330,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                 video_info.append({"frame": frame, "cropped_face": cropped_face,
                                    "all_couple_mask_dict":all_couple_mask_dict, "all_labels": all_labels,
                                    "video_id": subject_name + "_" + sequence_name})
-
+        resultdict.clear()
         if video_info:
             yield video_info, subject_name
         else:
@@ -480,7 +514,6 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="/home/machen/face_expr/result/10_fold_5_resnet101_linear_snapshot_model.npz")
     parser.add_argument("--prefix", default='',help="can be _pre")
     parser.add_argument("--pretrained_model_name", '-premodel', default='resnet101')
-    parser.add_argument("--proc_num","-proc", type=int,default=10)
     parser.add_argument('--database', default='BP4D',
                         help='Output directory')
     parser.add_argument('--device', default=1, type=int,
@@ -489,6 +522,7 @@ if __name__ == "__main__":
     parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument("--cut_zero", '-cut', action="store_true")
     parser.add_argument("--sift","-sift",action="store_true")
+    parser.add_argument("--proc_num","-proc", type=int, default=1)
 
     args = parser.parse_args()
     kfold_pattern = re.compile('.*?(\d+)_.*?fold_(\d+).*',re.DOTALL)

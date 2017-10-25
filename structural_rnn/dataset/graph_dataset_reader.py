@@ -7,7 +7,6 @@ else:
 
 from bidict import bidict
 
-from functools import lru_cache
 import json
 
 class MappingDict(object):
@@ -73,19 +72,13 @@ class DataNode(object):
         self.label_type = label_type
         self.label_num = len(label_bin)  # label_bin is np.ndarray
         self.label_dict = label_dict
-        label_str = ",".join(map(str, label_bin))
         self.label_bin = label_bin
-        self.label_dict.get_id(label_str)
-
         self.feature = feature
         self.num_attrib = len(feature)
-
-
-    @property
-    @lru_cache(maxsize=1)
-    def label(self):
         label_str = ",".join(map(str, self.label_bin))
-        return self.label_dict.get_id_const(label_str)  #  e.g. key = 1,2 which string represent of idx, value = id
+        self.label = self.label_dict.get_id_const(label_str)  #  e.g. key = 1,0,0,0,1 which string represent of idx, value = id
+
+
 
     def __hash__(self):
         return hash(self.id)
@@ -131,7 +124,7 @@ class GlobalDataSet(object):
     def __init__(self, info_dict_path):
         self.num_edge_type = 0
         self.num_label = 0
-        self.label_dict = MappingDict()  # id:int => AU_bin str
+        self.label_dict = MappingDict()  # id: AU_bin str => combine int
         self.edge_type_dict = MappingDict()
         self.num_attrib_type = 0
         self.info_json = None
@@ -146,6 +139,10 @@ class GlobalDataSet(object):
         self.num_label = self.info_json["num_label"]
         self.num_attrib_type = len(self.info_json["non_zero_attrib_index"])
         self.use_label_idx = sorted(map(int,self.info_json["use_label_idx"].keys())) # a dict , key=label_idx, value= AU
+        label_dict = self.info_json["label_dict"]
+        for bin_str, combine_id in label_dict.items():
+            self.label_dict.mapping_dict[bin_str] = combine_id
+            self.label_dict.keys.append(bin_str)
 
     def load_data(self, path):
         curt_sample = DataSample()

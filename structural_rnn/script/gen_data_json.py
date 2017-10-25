@@ -6,7 +6,7 @@ from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 
 def gen_data_json(train_folder, test_folder, pick_label_idx_dict): # pick_idx_dict key=choice idx value=AU
     non_zero_feature_idx = set()
-    label_set = set()
+    label_dict = dict()  # key is 0,1,1,1,0,0,0 value is int id
     out_folder = os.path.dirname(train_folder)
 
     all_choice_label_idx = list(sorted(pick_label_idx_dict.keys()))
@@ -22,7 +22,9 @@ def gen_data_json(train_folder, test_folder, pick_label_idx_dict): # pick_idx_di
                 assert len(label) >= max(pick_label_idx_dict.keys())
                 label = label[all_choice_label_idx]
                 label = ",".join(map(str, label))
-                label_set.add(label)
+                if label not in label_dict:
+                    label_dict[label] = len(label_dict)
+
                 feature = np.asarray(list(map(float,lines[2][len("features:"):].split(","))))
                 non_zero_feature_idx.update(list(map(int,np.nonzero(feature)[0])))
     for file_name in os.listdir(test_folder):
@@ -35,7 +37,8 @@ def gen_data_json(train_folder, test_folder, pick_label_idx_dict): # pick_idx_di
                 feature = np.asarray(list(map(float, lines[2][len("features:"):].split(","))))
                 non_zero_feature_idx.update(list(map(int, np.nonzero(feature)[0])))
     out_path = out_folder + os.sep + "data_info.json"
-    data_info = {"non_zero_attrib_index": sorted(non_zero_feature_idx), "num_label":len(label_set), "use_label_idx":pick_label_idx_dict}
+    data_info = {"non_zero_attrib_index": sorted(non_zero_feature_idx), "num_label":len(label_dict),
+                 "use_label_idx":pick_label_idx_dict, "label_dict":label_dict}
     with open(out_path, "w") as file_obj:
         file_obj.write(json.dumps(data_info))
         file_obj.flush()

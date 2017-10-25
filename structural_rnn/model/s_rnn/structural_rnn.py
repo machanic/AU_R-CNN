@@ -129,8 +129,8 @@ class StructuralRNN(chainer.Chain):
                 self.add_link("NodeRNN_{}".format(node_id), NodeRNN(insize=feature_len, outsize=out_size) )
                 self.top[str(node_id)] = getattr(self, "NodeRNN_{}".format(node_id))
 
-    def predict(self, x, crf_pact_structure, infered=True):
-
+    def predict(self, x, crf_pact_structure, infered=True, is_bin=False):
+        label_dict = crf_pact_structure.label_dict
         if not isinstance(x, chainer.Variable):
             x = chainer.Variable(x)
         xp = chainer.cuda.cupy.get_array_module(x)
@@ -141,9 +141,17 @@ class StructuralRNN(chainer.Chain):
             xs = F.expand_dims(x, 0)
             crf_pact_structures = [crf_pact_structure]
             xs = self.__call__(xs, crf_pact_structures)
+            xs = F.copy(xs, -1)
             pred = xs.data > 0.0
             pred = pred[0]
-        return pred.astype(xp.int32)  # return N x D, where N is number of nodes, D is out_size
+            if not is_bin:
+                int_pred_lst = []
+                for pred_bin in pred:
+                    label_str = ",".join(map(str, pred_bin))
+                    label = label_dict.get_id_const(label_str)
+                    int_pred_lst.append(label)
+                pred = np.asarray(int_pred_lst)
+        return pred.astype(np.int32)  # return N x D, where N is number of nodes, D is out_size
 
 
     def __call__(self, xs, crf_pact_structures):  # xs is chainer.Variable
@@ -203,6 +211,5 @@ class StructuralRNN(chainer.Chain):
                 node_RNN_id = int(node_id_convert[node_id])
                 one_video_nodes_output.append(node_output_dict[node_RNN_id][time_used[node_RNN_id]]) # 此处在variable下标索引，是否可以反传一定要保证nodeid从小到大是沿着frame顺序的
                 time_used[node_RNN_id] += 1
-            print("one graph_backup done")
             nodes_output.append(F.stack(one_video_nodes_output, axis=0))
         return F.stack(nodes_output)  # return shape B x N x D. B is batch_size,  but can only deal with one, N is number of variable nodes in graph D is out_size

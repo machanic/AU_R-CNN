@@ -215,7 +215,7 @@ class OpenCRFLayer(chainer.Link):
             x_nonzero_attrib[i].append(j)
         factor_graph = crf_pact_structure.factor_graph
         factor_graph.clear_data_for_sum_product()
-        factor_graph.labeled_given = True
+        factor_graph.labeled_given = False
         sample = crf_pact_structure.sample
         n = sample.num_node
         m = sample.num_edge

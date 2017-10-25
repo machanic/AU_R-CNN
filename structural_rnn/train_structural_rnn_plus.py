@@ -1,7 +1,7 @@
 import argparse
 import sys
 sys.path = sys.path[1:]
-print(sys.path)
+sys.path.append("/home/machen/face_expr")
 import chainer
 from structural_rnn.dataset.graph_dataset_reader import GlobalDataSet
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
@@ -29,8 +29,6 @@ def main():
                         help='Gradient norm threshold to clip')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--resume', '-r', default='',
-                        help='Resume the training from snapshot')
     parser.add_argument('--snapshot', '-snap', type=float, default=0.5, help='snapshot epochs for save checkpoint')
     parser.add_argument('--test_mode', action='store_true',
                         help='Use tiny datasets for quick tests')
@@ -44,13 +42,17 @@ def main():
     parser.add_argument("--stop_eps", '-eps', type=float, default=1e-3, help="f - old_f < eps ==> early stop")
     parser.add_argument('--with_crf', '-crf', action='store_true', help='whether to use open crf layer')
     parser.add_argument('--lr', '-l', type=float, default=1e-3)
-    parser.add_argument('--crf_lr', type=float, default=0.1)
-    parser.add_argument('--hidden_size', type=int, default=256,help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
-    parser.add_argument('--eval_mode', type=int, default=256)
+    parser.add_argument('--crf_lr', type=float, default=0.05)
+    parser.add_argument('--hidden_size', type=int, default=512, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
+    parser.add_argument('--eval_mode', action='store_true', help='whether to evaluate the model')
+    parser.add_argument("--fold", "-fd", type=int,
+                        help="which fold of K-fold")
+    parser.add_argument("--split_idx", '-sp', type=int, help="which split_idx")
+    parser.add_argument("--proc_num",'-proc', type=int, help="process number of dataset reader")
     parser.set_defaults(test=False)
     args = parser.parse_args()
     print_interval = 1, 'iteration'
-    val_interval = 1, 'epoch'
+    val_interval = 1, 'iteration'
 
     adaptive_AU_database(args.database)
 
@@ -77,7 +79,13 @@ def main():
 
     train_data = S_RNNPlusDataset(args.train,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True)  # train 传入文件夹
     valid_data = S_RNNPlusDataset(args.valid,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True)  # attrib_size控制open-crf层的weight长度
-    train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True, repeat=True)
+
+    if args.proc_num == 1:
+        train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True, repeat=True)
+    elif args.proc_num > 1:
+        train_iter = chainer.iterators.MultiprocessIterator(train_data, batch_size=1, n_processes=args.proc_num,
+                                                            repeat=True, shuffle=True, n_prefetch=10,
+                                                            shared_mem=31457280)
     validate_iter = chainer.iterators.SerialIterator(valid_data, 1, shuffle=False, repeat=False)
 
 
@@ -87,7 +95,7 @@ def main():
         model.structural_rnn.to_gpu(args.gpu)
 
 
-    optimizer = chainer.optimizers.SGD(lr=args.lr)
+    optimizer = chainer.optimizers.MomentumSGD(lr=args.lr, momentum=0.9)
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.GradientClipping(args.gradclip))
     updater = BPTTUpdater(train_iter, optimizer, int(args.gpu))
@@ -99,41 +107,52 @@ def main():
     else:
         trainer = chainer.training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 
-    interval = (1, 'epoch')
+    interval = (1, 'iteration')
     if args.test_mode:
         chainer.config.train = False
     trainer.extend(chainer.training.extensions.observe_lr(),
                    trigger=print_interval)
     trainer.extend(chainer.training.extensions.PrintReport(
         ['iteration', 'epoch', 'elapsed_time', 'lr',
-         'main/loss','main/accuracy','au_validation/main/f1_frame', "au_validation/main/f1_event",
-         "au_validation/main/f1_norm",
-         "crf_validation/main/A_F1", "accu_validation/main/accuracy"
+         'main/loss', "opencrf_val/main/hit",  # "opencrf_validation/main/U_hit",
+         "opencrf_val/main/miss",  # "opencrf_validation/main/U_miss",
+         "opencrf_val/main/F1",  # "opencrf_validation/main/U_F1"
+         'opencrf_val/main/accuracy',
          ]), trigger=print_interval)
 
-    trainer.extend(chainer.training.extensions.LogReport(trigger=interval))
+    trainer.extend(chainer.training.extensions.LogReport(trigger=interval,log_name='s_rnn_plus.log'))
     trainer.extend(chainer.training.extensions.ProgressBar(update_interval=1, training_length=(args.epoch, 'epoch')))
-    trainer.extend(chainer.training.extensions.snapshot(),
-                   trigger=(args.snapshot, 'epoch'))
+    optimizer_snapshot_name = "{0}_{1}_{2}_srnn_plus_optimizer.npz".format(args.database, args.fold, args.split_idx)
+    model_snapshot_name = "{0}_{1}_{2}_srnn_plus_model.npz".format(args.database, args.fold, args.split_idx)
+    trainer.extend(
+        chainer.training.extensions.snapshot_object(optimizer,
+                                                    filename=optimizer_snapshot_name),
+        trigger=(args.snapshot, 'iteration'))
+
+    trainer.extend(
+        chainer.training.extensions.snapshot_object(model,
+                                                    filename=model_snapshot_name),
+        trigger=(args.snapshot, 'iteration'))
     trainer.extend(chainer.training.extensions.ExponentialShift('lr',0.7), trigger=(5, "epoch"))
 
     if args.resume:
         chainer.serializers.load_npz(args.resume, trainer)
     if chainer.training.extensions.PlotReport.available():
-        trainer.extend(chainer.training.extensions.PlotReport(['au_validation/main/f1_frame'],file_name='au_validation.png'),
-                       trigger=val_interval)
+        # trainer.extend(chainer.training.extensions.PlotReport(['au_validation/main/f1_frame'],file_name='au_validation.png'),
+        #                trigger=val_interval)
         trainer.extend(
-            chainer.training.extensions.PlotReport(['crf_validation/main/A_F1'], file_name='crf_f1.png'),
+            chainer.training.extensions.PlotReport(['opencrf_val/main/F1'], file_name='srnn_plus_f1.png'),
             trigger=val_interval)
 
 
-    au_evaluator = ActionUnitEvaluator(iterator=validate_iter, target=model, device=-1, database=args.database)
-    trainer.extend(au_evaluator, trigger=val_interval, name='au_validation')
-    trainer.extend(Evaluator(validate_iter, model, converter=convert, device=-1), trigger=val_interval,
-                   name='accu_validation')
+    # au_evaluator = ActionUnitEvaluator(iterator=validate_iter, target=model, device=-1, database=args.database,
+    #                                    data_info_path=os.path.dirname(args.train) + os.sep + "data_info.json")
+    # trainer.extend(au_evaluator, trigger=val_interval, name='au_validation')
+    # trainer.extend(Evaluator(validate_iter, model, converter=convert, device=-1), trigger=val_interval,
+    #                name='accu_validation')
     if args.with_crf:
-        crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=-1)
-        trainer.extend(crf_evaluator, trigger=val_interval, name="crf_validation")
+        crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
+        trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
 
     trainer.run()
 
