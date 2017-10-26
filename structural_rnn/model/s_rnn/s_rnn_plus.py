@@ -4,7 +4,6 @@ import chainer
 import chainer.functions as F
 import numpy as np
 
-import config
 from structural_rnn.dataset.crf_pact_structure import CRFPackageStructure
 from structural_rnn.model.open_crf.cython.factor_graph import FactorGraph
 from structural_rnn.model.open_crf.cython.open_crf_layer import OpenCRFLayer
@@ -19,13 +18,12 @@ class StructuralRNNPlus(chainer.Chain):
         self.with_crf = with_crf
 
         if not self.with_crf:
-            assert out_size == crf_pact_structure.sample.label_bin_len # num_label指的是二进制label_bin的维度
+            assert out_size == crf_pact_structure.label_bin_len # num_label指的是二进制label_bin的维度
         else:
             # actually, hidden_size come from args.hidden_size
             assert hidden_size == crf_pact_structure.num_attrib_type  # 由于要用到crf_pact_structure.num_feature, 而setup_graph提前装好的EdgeFunction也要用到这个长度
         self.neg_pos_ratio = 3
         sample = crf_pact_structure.sample
-        self.label_dict = sample.label_dict
         n = sample.num_node
         m = sample.num_edge
         num_label = crf_pact_structure.num_label  #  whereas num_label(combine label count) only used in open_crf, this num_label doesn't matter here
@@ -104,10 +102,10 @@ class StructuralRNNPlus(chainer.Chain):
                 hs = self.structural_rnn(xs, crf_pact_structures)  # hs shape = B x N x D, B is batch_size
                 hs = F.copy(hs, -1) # data transfer to cpu
                 h = hs.data[0]
-                pred_labels = self.open_crf.predict(h, crf_pact_structures[0],is_bin=is_bin)  # shape = N x 1
-                return np.asarray(pred_labels, dtype=xp.int32)  # shape =N x D, where D = use_AU_len = label_bin_len
+                pred_labels = self.open_crf.predict(h, crf_pact_structures[0],is_bin=is_bin)  # shape = N x D or N x 1
+                return np.asarray(pred_labels, dtype=xp.int32)  # shape =N x D, where D = AU_squeeze_size
             else:
-                return self.structural_rnn.predict(x, crf_pact_structure, infered=False,is_bin=is_bin)  # 是binary形式的label. N x D
+                return self.structural_rnn.predict(x, crf_pact_structure, is_bin=is_bin)  # 是binary形式的label. N x D
 
 
 
