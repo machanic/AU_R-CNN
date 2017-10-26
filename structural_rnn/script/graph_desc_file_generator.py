@@ -24,6 +24,7 @@ from functools import lru_cache
 def delegate_mask_crop(img_path, channal_first, queue):
     try:
         cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(img_path, channal_first)
+        print("crop {} done".format(img_path))
         queue.put((img_path, cropped_face, AU_mask_dict), block=True)
     except IndexError:
         pass
@@ -255,6 +256,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                 line = line.rstrip()
                 lines = line.split(",")
                 if idx == 0:  # header define which column is which Action Unit
+                    print("read header")
                     for col_idx, AU in enumerate(lines[1:]):
                         AU_column_idx[AU] = col_idx + 1  # read header
                     continue  # read head over , continue
@@ -336,18 +338,37 @@ def has_edge(AU_couple_a, AU_couple_b, database):
                 return True
     return False
 
+def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_generate, proc_num, cut:bool, extract_key, train_subject, test_subject):
+    '''
+    currently CRF can only deal with single label situation
+    so use /home/machen/dataset/BP4D/label_dict.txt to regard combine label as new single label
+    example(each file contains one video!):
+    node_id kown_label features
+    1_12 +1 np_file:/path/to/npy features:1,3,4,5,5,...
+    node_id specific: ${frame}_${roi}, eg: 1_12
+    or
+    444 +[0,0,0,1,0,1,0] np_file:/path/to/npy features:1,3,4,5,5,...
+    spatio can have two factor node here, for example spatio_1 means upper face, and spatio_2 means lower face relation
+    #edge 143 4289 spatio_1
+    #edge 143 4289 spatio_2
+    #edge 112 1392 temporal
 
-def prallel_process_video(faster_rcnn, output_dir, database_name,  extract_key, train_subject, test_subject,
-                          video_info, subject_id):
+    mode: RNN or CRF
+    '''
+    adaptive_AU_database(database_name)
+    adaptive_AU_relation(database_name)
 
-        print(output_dir)
+    is_binary_AU = True
+
+    for video_info, subject_id in reader_func(output_dir, is_binary_AU=is_binary_AU, is_need_adaptive_AU_relation=False,
+                                  force_generate=force_generate, proc_num=proc_num, cut=cut, train_subject=train_subject):
+
         node_list = []
         temporal_edges = []
         spatio_edges = []
         faster_rcnn.reset_state()
         for entry_dict in video_info:
             frame = entry_dict["frame"]
-            print("processing frame:{}".format(frame))
             cropped_face = entry_dict["cropped_face"]
 
             all_couple_mask_dict = entry_dict["all_couple_mask_dict"]  # key is AU couple tuple,不管脸上有没有该AU都返回回来
@@ -452,33 +473,8 @@ def prallel_process_video(faster_rcnn, output_dir, database_name,  extract_key, 
 
 
 
-def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_generate, proc_num, cut:bool, extract_key, train_subject, test_subject):
-    '''
-    currently CRF can only deal with single label situation
-    so use /home/machen/dataset/BP4D/label_dict.txt to regard combine label as new single label
-    example(each file contains one video!):
-    node_id kown_label features
-    1_12 +1 np_file:/path/to/npy features:1,3,4,5,5,...
-    node_id specific: ${frame}_${roi}, eg: 1_12
-    or
-    444 +[0,0,0,1,0,1,0] np_file:/path/to/npy features:1,3,4,5,5,...
-    spatio can have two factor node here, for example spatio_1 means upper face, and spatio_2 means lower face relation
-    #edge 143 4289 spatio_1
-    #edge 143 4289 spatio_2
-    #edge 112 1392 temporal
 
-    mode: RNN or CRF
-    '''
-    adaptive_AU_database(database_name)
-    adaptive_AU_relation(database_name)
-    with mp.Pool(processes=proc_num) as pool:
-        for video_info, subject_id in reader_func(output_dir, is_binary_AU=True, is_need_adaptive_AU_relation=False,
-                                                  force_generate=force_generate, proc_num=10, cut=cut,
-                                                  train_subject=train_subject):
-            pool.apply(prallel_process_video, args=(faster_rcnn, output_dir, database_name,  extract_key, train_subject, test_subject,
-                          video_info, subject_id))
-        pool.close()
-        pool.join()
+
 
 def load_train_test_id(folder_path, split_idx, database):
     train_subject_id_set = set()
