@@ -18,14 +18,12 @@ from img_toolkit.face_mask_cropper import FaceMaskCropper
 import re
 import multiprocessing as mp
 from structural_rnn.handcraft_feature.roi_sift import RoISift
-data_info_dict = dict()  # data_info_dict = {"num_label":233, "non_zero_attrib_index":[0,1,4,5,6,...] }
-num_label_set = set()
-non_zero_attrib_index = set()
+from functools import lru_cache
+
 
 def delegate_mask_crop(img_path, channal_first, queue):
     try:
         cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(img_path, channal_first)
-        print("crop {} done".format(img_path))
         queue.put((img_path, cropped_face, AU_mask_dict), block=True)
     except IndexError:
         pass
@@ -49,7 +47,7 @@ def read_DISFA_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relatio
                 target_file_path = output_dir + os.sep + prefix + os.sep + video_name+"_"+ orientation + ".txt"
                 if os.path.exists(target_file_path):
                    continue
-            resultdict = dict()
+            resultdict={}
             if proc_num > 1:
                 pool = mp.Pool(processes=proc_num)
                 procs = 0
@@ -135,19 +133,13 @@ def read_DISFA_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relatio
                             all_labels.append("0")  # 若该区域压根没有任何AU出现，为了让只支持单label的CRF工作，用0来代替
                         else:
                             all_labels.append(",".join(sorted(concat_AU)))
-                        if is_train:
-                            if len(concat_AU) == 0:
-                                num_label_set.add("0")
-                            else:
-                                num_label_set.add(",".join(sorted(concat_AU)))
+
                     else:  # convert to np.array which is AU_bin
                         AU_bin = np.zeros(len(config.AU_SQUEEZE)).astype(np.uint8)
                         for AU in AU_couple:
                             if AU in AU_set:  # judge if this region contain which subset of whole image's AU_set
                                 np.put(AU_bin, config.AU_SQUEEZE.inv[AU], 1)
                         all_labels.append(tuple(AU_bin))
-                        if is_train:
-                            num_label_set.add(",".join(map(str,AU_bin)))
 
                 video_info.append({"frame": frame, "cropped_face": cropped_face,
                                    "all_couple_mask_dict": all_couple_mask_dict, "all_labels": all_labels,
@@ -195,16 +187,15 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
             target_file_path = output_dir + os.sep + prefix + os.sep + subject_name + "_" + sequence_name + ".txt"
             if os.path.exists(target_file_path):
                 continue
-        print("pool create by proc num : {}".format(proc_num))
         resultdict = {}
         if proc_num > 1:
-            pool = mp.Pool(processes=proc_num)
+
             one_image_path = os.listdir(config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[0]
             zfill_len = len(one_image_path[:one_image_path.rindex(".")])
 
             procs = 0
             # read image file and crop and get AU mask
-
+            pool = mp.Pool(processes=proc_num)
             with open(label_file_dir + "/" + file_name, "r") as au_file_obj:  # each file is a video
                 for idx, line in enumerate(au_file_obj):
                     if idx == 0:
@@ -223,16 +214,16 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                     # procs.append(p)
                     # p.start()
 
-                    for i in range(procs):
-                        try:
-                            entry = queue.get(block=True, timeout=60)
-                            resultdict[entry[0]] = (entry[1], entry[2])
-                        except Exception:
-                            print("queue block time out")
-                            break
-                    pool.close()
-                    pool.join()
-                    del pool
+            for i in range(procs):
+                try:
+                    entry = queue.get(block=True, timeout=60)
+                    resultdict[entry[0]] = (entry[1], entry[2])
+                except Exception:
+                    print("queue block time out")
+                    break
+            pool.close()
+            pool.join()
+            del pool
         else:  # only one process
             one_image_path = os.listdir(config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[
                 0]
@@ -249,8 +240,9 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                         print("not exists img_path:{}".format(img_path))
                         continue
                     try:
-                        cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(img_path, True)
+                        cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(img_path, channel_first=True)
                         resultdict[img_path] = (cropped_face, AU_mask_dict)
+                        print("one image :{} done".format(img_path))
                     except IndexError:
                         pass
         # for p in procs:
@@ -263,7 +255,6 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                 line = line.rstrip()
                 lines = line.split(",")
                 if idx == 0:  # header define which column is which Action Unit
-                    print("read header")
                     for col_idx, AU in enumerate(lines[1:]):
                         AU_column_idx[AU] = col_idx + 1  # read header
                     continue  # read head over , continue
@@ -310,11 +301,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                             all_labels.append("0")  # 若该区域压根没有任何AU出现，为了让只支持单label的CRF工作，用0来代替
                         else:
                             all_labels.append(",".join(concat_AU))
-                        if is_train:
-                            if len(concat_AU) == 0:
-                                num_label_set.add("0")
-                            else:
-                                num_label_set.add(",".join(sorted(concat_AU)))
+
                     else:  # convert to np.array which is AU_bin
                         AU_bin = np.zeros(len(config.AU_SQUEEZE)).astype(np.uint8)
                         for AU in AU_couple:
@@ -323,8 +310,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                             elif au_label_dict[AU] == 1:
                                 np.put(AU_bin, config.AU_SQUEEZE.inv[AU], 1)
 
-                        if is_train:
-                            num_label_set.add(",".join(map(str,AU_bin)))
+
                         all_labels.append(tuple(AU_bin))
 
                 video_info.append({"frame": frame, "cropped_face": cropped_face,
@@ -336,6 +322,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
         else:
             print("error video_info:{}".format(file_name))
 
+@lru_cache(maxsize=1024)
 def has_edge(AU_couple_a, AU_couple_b, database):
     au_relation_set = None
     if database == "DISFA":
@@ -349,48 +336,29 @@ def has_edge(AU_couple_a, AU_couple_b, database):
                 return True
     return False
 
-def build_graph(faster_rcnn, reader_func, output_dir, database_name, mode, force_generate, proc_num, cut:bool, extract_key, train_subject, test_subject):
-    '''
-    currently CRF can only deal with single label situation
-    so use /home/machen/dataset/BP4D/label_dict.txt to regard combine label as new single label
-    example(each file contains one video!):
-    node_id kown_label features
-    1_12 +1 np_file:/path/to/npy features:1,3,4,5,5,...
-    node_id specific: ${frame}_${roi}, eg: 1_12
-    or
-    444 +[0,0,0,1,0,1,0] np_file:/path/to/npy features:1,3,4,5,5,...
-    spatio can have two factor node here, for example spatio_1 means upper face, and spatio_2 means lower face relation
-    #edge 143 4289 spatio_1
-    #edge 143 4289 spatio_2
-    #edge 112 1392 temporal
 
-    mode: RNN or CRF
-    '''
-    adaptive_AU_database(database_name)
-    adaptive_AU_relation(database_name)
+def prallel_process_video(faster_rcnn, output_dir, database_name,  extract_key, train_subject, test_subject,
+                          video_info, subject_id):
 
-    is_binary_AU = True if mode == "RNN" else False
-
-    for video_info, subject_id in reader_func(output_dir, is_binary_AU=is_binary_AU, is_need_adaptive_AU_relation=False,
-                                  force_generate=force_generate, proc_num=proc_num, cut=cut, train_subject=train_subject):
-
+        print(output_dir)
         node_list = []
         temporal_edges = []
         spatio_edges = []
         faster_rcnn.reset_state()
         for entry_dict in video_info:
             frame = entry_dict["frame"]
+            print("processing frame:{}".format(frame))
             cropped_face = entry_dict["cropped_face"]
 
             all_couple_mask_dict = entry_dict["all_couple_mask_dict"]  # key is AU couple tuple,不管脸上有没有该AU都返回回来
-            all_labels = entry_dict["all_labels"]  # each region has a label(binary or AU)
+            image_labels = entry_dict["all_labels"]  # each region has a label(binary or AU)
 
             bboxes = []
             labels = []
             AU_couple_bbox_dict = dict()
 
             for idx, (AU_couple, mask) in enumerate(all_couple_mask_dict.items()):  # AU may contain single_true AU or AU binary tuple (depends on need_adaptive_AU_relation)
-                region_label = all_labels[idx] # str or tuple, so all_labels index must be the same as all_couple_mask_dict
+                region_label = image_labels[idx] # str or tuple, so all_labels index must be the same as all_couple_mask_dict
                 connect_arr = cv2.connectedComponents(mask, connectivity=8, ltype=cv2.CV_32S)
                 component_num = connect_arr[0]
                 label_matrix = connect_arr[1]
@@ -427,8 +395,8 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, mode, force
                 h = faster_rcnn.extract(cropped_face, bboxes, layer=extract_key)  # shape = R' x 2048
             assert h.shape[0] == len(bboxes)
             h = chainer.cuda.to_cpu(h)
-            h = np.squeeze(h)
-            non_zero_attrib_index.update(map(int, np.nonzero(h)[0].tolist()))
+            h = h.reshape(len(bboxes), -1)
+
             # 这个indent级别都是同一张图片内部
             # print("box number, all_mask:", len(bboxes),len(all_couple_mask_dict))
             for box_idx in range(len(bboxes)):
@@ -436,7 +404,10 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, mode, force
                 if isinstance(label, tuple):
                     label_arr = np.char.mod("%d", label)
                     label = "({})".format(",".join(label_arr))
-                h_info = ",".join(map(str, h[box_idx, :]))
+                h_flat = h[box_idx]
+                nonzero_idx = np.nonzero(h_flat)[0]
+                h_flat_nonzero = h_flat[nonzero_idx]
+                h_info = ",".join("{}:{:.4f}".format(idx, val) for idx,val in zip(nonzero_idx,h_flat_nonzero))
                 node_id = "{0}_{1}".format(frame, box_idx)
                 node_list.append("{0} {1} features:{2}".format(node_id, label, h_info))
 
@@ -479,11 +450,35 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, mode, force
             spatio_edges.clear()
             temporal_edges.clear()
 
-def write_data_info_json(out_path):
-    data_info_dict = {"num_label": len(num_label_set), "non_zero_attrib_index": list(map(int, sorted(non_zero_attrib_index)))}
-    with open(out_path, "w") as file_obj:
-        file_obj.write(data_info_dict)
-        file_obj.flush()
+
+
+def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_generate, proc_num, cut:bool, extract_key, train_subject, test_subject):
+    '''
+    currently CRF can only deal with single label situation
+    so use /home/machen/dataset/BP4D/label_dict.txt to regard combine label as new single label
+    example(each file contains one video!):
+    node_id kown_label features
+    1_12 +1 np_file:/path/to/npy features:1,3,4,5,5,...
+    node_id specific: ${frame}_${roi}, eg: 1_12
+    or
+    444 +[0,0,0,1,0,1,0] np_file:/path/to/npy features:1,3,4,5,5,...
+    spatio can have two factor node here, for example spatio_1 means upper face, and spatio_2 means lower face relation
+    #edge 143 4289 spatio_1
+    #edge 143 4289 spatio_2
+    #edge 112 1392 temporal
+
+    mode: RNN or CRF
+    '''
+    adaptive_AU_database(database_name)
+    adaptive_AU_relation(database_name)
+    with mp.Pool(processes=proc_num) as pool:
+        for video_info, subject_id in reader_func(output_dir, is_binary_AU=True, is_need_adaptive_AU_relation=False,
+                                                  force_generate=force_generate, proc_num=10, cut=cut,
+                                                  train_subject=train_subject):
+            pool.apply(prallel_process_video, args=(faster_rcnn, output_dir, database_name,  extract_key, train_subject, test_subject,
+                          video_info, subject_id))
+        pool.close()
+        pool.join()
 
 def load_train_test_id(folder_path, split_idx, database):
     train_subject_id_set = set()
@@ -514,6 +509,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="/home/machen/face_expr/result/10_fold_5_resnet101_linear_snapshot_model.npz")
     parser.add_argument("--prefix", default='',help="can be _pre")
     parser.add_argument("--pretrained_model_name", '-premodel', default='resnet101')
+    parser.add_argument("--proc_num","-proc", type=int,default=10)
     parser.add_argument('--database', default='BP4D',
                         help='Output directory')
     parser.add_argument('--device', default=1, type=int,
@@ -522,7 +518,6 @@ if __name__ == "__main__":
     parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument("--cut_zero", '-cut', action="store_true")
     parser.add_argument("--sift","-sift",action="store_true")
-    parser.add_argument("--proc_num","-proc", type=int, default=1)
 
     args = parser.parse_args()
     kfold_pattern = re.compile('.*?(\d+)_.*?fold_(\d+).*',re.DOTALL)
@@ -553,7 +548,7 @@ if __name__ == "__main__":
                                           mean_file=args.mean,
                                           use_lstm=False,
                                           extract_len=args.extract_len)
-            extract_key = 'relu'
+            extract_key = 'h'
         if os.path.exists(args.model):
             print("loading pretrained snapshot:{}".format(args.model))
             chainer.serializers.load_npz(args.model, faster_rcnn)
@@ -574,10 +569,10 @@ if __name__ == "__main__":
     else:
         print("you can not specify database other than BP4D/DISFA")
         sys.exit(1)
-    build_graph(faster_rcnn, read_func, output, database_name=args.database, mode="RNN", force_generate=False,
+    build_graph(faster_rcnn, read_func, output, database_name=args.database, force_generate=False,
                 proc_num=args.proc_num, cut=args.cut_zero, extract_key=extract_key,train_subject=train_subject,
                 test_subject=test_subject)
-    write_data_info_json(output + os.sep + "data_info.json")
+
 
 
 
