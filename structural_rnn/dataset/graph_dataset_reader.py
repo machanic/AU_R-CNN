@@ -91,7 +91,8 @@ class DataNode(object):
 
 
 class DataEdge(object):
-    def __init__(self, edge_dict:MappingDict, a:int, b:int, edge_type:int):
+    def __init__(self, id:int,edge_dict:MappingDict, a:int, b:int, edge_type:int):
+        self.id = id
         self.a = a
         self.b = b
         self.edge_type = edge_type
@@ -162,9 +163,10 @@ class GlobalDataSet(object):
                     a = curt_sample.nodeid_line_no_dict.get_id_const(tokens[1])  # 如果没有这个node的行号，返回-1
                     b = curt_sample.nodeid_line_no_dict.get_id_const(tokens[2])  # 如果没有这个node，返回-1
                     edge_type = self.edge_type_dict.get_id(tokens[3])  # 比如temporal 对应的id
+                    edge_id = curt_sample.nodeid_line_no_dict.get_id("{0}#{1}&{2}".format(tokens[3],tokens[1],tokens[2]))
                     if a == -1 or b == -1:
                         raise TypeError("#edge error! nodeid={0} or nodeid={1} found in path={2}".format(tokens[1], tokens[2], path))
-                    curt_edge = DataEdge(self.edge_type_dict, a, b, edge_type=edge_type)  # a 和 b是行号，相当于是node_id，原来OpenCRF代码中这个id是var_node的index
+                    curt_edge = DataEdge(edge_id, self.edge_type_dict, a, b, edge_type=edge_type)  # a 和 b是行号，相当于是node_id，原来OpenCRF代码中这个id是var_node的index
                     curt_sample.edge_list.append(curt_edge)
                 else:  # read node, 会将num_label也得到
                     assert len(tokens) == 3

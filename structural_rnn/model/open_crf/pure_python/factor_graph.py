@@ -40,7 +40,7 @@ class EdgeFactorFunction(FactorFunction):
 class Node(metaclass=ABCMeta):
 
     def __init__(self):
-        self.id = None  # id is int. how to convert to str
+        self.id = None
         self.num_label = None
         self.neighbor = list()  # vector<Node*> neighbor
         self.neighbor_pos = dict() # neighbor => position (index in neighbor vector)
@@ -205,43 +205,24 @@ class FactorGraph(object):
         self.bfs_node = np.empty(self.num_node, dtype=Node)
         self.p_node = np.empty(self.num_node, dtype=Node) # p_node contains all node
         self.edge_type_func_list = func_list
-        p_node_id = 0
-        for i in range(self.n):
-            self.var_node[i].id = p_node_id  # 这个id从0开始! 注意这个id不是Sample里的node的id
-            self.p_node[p_node_id] = self.var_node[i]
-            p_node_id += 1
-            self.var_node[i].init(num_label)
-
-        for i in range(self.m):
-            self.factor_node[i].id = p_node_id # 注意这个id不是Sample里的node的id
-            self.p_node[p_node_id] = self.factor_node[i]
-            p_node_id += 1
-            self.factor_node[i].init(num_label)
-            self.factor_node[i].func = self.edge_type_func_list[self.factor_node[i].edge_type]
-            # note that we have not call add_edge yet
-
-        self.factor_node_used = 0
 
         self.diff_max = DiffMax(diff_max=0.0)
         self.converged = False
         self.entry = [] # For each subgraph (connected component), we select one node as entry
 
-    def add_edge(self, a:int, b:int,  edge_type:int):
+    def add_edge(self, factor_node_index:int, a:int, b:int,  edge_type:int):
         '''
         :param a:  int类型id
         :param b:  int类型id
-        :param func:
+        :param edge_type: the difference of factor_node.func is in edge_type
         :return:
         '''
-        if self.factor_node_used == self.m:
-            return
-        # factor_node_used++ 是非常聪明的做法，因为其实每个factor_node(edge)没有区别，区别仅仅在function不一样
-        self.factor_node[self.factor_node_used].edge_type = edge_type
-        self.factor_node[self.factor_node_used].add_neighbor(self.var_node[a])
-        self.factor_node[self.factor_node_used].add_neighbor(self.var_node[b])
-        self.var_node[a].add_neighbor(self.factor_node[self.factor_node_used])
-        self.var_node[b].add_neighbor(self.factor_node[self.factor_node_used])
-        self.factor_node_used += 1
+        self.factor_node[factor_node_index].edge_type = edge_type
+        self.factor_node[factor_node_index].add_neighbor(self.var_node[a])
+        self.factor_node[factor_node_index].add_neighbor(self.var_node[b])
+        self.var_node[a].add_neighbor(self.factor_node[factor_node_index])
+        self.var_node[b].add_neighbor(self.factor_node[factor_node_index])
+
 
     def clear_data_for_sum_product(self):
         for i in range(self.n):

@@ -197,9 +197,9 @@ def main():
                                           use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
             test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=args.use_lstm))
             if args.proc_num == 1:
-                test_iter = SerialIterator(test_data, batch_size, False, True)
+                test_iter = SerialIterator(test_data, 1, False, True)
             else:
-                test_iter = MultiprocessIterator(test_data, batch_size=batch_size, n_processes=args.proc_num,
+                test_iter = MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
                                                                    repeat=False, shuffle=True,
                                                                    n_prefetch=10, shared_mem=10000000)
 

@@ -256,7 +256,6 @@ cdef class FactorGraph:
     # this is original InitGraph code
     def __init__(self, int n, int m, int num_label, list func_list=None):
         
-        cdef int p_node_id
         self.labeled_given = False
         self.n = n
         self.m = m
@@ -268,48 +267,28 @@ cdef class FactorGraph:
         self.p_node = np.empty(self.num_node, dtype=object) # p_node contains all node
         self.all_diff_size = 0
         self.edge_type_func_list = func_list
-
-        p_node_id = 0
-        for i in range(self.n):
-            self.var_node[i].id = p_node_id  # id start from 0! note that this id is not Sample's node id
-            self.p_node[p_node_id] = self.var_node[i]
-            p_node_id += 1
-            self.var_node[i].init(num_label)
-
-
-        for i in range(self.m):
-            self.factor_node[i].id = p_node_id # 注意这个id不是Sample里的node的id
-            self.p_node[p_node_id] = self.factor_node[i]
-            p_node_id += 1
-            self.factor_node[i].init(num_label)
-            # note that we have not call add_edge yet, thus edge_type doesn't correct
-
-        self.factor_node_used = 0
-
         self.diff_max = DiffMax(diff_max=0.0)
         self.converged = False
 
 
-    cpdef add_edge(self, int a, int b, int edge_type):
+    cpdef add_edge(self, int factor_node_index, int a, int b, int edge_type):
         '''
+        :param factor_node_index: the same with index in self.factor_node (0...m-1), but not factor_node.id
         :param a:  int type id
         :param b:  int type id
         :param func:
         :return:
         '''
-        if self.factor_node_used == self.m:
-            return
+
         # factor_node_used++ is very clever way，for the reason that each factor_node(edge) has no different，only differs in its func
-        self.factor_node[self.factor_node_used].edge_type = edge_type
-        self.factor_node[self.factor_node_used].add_neighbor(self.var_node[a])
-        self.factor_node[self.factor_node_used].add_neighbor(self.var_node[b])
-        self.var_node[a].add_neighbor(self.factor_node[self.factor_node_used])
-        self.var_node[b].add_neighbor(self.factor_node[self.factor_node_used])
-        self.factor_node_used += 1
+        self.factor_node[factor_node_index].edge_type = edge_type
+        self.factor_node[factor_node_index].add_neighbor(self.var_node[a])
+        self.factor_node[factor_node_index].add_neighbor(self.var_node[b])
+        self.var_node[a].add_neighbor(self.factor_node[factor_node_index])
+        self.var_node[b].add_neighbor(self.factor_node[factor_node_index])
 
     cpdef add_edge_done(self):
         cdef int i, edge_type
-        cdef VariableNode var_node
         cdef Node p_node
         cdef np.ndarray[DTYPE_int_t, ndim=1] filtered_index, all_index
 

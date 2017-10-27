@@ -32,7 +32,7 @@ cdef class FactorGraph:
     cdef dict __dict__
 
     cpdef public add_edge_done(self)
-    cpdef add_edge(self, int a, int b, int edge_type)
+    cpdef add_edge(self, int factor_node_index, int a, int b, int edge_type)
     cpdef clear_data_for_sum_product(self)
     cpdef set_variable_label(self, int u, int y)
     cpdef set_variable_state_factor_y(self, int u, int y, double v)

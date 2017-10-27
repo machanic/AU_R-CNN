@@ -9,6 +9,8 @@ from action_unit_metric.F1_event import get_F1_event
 import config
 from collections import defaultdict
 from chainer import DictSummary
+
+
 class AUEvaluator(chainer.training.extensions.Evaluator):
     trigger = 1, "epoch"
     default_name = "AU_RCNN_validation"
@@ -50,20 +52,15 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
             preds = np.bitwise_or.reduce(preds, axis=1)  # shape = B, Y
             gt_labels = np.bitwise_or.reduce(labels, axis=1) # shape = B, Y
 
-            test_set = set()
-            test_set.update(preds.flatten().tolist())
-            test_set.update(gt_labels.flatten().tolist())
-            test_set.remove(0)
-            test_set.remove(1)
-            if len(test_set) > 0:
-                pass
+
             all_gt_index = set()
             pos_pred = np.nonzero(preds)
             pos_gt_labels = np.nonzero(gt_labels)
             all_gt_index.update(list(zip(*pos_pred)))
             all_gt_index.update(list(zip(*pos_gt_labels)))
-            accuracy = np.sum(preds[list(zip(*all_gt_index))[0], list(zip(*all_gt_index))[1]] == gt_labels[list(zip(*all_gt_index))[0], list(zip(*all_gt_index))[1]])/ len(all_gt_index)
-            print("batch idx:{0} current batch accuracy is :{1}".format(idx, accuracy))
+            if len(all_gt_index) > 0:
+                accuracy = np.sum(preds[list(zip(*all_gt_index))[0], list(zip(*all_gt_index))[1]] == gt_labels[list(zip(*all_gt_index))[0], list(zip(*all_gt_index))[1]])/ len(all_gt_index)
+                print("batch idx:{0} current batch accuracy is :{1}".format(idx, accuracy))
             all_gt_label.extend(gt_labels)
             all_pred_label.extend(preds)
         all_gt_label = np.asarray(all_gt_label)  # shape = (N, len(AU_SQUEEZE))
@@ -81,12 +78,13 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
                 gt_label = AU_gt_label[AU_squeeze_idx]
                 # met_E = get_F1_event(gt_label, pred_label)
                 met_F = get_F1_frame(gt_label, pred_label)
+                roc =get_ROC(gt_label, pred_label)
                 report["f1_frame"][AU] = met_F.f1f
-                # report["AUC"][AU] = roc.auc
+                report["AUC"][AU] = roc.auc
                 report["accuracy"][AU] = met_F.accuracy
                 # report["f1_event"][AU] = np.median(met_E.f1EventCurve)
                 summary.add({"f1_frame_avg": met_F.f1f})
-                # summary.add({"AUC_avg": roc.auc})
+                summary.add({"AUC_avg": roc.auc})
                 summary.add({"accuracy_avg": met_F.accuracy})
                 # summary.add({"f1_event_avg": np.median(met_E.f1EventCurve)})
         observation = {}

@@ -17,7 +17,7 @@ class CRFPackageStructure(object):
 
         self.sample = sample
         self.num_node = self.sample.num_node
-        self.label_dict = train_data.label_dict
+        # self.label_dict = train_data.label_dict
         self.num_label = train_data.num_label
         self.label_bin_len = train_data.label_bin_len
         if num_attrib is not None:
@@ -80,13 +80,23 @@ class CRFPackageStructure(object):
         m = self.sample.num_edge
         factor_graph = FactorGraph(n=n, m=m, num_label=self.num_label,func_list=func_list)
 
+
         for i in range(n):  # add node info
+            node_id = self.sample.node_list[i].id
+            factor_graph.var_node[i].id = node_id
+            factor_graph.p_node[node_id] = factor_graph.var_node[i]
+            factor_graph.var_node[i].init(self.num_label)
             factor_graph.set_variable_label(i, self.sample.node_list[i].label)  # 这个label是int类型，代表字典里的数字
             factor_graph.var_node[i].label_type = self.sample.node_list[i].label_type  # ENUM的 KNOWN 或者UNKOWN
 
         for i in range(m):  # add edge info, mandatory. 注意a和b是int的类型的node-id
-            factor_graph.add_edge(self.sample.edge_list[i].a, self.sample.edge_list[i].b,
+            factor_node_id = self.sample.edge_list[i].id
+            factor_graph.factor_node[i].id = factor_node_id
+            factor_graph.p_node[factor_node_id] = factor_graph.factor_node[i]
+            factor_graph.factor_node[i].init(self.num_label)
+            factor_graph.add_edge(i, self.sample.edge_list[i].a, self.sample.edge_list[i].b,
                                   self.sample.edge_list[i].edge_type)
+
         if hasattr(factor_graph,"add_edge_done"):
             factor_graph.add_edge_done()
         factor_graph.gen_propagate_order()
