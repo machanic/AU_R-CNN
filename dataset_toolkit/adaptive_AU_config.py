@@ -61,13 +61,12 @@ def adaptive_AU_database(database_name, use_paper_only=False):
 def adaptive_AU_relation(database_name):
     '''
     must called after adaptive_AU_database
-    从config.AU_RELATION_BP4D中删去同一个区域的AU，将label_dict组合出的新label编号添加到config.AU_RELATION_BP4D中
+    从config.AU_RELATION_BP4D中删去同一个区域的AU
 
     比如说config.AU_RELATION_BP4D 中有(10, 12) 但10和12已经是同一个区域了，因此删掉这种关系。
 
     另外需要注意另一种情况：再比如说config.AU_RELATION_BP4D 中有(10, 13)，但10和12再字典中组合成新的区域了，而13也和另一个AU组合成了新的区域。
-    args:
-       label_dict_path: 组合label的字典位置
+
     '''
     new_AU_relation = list()
 

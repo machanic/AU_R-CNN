@@ -245,7 +245,7 @@ class ResRoIHead(chainer.Chain):
         self.use_lstm = use_lstm
         if extract_len is None:
             extract_len = 1000
-
+        conv_initialW = initializers.HeNormal()
         with self.init_scope():
             self.res5 = Block(3, 1024, 512, 2048)
             if use_lstm:
@@ -269,7 +269,7 @@ class ResRoIHead(chainer.Chain):
         if self.use_lstm:
             self.fc.reset_state()
 
-    def __call__(self, x, rois, roi_indices, layers=["fc"]):
+    def __call__(self, x, rois, roi_indices, layers=["res5"]):
         """Forward the chain.
 
         We assume that there are :math:`N` batches.

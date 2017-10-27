@@ -8,6 +8,7 @@ else:
 from bidict import bidict
 
 import json
+import random
 
 class MappingDict(object):
 
@@ -67,18 +68,20 @@ class MappingDict(object):
 
 
 class DataNode(object):
-    def __init__(self, label_dict:MappingDict, id:int, label_type:int, label_bin, feature):
+    def __init__(self,  id:int, label_type:int, label_bin, feature):
         self.id = id
         self.label_type = label_type
         self.label_num = len(label_bin)  # label_bin is np.ndarray
-        self.label_dict = label_dict
         self.label_bin = label_bin
         self.feature = feature
         self.num_attrib = len(feature)
-        label_str = ",".join(map(str, self.label_bin))
-        self.label = self.label_dict.get_id_const(label_str)  #  e.g. key = 1,0,0,0,1 which string represent of idx, value = id
 
-
+    @property
+    def label(self):
+        nonzero_idx = np.nonzero(self.label_bin)[0]
+        if len(nonzero_idx) > 0:
+            return random.choice(nonzero_idx) + 1 # random pick, +1 is for the reason 0 also will be one label
+        return 0  # all zero became 0
 
     def __hash__(self):
         return hash(self.id)
@@ -97,14 +100,13 @@ class DataEdge(object):
 
 class DataSample(object):
 
-    def __init__(self, num_node=None, num_edge=None,  label_dict=None, label_bin_len=None):
+    def __init__(self, num_node=None, num_edge=None,  label_dict=None):
         self.num_node = num_node   # note that the num_node attribute of FactorGraph is node count + edge count
         self.num_edge = num_edge
         self.node_list = []
         self.edge_list = []
         self.nodeid_line_no_dict = MappingDict()
         self.label_dict = label_dict
-        self.label_bin_len = label_bin_len
 
 
     def clear(self):
@@ -124,30 +126,33 @@ class GlobalDataSet(object):
     def __init__(self, info_dict_path):
         self.num_edge_type = 0
         self.num_label = 0
-        self.label_dict = MappingDict()  # id: AU_bin str => combine int
+        self.label_dict = MappingDict()  # pred_idx <=> true label
         self.edge_type_dict = MappingDict()
         self.num_attrib_type = 0
         self.info_json = None
         self.use_label_idx = None
         self.load_data_info_dict(info_dict_path)  # {"num_label":233, "non_zero_attrib_index":[0,1,4,5,6,...] }
+        self.label_bin_len = 0
 
 
 
     def load_data_info_dict(self, info_dict_path):
         with open(info_dict_path, "r") as file_obj:
             self.info_json = json.loads(file_obj.read())
-        self.num_label = self.info_json["num_label"]
-        self.num_attrib_type = len(self.info_json["non_zero_attrib_index"])
-        self.use_label_idx = sorted(map(int,self.info_json["use_label_idx"].keys())) # a dict , key=label_idx, value= AU
-        label_dict = self.info_json["label_dict"]
-        for bin_str, combine_id in label_dict.items():
-            self.label_dict.mapping_dict[bin_str] = combine_id
-            self.label_dict.keys.append(bin_str)
+        self.num_attrib_type = self.info_json["num_attrib_type"]
+        self.use_label_idx = sorted(map(int,self.info_json["label_dict"].keys())) # a dict , key=label_idx, value= AU
+
+        for pred_idx, true_label_str in self.info_json["label_dict"].items():
+            pred_idx = int(pred_idx)
+            self.label_dict.mapping_dict[pred_idx] = true_label_str   # pred_idx <=> true label
+            self.label_dict.keys.append(pred_idx)
+
 
     def load_data(self, path):
         curt_sample = DataSample()
         curt_sample.label_dict = self.label_dict
-
+        npy_path = path[:path.rindex(".")] + ".npy"
+        h_info_array = np.load(npy_path)
         with open(path, "r") as file_obj:
             for line in file_obj:
                 tokens = line.split()
@@ -173,20 +178,26 @@ class GlobalDataSet(object):
                     node_id = curt_sample.nodeid_line_no_dict.get_id(node_id)   #nodeid convert to line number int，original string nodeid into dict
                     if node_labels.startswith("(") and node_labels.endswith(")"):  #open-crf cannot use bin form label, but can combine as one to use, located in Node constructor
                         label_bin = np.asarray(list(map(int,node_labels[1:-1].split(",") )), dtype=np.int32)
-                        label_bin = label_bin[self.use_label_idx]  # it will filter out not in actual use label
-                    if tokens[2].startswith("features:"):
-                        node_features = np.asarray(list(map(float, tokens[2][len("features:"):].split(","))), dtype=np.float32)
-                        node_features = node_features[self.info_json["non_zero_attrib_index"]]
+                        narrow_label_bin = label_bin[self.use_label_idx]
+                        all_zeros = not np.any(narrow_label_bin)
+                        if not all_zeros:
+                            rest_index = set(np.arange(len(label_bin))) - set(self.use_label_idx)
+                            label_bin[list(rest_index)] = 0
+
+                    if tokens[2].startswith("feature"):
+                        feature_idx = int(tokens[2][len("feature_idx:"):])
+                        node_features = h_info_array[feature_idx]
 
                     else:
                         print("Data format wrong! Label must start with features:/np_file:")
                         return
-                    curt_node = DataNode(id=node_id, label_type=label_type, label_dict=self.label_dict, label_bin=label_bin,
+                    curt_node = DataNode(id=node_id, label_type=label_type, label_bin=label_bin,
                                          feature=node_features)
 
                     assert len(curt_sample.node_list) == node_id
                     curt_sample.node_list.append(curt_node)
-                    curt_sample.label_bin_len = len(label_bin)
+                    self.num_label = len(label_bin) + 1  # label length is bin vector length, 0 will also seems be one label
+                    self.label_bin_len =len(label_bin)
 
         # graph desc file read done
         self.num_edge_type = self.edge_type_dict.get_size()  # 这个是所有sample数据文件整体的edge种类

@@ -29,7 +29,7 @@ class OpenCRFLayer(chainer.Link):
 
     def predict(self, x:np.ndarray, crf_pact_structure:CRFPackageStructure, is_bin=False):  # x is one video's node feature
         xp = chainer.cuda.get_array_module(x)
-        label_dict = crf_pact_structure.label_dict
+        label_bin_len = crf_pact_structure.label_bin_len
         factor_graph = crf_pact_structure.factor_graph
         factor_graph.clear_data_for_sum_product()
         factor_graph.labeled_given = False
@@ -70,7 +70,10 @@ class OpenCRFLayer(chainer.Link):
         if is_bin:
             bin_inf_label = []
             for label in inf_label:
-                bin_inf_label.append(label_dict.get_key(label).split(","))
-            inf_label = np.asarray(bin_inf_label, dtype=np.int32)
+                label_bin = np.zeros(shape=label_bin_len, dtype=np.int32)
+                if label > 0:
+                    label_bin[label-1] = 1
+                bin_inf_label.append(label_bin)
+            inf_label = np.asarray(bin_inf_label, dtype=np.int32) # N x D
         inf_label = chainer.cuda.to_cpu(inf_label)
         return inf_label

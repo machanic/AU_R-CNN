@@ -299,7 +299,7 @@ cdef class FactorGraph:
         '''
         if self.factor_node_used == self.m:
             return
-        # factor_node_used++ is very clever way，for the reason that each factor_node(edge) has no different，only differs in func
+        # factor_node_used++ is very clever way，for the reason that each factor_node(edge) has no different，only differs in its func
         self.factor_node[self.factor_node_used].edge_type = edge_type
         self.factor_node[self.factor_node_used].add_neighbor(self.var_node[a])
         self.factor_node[self.factor_node_used].add_neighbor(self.var_node[b])

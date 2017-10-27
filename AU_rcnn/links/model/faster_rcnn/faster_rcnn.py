@@ -108,7 +108,7 @@ class FasterRCNN(chainer.Chain):
     def reset_state(self):
         self.head.reset_state()
 
-    def extract(self, image, bboxes, layer='relu'):
+    def extract(self, image, bboxes, layer='res5'):
         x = self.prepare(image)
         x = chainer.Variable(self.xp.asarray([x]))  # add outer dimension
         bboxes = chainer.Variable(self.xp.asarray([bboxes]))
@@ -117,11 +117,23 @@ class FasterRCNN(chainer.Chain):
         self.extract_dict.clear()
         return feature
 
+    def extract_batch(self, images, bboxes, layer='res5'):  # images = batch x C x H x W
+        x = []
+        for image in images:
+            x.append(self.prepare(image))
+        x = chainer.Variable(self.xp.asarray(x))
+        bboxes = chainer.Variable(self.xp.asarray(bboxes,dtype=self.xp.float32))
+        roi_scores, rois, roi_indices = self.__call__(x, bboxes, keep_all_bbox=True, layers=[layer])
+        feature = self.extract_dict[layer]  # shape = R' x 4096 where R' is number bbox in all batch idx
+        assert feature.shape[0] == bboxes.shape[0] * bboxes.shape[1], "box_shape:{0}, feature:{1}".format(bboxes.shape, feature.shape)
+        feature = feature.reshape(bboxes.shape[0],bboxes.shape[1],-1)
+        self.extract_dict.clear()
+        return feature
 
 
     # 预测的时候才可能被调用，train的时候反而不调用，具体可看faster_rcnn_train_chain.py
     # 若两个box的IOU较大，将较大面积的box删掉
-    def __call__(self, x, bboxes, keep_all_bbox=True, layers=["fc"]): # 预测的时候同样要提供来自于landmark的bounding box
+    def __call__(self, x, bboxes, keep_all_bbox=True, layers=["res5"]): # 预测的时候同样要提供来自于landmark的bounding box
         """Forward Faster R-CNN.
         called by self.predict
 
@@ -242,7 +254,7 @@ class FasterRCNN(chainer.Chain):
             imgs(iterable of numpy.ndarray): Arrays holding images. shape = (B,C,H,W), where B is batch_size
                 All images are in CHW and RGB format
                 and the range of their value is :math:`[0, 255]`.
-            bboxes (iterable of numpy.ndarray): Arrays holding bounding boxes, each is bboxes inside one image shape=(B,R,4)
+            bboxes (iterable of numpy.ndarray): Arrays holding bounding boxes, each is bboxes inside one image shape=(Batch,R,4)
 
         Returns:
            tuple of lists:

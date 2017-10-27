@@ -12,7 +12,7 @@ from img_toolkit.face_mask_cropper import FaceMaskCropper
 # obtain the cropped face image and bounding box and ground truth label for each box
 class AUDataset(chainer.dataset.DatasetMixin):
 
-    def __init__(self, database, fold, split_name, split_index, mc_manager, use_lstm, train_all_data, prefix=""):
+    def __init__(self, database, fold, split_name, split_index, mc_manager, use_lstm, train_all_data, prefix="", pretrained_target=""):
         self.database = database
         self.split_name = split_name
         self.use_lstm = use_lstm
@@ -20,6 +20,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
         self.mc_manager = mc_manager
         self.au_couple_child_dict = get_AU_couple_child(self.au_couple_dict)
         self.AU_intensity_label = {}  # subject + "/" + emotion_seq + "/" + frame => ... not implemented
+        self.pretrained_target = pretrained_target
         self.dir = config.DATA_PATH[database] # BP4D/DISFA/ BP4D_DISFA
         if train_all_data:
             id_list_file_path = os.path.join(self.dir + "/idx/{}_fold".format(fold),
@@ -70,9 +71,9 @@ class AUDataset(chainer.dataset.DatasetMixin):
                 if (not AU.startswith("?")) and (not AU.startswith("-")):
                     AU_squeeze = config.AU_SQUEEZE.inv[AU]  # AU_squeeze type = int
                     np.put(AU_bin, AU_squeeze, 1)
-                elif AU.startswith("?"):
-                    AU_squeeze = config.AU_SQUEEZE.inv[AU[1:]]
-                    np.put(AU_bin, AU_squeeze, -1)  # ignore label
+                # elif AU.startswith("?"):
+                #     AU_squeeze = config.AU_SQUEEZE.inv[AU[1:]]
+                #     np.put(AU_bin, AU_squeeze, -1)  # ignore label
             AU_couple_bin[au_couple_tuple] = AU_bin  # for the child
         # 循环两遍，第二遍拿出child_AU_couple
         for au_couple_tuple, box_list in sorted(couple_box_dict.items(), key=lambda e: ",".join(e[0])):
@@ -112,9 +113,12 @@ class AUDataset(chainer.dataset.DatasetMixin):
             read_img_path = img_path if from_img_path == "#" else from_img_path
             img_id = "/".join((read_img_path.split("/")[-3], read_img_path.split("/")[-2],
                                read_img_path.split("/")[-1][:read_img_path.split("/")[-1].index(".")]))
+            key_prefix = self.database+"|"
+            if self.pretrained_target is not None and len(self.pretrained_target) > 0:
+                key_prefix = self.pretrained_target+"|"
             cropped_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(read_img_path,
                                                                                channel_first=True,
-                                                                               mc_manager=self.mc_manager, key_prefix=self.database+"|")
+                                                                               mc_manager=self.mc_manager, key_prefix=key_prefix)
 
         except IndexError:
             return self.get_example(i-1)  # 不得已为之

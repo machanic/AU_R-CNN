@@ -144,7 +144,7 @@ def main():
     parser.add_argument("--use_sigmoid_cross_entropy", "-sigmoid", action="store_true",
                         help="whether to use sigmoid cross entropy or softmax cross entropy")
     parser.add_argument("--is_pretrained", action="store_true", help="whether is to pretrain BP4D later will for DISFA dataset or not")
-    parser.add_argument("--pretrained_target", '-pt', default="DISFA", help="whether pretrain label set will use DISFA or not")
+    parser.add_argument("--pretrained_target", '-pt', default="", help="whether pretrain label set will use DISFA or not")
     parser.add_argument("--fix", '-fix', action="store_true", help="whether to fix first few conv layers or not")
     parser.add_argument("--prefix", '-prefix', default="", help="_beta, for example 3_fold_beta")
     parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
@@ -194,7 +194,7 @@ def main():
         with chainer.no_backprop_mode():
             test_data = AUDataset(database=args.database, fold=args.fold,
                                           split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
-                                          use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix)
+                                          use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
             test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=args.use_lstm))
             if args.proc_num == 1:
                 test_iter = SerialIterator(test_data, batch_size, False, True)
@@ -220,7 +220,7 @@ def main():
     train_data = AUDataset(database=args.database,
                            fold=args.fold, split_name='trainval',
                            split_index=args.split_idx, mc_manager=mc_manager, use_lstm=args.use_lstm, train_all_data=args.is_pretrained,
-                           prefix=args.prefix
+                           prefix=args.prefix, pretrained_target=args.pretrained_target
                            )
 
 
@@ -373,7 +373,7 @@ def main():
 
         validate_data = AUDataset(database=args.database, fold=args.fold,
                                   split_name='valid', split_index=args.split_idx, mc_manager=mc_manager,
-                                  use_lstm=args.use_lstm, train_all_data=False)
+                                  use_lstm=args.use_lstm, train_all_data=False, pretrained_target=args.pretrained_target)
 
         validate_data = TransformDataset(validate_data, Transform(faster_rcnn, mirror=False,shift=args.random_shift,
                                                                   use_lstm=args.use_lstm))

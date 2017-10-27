@@ -266,7 +266,7 @@ class VGG16RoIHead(chainer.Chain):
         if self.use_lstm:
             self.lstm8.reset_state()
 
-    def __call__(self, x, rois, roi_indices, layers=["fc"]):
+    def __call__(self, x, rois, roi_indices, layers=["h"]):
         """Forward the chain.
 
         We assume that there are :math:`N` batches.
@@ -291,12 +291,14 @@ class VGG16RoIHead(chainer.Chain):
             x, indices_and_rois, self.roi_size, self.roi_size,
             self.spatial_scale)
         h = pool
+        if "h" in target_layers:
+            self.activation["h"] = h
         for key, funcs in self.functions.items():
             for func in funcs:
                 h = func(h)
-            if key in target_layers:
-                self.activation[key] = h
-                target_layers.remove(key)
+            # if key in target_layers:
+            #     self.activation[key] = h
+            #     target_layers.remove(key)
         return h
 
 

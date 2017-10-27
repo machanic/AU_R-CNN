@@ -9,7 +9,6 @@ from action_unit_metric.F1_event import get_F1_event
 import config
 from collections import defaultdict
 from chainer import DictSummary
-
 class AUEvaluator(chainer.training.extensions.Evaluator):
     trigger = 1, "epoch"
     default_name = "AU_RCNN_validation"
@@ -30,19 +29,17 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
         iterator = self._iterators['main']
         target = self._targets['main']
 
-        if hasattr(iterator, 'reset'):
-            iterator.reset()
-            it = iterator
-        else:
-            it = copy.copy(iterator)
+
+        it = copy.copy(iterator)
 
         all_gt_label = []
         all_pred_label = []
 
         for idx, batch in enumerate(it):
-            if idx >= 5:break
+
             batch = self.converter(batch, device=self.device)
             imgs, bbox, labels = batch
+
             if bbox.shape[1] != config.BOX_NUM[self.database]:
                 print("error box num {0} != {1}".format(bbox.shape[1], config.BOX_NUM[self.database]))
                 continue
@@ -53,6 +50,13 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
             preds = np.bitwise_or.reduce(preds, axis=1)  # shape = B, Y
             gt_labels = np.bitwise_or.reduce(labels, axis=1) # shape = B, Y
 
+            test_set = set()
+            test_set.update(preds.flatten().tolist())
+            test_set.update(gt_labels.flatten().tolist())
+            test_set.remove(0)
+            test_set.remove(1)
+            if len(test_set) > 0:
+                pass
             all_gt_index = set()
             pos_pred = np.nonzero(preds)
             pos_gt_labels = np.nonzero(gt_labels)
@@ -77,13 +81,12 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
                 gt_label = AU_gt_label[AU_squeeze_idx]
                 # met_E = get_F1_event(gt_label, pred_label)
                 met_F = get_F1_frame(gt_label, pred_label)
-                roc = get_ROC(gt_label, pred_label)
                 report["f1_frame"][AU] = met_F.f1f
-                report["AUC"][AU] = roc.auc
+                # report["AUC"][AU] = roc.auc
                 report["accuracy"][AU] = met_F.accuracy
                 # report["f1_event"][AU] = np.median(met_E.f1EventCurve)
                 summary.add({"f1_frame_avg": met_F.f1f})
-                summary.add({"AUC_avg": roc.auc})
+                # summary.add({"AUC_avg": roc.auc})
                 summary.add({"accuracy_avg": met_F.accuracy})
                 # summary.add({"f1_event_avg": np.median(met_E.f1EventCurve)})
         observation = {}

@@ -46,5 +46,5 @@ class BPTTUpdater(training.StandardUpdater):
 
         optimizer.target.cleargrads()
         loss.backward()
-        loss.unchain_backward()
+        # loss.unchain_backward()
         optimizer.update()

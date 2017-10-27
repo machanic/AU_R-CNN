@@ -54,11 +54,12 @@ class FaceMaskCropper(object):
 
     @staticmethod
     def get_cropface_and_box(orig_img_path, channel_first=True, mc_manager=None, key_prefix=""):
+        key = key_prefix+orig_img_path
         if mc_manager is not None:
             try:
-                if orig_img_path in mc_manager:
+                if key in mc_manager:
                     orig_img = cv2.imread(orig_img_path, cv2.IMREAD_COLOR)
-                    result = mc_manager.get(key_prefix+orig_img_path)
+                    result = mc_manager.get(key)
                     crop_rect = result["crop_rect"]
                     AU_box_dict = result["AU_box_dict"]
                     new_face = orig_img[crop_rect["top"]:crop_rect["top"] + crop_rect["height"],
@@ -108,7 +109,7 @@ class FaceMaskCropper(object):
         if mc_manager is not None:
             try:
                 save_dict = {"crop_rect":rect, "AU_box_dict":AU_box_dict}
-                mc_manager.set(key_prefix+orig_img_path, save_dict)
+                mc_manager.set(key, save_dict)
             except Exception:
                 pass
         if channel_first:

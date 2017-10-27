@@ -7,7 +7,7 @@ from chainer.training.extensions import Evaluator
 
 from structural_rnn.model.open_crf.pure_python.constant_variable import LabelTypeEnum
 from sklearn.metrics import f1_score,recall_score,precision_score,accuracy_score
-
+import random
 class OpenCRFEvaluator(Evaluator):
 
     trigger = 1, "epoch"
@@ -81,7 +81,15 @@ class OpenCRFEvaluator(Evaluator):
                 #     ucnt = np.zeros(shape=(crf_pact_structure.num_label, crf_pact_structure.num_label), dtype=np.uint32)
 
                 for i, node in enumerate(sample.node_list):
-                    gt_label.append(node.label)
+                    gt_label_set = np.nonzero(node.label_bin)[0] + 1
+                    gt_label_set = set(gt_label_set)
+                    if pred_label[i] in gt_label_set:
+                        gt_label.append(pred_label[i])
+                    else:
+                        if len(gt_label_set) > 0:
+                            gt_label.append(random.choice(list(gt_label_set)))
+                        else:
+                            gt_label.append(0)
                     if pred_label[i] == gt_label[i]:
                         hit += 1
                     else:

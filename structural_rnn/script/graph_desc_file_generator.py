@@ -19,7 +19,7 @@ import re
 import multiprocessing as mp
 from structural_rnn.handcraft_feature.roi_sift import RoISift
 from functools import lru_cache
-
+import pickle
 
 def delegate_mask_crop(img_path, channal_first, queue):
     try:
@@ -102,7 +102,7 @@ def read_DISFA_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relatio
                             frame_label[frame] = set()
                         if AU_intensity >= 3:
                             frame_label[int(frame)].add(AU)  #存储str类型
-            for frame, img_path in video_img_path_set:
+            for frame, img_path in sorted(video_img_path_set,key=lambda e:int(e[0])):
                 if img_path not in resultdict:
                     continue
                 AU_set = frame_label[frame]  # it is whole image's AU set
@@ -367,10 +367,11 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
         temporal_edges = []
         spatio_edges = []
         faster_rcnn.reset_state()
+        h_info_array = []
         for entry_dict in video_info:
             frame = entry_dict["frame"]
             cropped_face = entry_dict["cropped_face"]
-
+            print("processing frame:{}".format(frame))
             all_couple_mask_dict = entry_dict["all_couple_mask_dict"]  # key is AU couple tuple,不管脸上有没有该AU都返回回来
             image_labels = entry_dict["all_labels"]  # each region has a label(binary or AU)
 
@@ -408,7 +409,6 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
                         labels.append(region_label)  # AU may contain single_true AU or AU binary tuple (depends on need_adaptive_AU_relation)
                         AU_couple_bbox_dict[coordinates] = AU_couple
                 del label_matrix
-                print("AU_couple:,", AU_couple, "connect:", actual_connect)
             if len(bboxes) != config.BOX_NUM[database_name]:
                 print("boxes num != {0}, real box num= {1}".format(config.BOX_NUM[database_name], len(bboxes)))
                 continue
@@ -426,12 +426,13 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
                     label_arr = np.char.mod("%d", label)
                     label = "({})".format(",".join(label_arr))
                 h_flat = h[box_idx]
-                nonzero_idx = np.nonzero(h_flat)[0]
-                h_flat_nonzero = h_flat[nonzero_idx]
-                h_info = ",".join("{}:{:.4f}".format(idx, val) for idx,val in zip(nonzero_idx,h_flat_nonzero))
-                node_id = "{0}_{1}".format(frame, box_idx)
-                node_list.append("{0} {1} features:{2}".format(node_id, label, h_info))
+                # nonzero_idx = np.nonzero(h_flat)[0]
+                # h_flat_nonzero = h_flat[nonzero_idx]
+                # h_info = ",".join("{}:{:.4f}".format(idx, val) for idx,val in zip(nonzero_idx,h_flat_nonzero))
 
+                node_id = "{0}_{1}".format(frame, box_idx)
+                node_list.append("{0} {1} feature_idx:{2}".format(node_id, label, len(h_info_array)))
+                h_info_array.append(h_flat)
 
             # 同一张画面两两组合，看有没连接线，注意AU=0，就是未出现的AU动作的区域也参与连接
             for box_idx_a, box_idx_b in map(sorted, itertools.combinations(range(len(bboxes)), 2)):
@@ -459,6 +460,9 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
         elif subject_id in test_subject:
             output_path = "{0}/test/{1}.txt".format(output_dir, video_info[0]["video_id"])
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        npy_path = output_path[:output_path.rindex(".")] + ".npy"
+
+        np.save(npy_path, h_info_array)
         with open(output_path, "w") as file_obj:
             for line in node_list:
                 file_obj.write("{}\n".format(line))
@@ -470,6 +474,7 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
             node_list.clear()
             spatio_edges.clear()
             temporal_edges.clear()
+            h_info_array.clear()
 
 
 

@@ -8,7 +8,7 @@ DTYPE_obj = np.object
 ctypedef np.float32_t DTYPE_float_t
 ctypedef np.int32_t DTYPE_int_t
 from libc.math cimport exp, fabs,log,sqrt
-from structural_rnn.openblas_toolkit.openblas_configure import num_threads
+# from structural_rnn.openblas_toolkit.openblas_configure import num_threads
 
 import chainer
 from chainer import Function
@@ -45,6 +45,7 @@ cdef class CRF_CFunction:
         self.num_edge_feature_each_type = crf_pact_structure.num_edge_feature_each_type
         self.num_edge_type = crf_pact_structure.num_edge_type
         self.edge_parameter_id_dict = <dict>self.get_edge_parameter_id_dict()  # cache all get_edge_parameter_id to boost speed
+
 
         
 
@@ -301,9 +302,9 @@ class CRFFunction(Function):
         gw, = grad_outputs  # the same shape as W?
         cdef np.ndarray[DTYPE_float_t, ndim=1] dw = np.zeros(shape=(self.crf.num_feature,), dtype=DTYPE_float)
         cdef np.ndarray[DTYPE_float_t, ndim=2] dx = np.zeros_like(x, dtype=DTYPE_float)
-        with num_threads(8):
-            self.crf.calc_gradient(dx, dw, x, W, labeled_given=True)
-            self.crf.calc_gradient(dx, dw, x, W, labeled_given=False)
+
+        self.crf.calc_gradient(dx, dw, x, W, labeled_given=True)
+        self.crf.calc_gradient(dx, dw, x, W, labeled_given=False)
         dw *= -1.0
         dx *= -1.0
         # normalize gradient

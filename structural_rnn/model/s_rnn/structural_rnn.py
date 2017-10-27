@@ -7,7 +7,7 @@ import numpy as np
 from chainer import initializers
 
 from structural_rnn.model.open_crf.cython.factor_graph import FactorGraph
-
+import random
 '''
 nodeRNNs[nm] = [multilayerLSTM(LSTMs,skip_input=True,skip_output=True,input_output_fused=True),
 				FCLayer('rectify',args.fc_init,size=args.fc_size,rng=rng),
@@ -33,7 +33,7 @@ class NodeRNN(chainer.Chain):
         self.n_layer = 1
         with self.init_scope():
 
-            self.lstm1 = L.NStepLSTM(self.n_layer, insize, 512, dropout=0.5)
+            self.lstm1 = L.NStepLSTM(self.n_layer, insize, 512, dropout=0) #dropout = 0.0
             self.fc2 = L.Linear(512, 256, initialW=initialW)
             self.fc3 = L.Linear(256, 100, initialW=initialW)
             self.fc4 = L.Linear(100, outsize, initialW=initialW)
@@ -64,7 +64,7 @@ class EdgeRNN(chainer.Chain):
         with self.init_scope():
             self.fc1 = L.Linear(insize, 256, initialW=initialW)
             self.fc2 = L.Linear(256, 256, initialW=initialW)
-            self.lstm3 = L.NStepLSTM(self.n_layer, 256, outsize, dropout=0.5)
+            self.lstm3 = L.NStepLSTM(self.n_layer, 256, outsize, dropout=0.0)  #dropout = 0.0
 
     def __call__(self, xs):
         xp = chainer.cuda.cupy.get_array_module(xs[0].data)
@@ -129,14 +129,11 @@ class StructuralRNN(chainer.Chain):
                 self.add_link("NodeRNN_{}".format(node_id), NodeRNN(insize=feature_len, outsize=out_size) )
                 self.top[str(node_id)] = getattr(self, "NodeRNN_{}".format(node_id))
 
-    def predict(self, x, crf_pact_structure, infered=True, is_bin=False):
-        label_dict = crf_pact_structure.label_dict
+    def predict(self, x, crf_pact_structure, is_bin=False):
         if not isinstance(x, chainer.Variable):
             x = chainer.Variable(x)
         xp = chainer.cuda.cupy.get_array_module(x)
-        if infered:
-            pred = x > 0.0
-            return pred.astype(xp.int32)
+
         with chainer.no_backprop_mode():
             xs = F.expand_dims(x, 0)
             crf_pact_structures = [crf_pact_structure]
@@ -145,13 +142,15 @@ class StructuralRNN(chainer.Chain):
             pred = xs.data > 0.0
             pred = pred[0]
             if not is_bin:
-                int_pred_lst = []
+                pred_lst = []
                 for pred_bin in pred:
-                    label_str = ",".join(map(str, pred_bin))
-                    label = label_dict.get_id_const(label_str)
-                    int_pred_lst.append(label)
-                pred = np.asarray(int_pred_lst)
-        return pred.astype(np.int32)  # return N x D, where N is number of nodes, D is out_size
+                    non_zero_idx = np.nonzero(pred_bin)[0]
+                    label = 0
+                    if len(non_zero_idx) > 0:
+                        label = random.choice(non_zero_idx) + 1
+                    pred_lst.append(label)
+                pred = np.asarray(pred_lst)  # return N x 1
+        return pred.astype(np.int32)  # return N x D, where N is number of nodes, D is self.out_size
 
 
     def __call__(self, xs, crf_pact_structures):  # xs is chainer.Variable
@@ -163,12 +162,12 @@ class StructuralRNN(chainer.Chain):
         :param boxid_features: key= box_id, value= feature_list
         :return : chainer.Variable shape= B * N * D , B is batch_size, N is one video all nodes count, D is each node output vector
         '''
-        nodes_output = []
+
         xp = chainer.cuda.get_array_module(xs.data)
-        for idx, x in enumerate(xs): # xs is shape B x N x D. B is batch_size
+        for idx, x in enumerate(xs): # xs is shape B x N x D. B is batch_size, always = 1
             x = x.reshape(-1, self.in_size)  # because of padding
             crf_pact_structure = crf_pact_structures[idx]
-            node_id_convert = crf_pact_structure.node_id_convert # this long sequence node_id convert to root node_id (NodeRNN id)
+            # node_id_convert = crf_pact_structure.node_id_convert # this long sequence node_id convert => root node_id (NodeRNN id)
             nodeRNN_id_dict = crf_pact_structure.nodeRNN_id_dict
 
             edge_out_dict = dict()
@@ -183,7 +182,7 @@ class StructuralRNN(chainer.Chain):
                 edge_feature = edge_feature.reshape(fetch_x_index.shape[0], 2 * x.shape[-1])  # x shape N x D, fetch_x_index shape = T x 2,
                 edge_out_dict[edge_RNN_id] = edge_RNN([edge_feature])[0]
 
-            node_output_dict = dict()
+            node_output = []
             for node_RNN_id, node_RNN in sorted(self.top.items(), key=lambda e:int(e[0])):
                 # print("nodeRNN:{}".format(node_RNN_id))
                 neighbor_id_list = self.node_id_neighbor[int(node_RNN_id)]
@@ -201,15 +200,17 @@ class StructuralRNN(chainer.Chain):
                 assert concat_features.shape[2] == self.node_feature_convert_len
                 concat_features = F.transpose(concat_features, (1, 0, 2))  # shape = T x (neighbor + 1) x 256
                 concat_features = F.reshape(concat_features, (frame_num, -1))  # shape = T x ((neighbor + 1) x 256)
-                node_output_dict[int(node_RNN_id)] = node_RNN([concat_features])[0]  # output= list of T x out_size
-
+                node_output.append(node_RNN([concat_features])[0])  # output= list of T x out_size
+            node_output = F.stack(node_output)  # shape nodeRNN_num x T x out_size
+            node_output = F.transpose(node_output,axes=(1,0,2))  # reorder
+            node_output = node_output.reshape(-1, self.out_size)  # shape N x out_size
             # reorder to nodeid list order
-            time_used = {int(node_RNN_id):0 for node_RNN_id in self.top.keys()}
-            one_video_nodes_output = list()
-            for i in range(x.shape[0]):
-                node_id = i  # node_id 来自于factor_graph里的var_node.id，从0开始
-                node_RNN_id = int(node_id_convert[node_id])
-                one_video_nodes_output.append(node_output_dict[node_RNN_id][time_used[node_RNN_id]]) # 此处在variable下标索引，是否可以反传一定要保证nodeid从小到大是沿着frame顺序的
-                time_used[node_RNN_id] += 1
-            nodes_output.append(F.stack(one_video_nodes_output, axis=0))
-        return F.stack(nodes_output)  # return shape B x N x D. B is batch_size,  but can only deal with one, N is number of variable nodes in graph D is out_size
+            # time_used = {int(node_RNN_id):0 for node_RNN_id in self.top.keys()}
+            # one_video_nodes_output = list()
+            # for i in range(x.shape[0]):
+            #     node_id = i  # node_id 来自于factor_graph里的var_node.id，从0开始
+            #     node_RNN_id = int(node_id_convert[node_id])
+            #     one_video_nodes_output.append(node_output_dict[node_RNN_id][time_used[node_RNN_id]]) # 此处在variable下标索引，是否可以反传一定要保证nodeid从小到大是沿着frame顺序的
+            #     time_used[node_RNN_id] += 1
+            # nodes_output.append(F.stack(one_video_nodes_output, axis=0))
+        return F.expand_dims(node_output,axis=0)  # return shape B x N x D. B is batch_size,  but can only deal with one, N is number of variable nodes in graph D is out_size

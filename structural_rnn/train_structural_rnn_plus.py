@@ -42,13 +42,13 @@ def main():
     parser.add_argument("--stop_eps", '-eps', type=float, default=1e-3, help="f - old_f < eps ==> early stop")
     parser.add_argument('--with_crf', '-crf', action='store_true', help='whether to use open crf layer')
     parser.add_argument('--lr', '-l', type=float, default=1e-3)
-    parser.add_argument('--crf_lr', type=float, default=0.05)
+    parser.add_argument('--crf_lr', type=float, default=0.1)
     parser.add_argument('--hidden_size', type=int, default=512, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
     parser.add_argument('--eval_mode', action='store_true', help='whether to evaluate the model')
     parser.add_argument("--fold", "-fd", type=int,
                         help="which fold of K-fold")
     parser.add_argument("--split_idx", '-sp', type=int, help="which split_idx")
-    parser.add_argument("--proc_num",'-proc', type=int, help="process number of dataset reader")
+    parser.add_argument("--proc_num",'-proc', type=int,default=1, help="process number of dataset reader")
     parser.set_defaults(test=False)
     args = parser.parse_args()
     print_interval = 1, 'iteration'
@@ -59,11 +59,12 @@ def main():
 
     # for the StructuralRNN constuctor need first frame factor graph_backup
     dataset = GlobalDataSet(info_dict_path=os.path.dirname(args.train)+os.sep + "data_info.json")
-    sample = dataset.load_data(args.train + os.sep + os.listdir(args.train)[0])  # we load first sample for construct S-RNN, it must passed to constructor argument
+    file_name = list(filter(lambda e: e.endswith(".txt"), os.listdir(args.train)))[0]
+    sample = dataset.load_data(args.train + os.sep + file_name)  # we load first sample for construct S-RNN, it must passed to constructor argument
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size)  # 只读取其中的一个视频的第一帧，由于node个数相对稳定，因此可以construct RNN
 
     print("in_size:{}".format(dataset.num_attrib_type))
-    model = StructuralRNNPlus(crf_pact_structure, in_size=dataset.num_attrib_type, out_size=sample.label_bin_len,
+    model = StructuralRNNPlus(crf_pact_structure, in_size=dataset.num_attrib_type, out_size=dataset.label_bin_len,
                               hidden_size=args.hidden_size, with_crf=args.with_crf)
 
     if args.eval_mode:
@@ -135,8 +136,7 @@ def main():
         trigger=(args.snapshot, 'iteration'))
     trainer.extend(chainer.training.extensions.ExponentialShift('lr',0.7), trigger=(5, "epoch"))
 
-    if args.resume:
-        chainer.serializers.load_npz(args.resume, trainer)
+
     if chainer.training.extensions.PlotReport.available():
         # trainer.extend(chainer.training.extensions.PlotReport(['au_validation/main/f1_frame'],file_name='au_validation.png'),
         #                trigger=val_interval)
@@ -150,9 +150,9 @@ def main():
     # trainer.extend(au_evaluator, trigger=val_interval, name='au_validation')
     # trainer.extend(Evaluator(validate_iter, model, converter=convert, device=-1), trigger=val_interval,
     #                name='accu_validation')
-    if args.with_crf:
-        crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
-        trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
+    # if args.with_crf:
+    crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
+    trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
 
     trainer.run()
 
