@@ -34,7 +34,7 @@ class S_RNNPlusDataset(chainer.dataset.DatasetMixin):
                                                      need_s_rnn=self.need_s_rnn)
 
             return x, crf_pact_structure
-        sample = self.dataset.load_data(self.file_name_dict[i])
+        sample = self.dataset.load_data(self.file_name_dict[i])  #FIXME, 因为是随机取的label，所以不能缓存！
         # assert sample.num_attrib_type == self.attrib_size
         # crf_pact_structure 的num_attrib控制open-crf层的weight个数，因此必须被设置为hidden_size
         crf_pact_structure = CRFPackageStructure(sample, self.dataset, num_attrib=self.attrib_size, need_s_rnn=self.need_s_rnn)

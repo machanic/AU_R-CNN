@@ -138,18 +138,10 @@ class StructuralRNN(chainer.Chain):
             crf_pact_structures = [crf_pact_structure]
             xs = self.__call__(xs, crf_pact_structures)
             xs = F.copy(xs, -1)
-            pred = xs.data > 0.0
-            pred = pred[0]
-            if not is_bin:
-                pred_lst = []
-                for pred_bin in pred:
-                    non_zero_idx = np.nonzero(pred_bin)[0]
-                    label = 0
-                    if len(non_zero_idx) > 0:
-                        label = random.choice(non_zero_idx) + 1
-                    pred_lst.append(label)
-                pred = np.asarray(pred_lst)  # return N x 1
-        return pred.astype(np.int32)  # return N x D, where N is number of nodes, D is self.out_size
+            pred_score_array = xs.data[0]
+            pred = np.argmax(pred_score_array, axis=1)
+            assert len(pred) == x.shape[0]
+        return pred.astype(np.int32)  # return N x 1, where N is number of nodes
 
 
     def __call__(self, xs, crf_pact_structures):  # xs is chainer.Variable

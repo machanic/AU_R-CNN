@@ -9,6 +9,8 @@ from bidict import bidict
 
 import json
 import random
+import copy
+from collections import defaultdict
 
 class MappingDict(object):
 
@@ -75,6 +77,7 @@ class DataNode(object):
         self.label_bin = label_bin
         self.feature = feature
         self.num_attrib = len(feature)
+
 
     @property
     def label(self):
@@ -148,12 +151,15 @@ class GlobalDataSet(object):
             self.label_dict.mapping_dict[pred_idx] = true_label_str   # pred_idx <=> true label
             self.label_dict.keys.append(pred_idx)
 
-
+    @profile
     def load_data(self, path):
         curt_sample = DataSample()
         curt_sample.label_dict = self.label_dict
         npy_path = path[:path.rindex(".")] + ".npy"
         h_info_array = np.load(npy_path)
+        all_label_array = list()
+        # main_label is label set which continuous occurrence >= 5, we pick all each main_label as one sample(by deepcopy),
+        # only if current label_set doesn't have main_label, we pick up the rest label (minor occurence)
         with open(path, "r") as file_obj:
             for line in file_obj:
                 tokens = line.split()
@@ -185,6 +191,7 @@ class GlobalDataSet(object):
                         if not all_zeros:
                             rest_index = set(np.arange(len(label_bin))) - set(self.use_label_idx)
                             label_bin[list(rest_index)] = 0
+                        all_label_array.append(label_bin)
 
                     if tokens[2].startswith("feature"):
                         feature_idx = int(tokens[2][len("feature_idx:"):])
@@ -199,15 +206,31 @@ class GlobalDataSet(object):
                     assert len(curt_sample.node_list) == node_id
                     curt_sample.node_list.append(curt_node)
                     self.num_label = len(label_bin) + 1  # label length is bin vector length, 0 will also seems be one label
-                    self.label_bin_len =len(label_bin)
+                    self.label_bin_len = len(label_bin)
+        if len(curt_sample.node_list) > 0:
+            curt_sample.num_node = len(curt_sample.node_list)
+            curt_sample.num_edge = len(curt_sample.edge_list)
+        all_label_array = np.asarray(all_label_array)
+        trans_label_array = np.transpose(all_label_array) # Y x N
+        main_Y = set()
+        for Y, label_array in enumerate(trans_label_array):
+            count_arr = np.bincount(label_array)
+            if count_arr.size > 1 and count_arr[1] >= 5:
+                main_Y.add(Y)
+
+        if len(main_Y) > 0:
+            Y = random.choice(list(main_Y))  # each time random choice Y regard as main Y
+            for node_idx, node in enumerate(curt_sample.node_list):
+                if all_label_array[node_idx, Y] > 0:  # 这句话仍旧有问题，剩下的Y也应该设置
+                    all_label_array[node_idx, :] = 0
+                    all_label_array[node_idx, Y] = 1
+                node.label_bin = all_label_array[node_idx]
 
         # graph desc file read done
         self.num_edge_type = self.edge_type_dict.get_size()  # 这个是所有sample数据文件整体的edge种类
         if self.num_edge_type == 0:
             self.num_edge_type = 1
-        if len(curt_sample.node_list) > 0:
-            curt_sample.num_node = len(curt_sample.node_list)
-            curt_sample.num_edge = len(curt_sample.edge_list)
+
         return curt_sample
 
 
