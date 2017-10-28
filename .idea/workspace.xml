@@ -2,12 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list id="8f4ed7cd-6dea-4137-bf3c-226bb66d75fb" name="first commit. not done yet" comment="first commit. not done yet" />
-    <list default="true" id="a15c7e7e-4963-4d24-9903-41204a5fe181" name="Default" comment="before modify the factor graph to support pickle">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py" afterPath="$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py" afterPath="$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" afterPath="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" />
-    </list>
+    <list default="true" id="a15c7e7e-4963-4d24-9903-41204a5fe181" name="Default" comment="before modify the factor graph to support pickle" />
     <list id="1fc129f1-64d2-4319-9d0c-ec5e6e791e20" name="Failed commit: first commit. not done yet" comment="first commit. not done yet" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
