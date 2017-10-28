@@ -91,10 +91,9 @@ class StructuralRNN(chainer.Chain):
 
         super(StructuralRNN, self).__init__()
         self.out_size = out_size
-        self.in_size =  in_size
-        # 现在需要造出每个node_id(RNN的node_id)对应的跨越frame的node_list
+        self.in_size = in_size
 
-        self.node_id_neighbor = defaultdict(list)
+        self.node_id_neighbor = defaultdict(list)  # 现在需要造出每个node_id(RNN的node_id)对应的跨越frame的node_list
         if not initialW:
             initialW = initializers.HeNormal()
         with self.init_scope():

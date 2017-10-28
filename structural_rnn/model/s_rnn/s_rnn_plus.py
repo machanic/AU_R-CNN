@@ -22,7 +22,6 @@ class StructuralRNNPlus(chainer.Chain):
         else:
             # actually, hidden_size come from args.hidden_size
             assert hidden_size == crf_pact_structure.num_attrib_type  # 由于要用到crf_pact_structure.num_feature, 而setup_graph提前装好的EdgeFunction也要用到这个长度
-        self.neg_pos_ratio = 3
         sample = crf_pact_structure.sample
         n = sample.num_node
         m = sample.num_edge
@@ -34,23 +33,29 @@ class StructuralRNNPlus(chainer.Chain):
                                         for node in sample.node_list]))
 
 
-        frame_node_id = defaultdict(list)
+        frame_node_id = defaultdict(list)  # frame -> node_id
         remove_var_node_index_ls = list()
         remove_factor_node_index_ls = list()
         for i in range(n):
-            nodeid_int = sample.node_list[i].id
-            nodeid_str = sample.nodeid_line_no_dict.mapping_dict.inv[nodeid_int]
-            frame_node_id[get_frame(nodeid_str)].append(nodeid_int)
-            if get_frame(nodeid_str) == min_frame:
-                factor_graph.set_variable_label(i, sample.node_list[i].label)
-                factor_graph.var_node[i].label_type = sample.node_list[i].label_type
-            else:
+            node_id = sample.node_list[i].id
+            nodeid_str = sample.nodeid_line_no_dict.mapping_dict.inv[node_id]
+            frame_node_id[get_frame(nodeid_str)].append(node_id)
+            factor_graph.var_node[i].id = node_id
+            factor_graph.p_node[node_id] = factor_graph.var_node[i]
+            factor_graph.var_node[i].init(crf_pact_structure.num_label)
+            factor_graph.set_variable_label(i, sample.node_list[i].label)
+            factor_graph.var_node[i].label_type = sample.node_list[i].label_type
+            if get_frame(nodeid_str) != min_frame:
                 remove_var_node_index_ls.append(i)
         for i in range(m):
+            factor_node_id = sample.edge_list[i].id
+            factor_graph.factor_node[i].id = factor_node_id
+            factor_graph.p_node[factor_node_id] = factor_graph.factor_node[i]
+            factor_graph.factor_node[i].init(crf_pact_structure.num_label)
             frame_a = get_frame(sample.nodeid_line_no_dict.mapping_dict.inv[sample.edge_list[i].a])
             frame_b = get_frame(sample.nodeid_line_no_dict.mapping_dict.inv[sample.edge_list[i].b])
             if frame_a == frame_b == min_frame:  # 只要第一帧的factor_graph的edge，从而不考虑原始的S-RNN论文中自己到自己的边
-                factor_graph.add_edge(sample.edge_list[i].a, sample.edge_list[i].b, sample.edge_list[i].edge_type)  # func用不到
+                factor_graph.add_edge(i, sample.edge_list[i].a, sample.edge_list[i].b, sample.edge_list[i].edge_type)  # func用不到
             else:
                 remove_factor_node_index_ls.append(i)
        # We don't need self link EdgeRNN here(in original paper self to self link), I assume this can be done via RNN inherent nature
@@ -73,15 +78,15 @@ class StructuralRNNPlus(chainer.Chain):
         targets = list()
         for crf_pact in crf_pact_structures:
             sample = crf_pact.sample
-            node_label_one_video = list()
+            node_label_one_video = xp.zeros(shape=len(sample.node_list))
             for node in sample.node_list:
                 if is_bin:
                     label_bin = node.label_bin
-                    node_label_one_video.append(label_bin)
+                    node_label_one_video[node.id] = label_bin
                 else:
                     label = node.label
-                    node_label_one_video.append(label)
-            targets.append(xp.asarray(node_label_one_video))
+                    node_label_one_video[node.id] = label
+            targets.append(node_label_one_video)
         return xp.stack(targets).astype(xp.int32)  # shape = B x N x D but B = 1 forever and D is data_info specified number (picked index)
 
 

@@ -4,13 +4,9 @@
     <list id="8f4ed7cd-6dea-4137-bf3c-226bb66d75fb" name="first commit. not done yet" comment="first commit. not done yet" />
     <list default="true" id="a15c7e7e-4963-4d24-9903-41204a5fe181" name="Default" comment="before modify the factor graph to support pickle">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AU_rcnn/extensions/AU_evaluator.py" afterPath="$PROJECT_DIR$/AU_rcnn/extensions/AU_evaluator.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AU_rcnn/train.py" afterPath="$PROJECT_DIR$/AU_rcnn/train.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py" afterPath="$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/dataset/graph_dataset_reader.py" afterPath="$PROJECT_DIR$/structural_rnn/dataset/graph_dataset_reader.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pxd" afterPath="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pxd" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pyx" afterPath="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pyx" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/model/open_crf/pure_python/factor_graph.py" afterPath="$PROJECT_DIR$/structural_rnn/model/open_crf/pure_python/factor_graph.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py" afterPath="$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py" afterPath="$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" afterPath="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" />
     </list>
     <list id="1fc129f1-64d2-4319-9d0c-ec5e6e791e20" name="Failed commit: first commit. not done yet" comment="first commit. not done yet" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -70,7 +66,7 @@
     <SUITE FILE_PATH="coverage/face_expr$open_crf_layer.coverage" NAME="open_crf_layer Coverage Results" MODIFIED="1505893206663" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/model/open_crf" />
     <SUITE FILE_PATH="coverage/face_expr$setup.coverage" NAME="setup Coverage Results" MODIFIED="1508690684999" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/S_RNN__$train.coverage" NAME="train Coverage Results" MODIFIED="1509090579908" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/AU_rcnn" />
-    <SUITE FILE_PATH="coverage/S_RNN__$train_structural_rnn_plus.coverage" NAME="train_structural_rnn_plus Coverage Results" MODIFIED="1509034927551" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn" />
+    <SUITE FILE_PATH="coverage/S_RNN__$train_structural_rnn_plus.coverage" NAME="train_structural_rnn_plus Coverage Results" MODIFIED="1509126287872" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn" />
     <SUITE FILE_PATH="coverage/face_expr$demo_metric.coverage" NAME="demo_metric Coverage Results" MODIFIED="1506155382762" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/action_unit_metric" />
     <SUITE FILE_PATH="coverage/face_expr$gen_data_json.coverage" NAME="gen_data_json Coverage Results" MODIFIED="1508663762138" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/script" />
     <SUITE FILE_PATH="coverage/face_expr$roi_sift.coverage" NAME="roi_sift Coverage Results" MODIFIED="1508071816173" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/handcraft_feature" />
@@ -101,51 +97,43 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="opencrf_evaluator.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/structural_rnn/extensions/opencrf_evaluator.py">
+      <file leaf-file-name="structural_rnn.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="107">
-              <caret line="73" column="0" lean-forward="false" selection-start-line="73" selection-start-column="0" selection-end-line="74" selection-end-column="0" />
+            <state relative-caret-position="2852">
+              <caret line="193" column="27" lean-forward="false" selection-start-line="193" selection-start-column="27" selection-end-line="193" selection-end-column="27" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="open_crf.pyx" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/open_crf.pyx">
+      <file leaf-file-name="transpose.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/functions/array/transpose.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2079">
-              <caret line="333" column="113" lean-forward="true" selection-start-line="333" selection-start-column="113" selection-end-line="333" selection-end-column="113" />
+            <state relative-caret-position="800">
+              <caret line="35" column="4" lean-forward="false" selection-start-line="35" selection-start-column="4" selection-end-line="35" selection-end-column="4" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="factor_graph.pyx" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pyx">
+      <file leaf-file-name="s_rnn_plus.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1527">
-              <caret line="282" column="127" lean-forward="false" selection-start-line="282" selection-start-column="127" selection-end-line="282" selection-end-column="127" />
-              <folding />
+            <state relative-caret-position="384">
+              <caret line="131" column="44" lean-forward="true" selection-start-line="131" selection-start-column="44" selection-end-line="131" selection-end-column="44" />
+              <folding>
+                <element signature="e#0#35#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="graph_dataset_reader.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/graph_dataset_reader.py">
+      <file leaf-file-name="train_structural_rnn_plus.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="216">
-              <caret line="165" column="22" lean-forward="false" selection-start-line="165" selection-start-column="22" selection-end-line="165" selection-end-column="22" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="structural_RNN_dataset.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/structural_RNN_dataset.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="727">
-              <caret line="44" column="12" lean-forward="false" selection-start-line="44" selection-start-column="12" selection-end-line="44" selection-end-column="12" />
+            <state relative-caret-position="-1566">
+              <caret line="43" column="85" lean-forward="false" selection-start-line="43" selection-start-column="85" selection-end-line="43" selection-end-column="85" />
               <folding />
             </state>
           </provider>
@@ -154,50 +142,58 @@
       <file leaf-file-name="crf_pact_structure.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1700">
-              <caret line="17" column="13" lean-forward="false" selection-start-line="17" selection-start-column="13" selection-end-line="17" selection-end-column="13" />
+            <state relative-caret-position="1150">
+              <caret line="49" column="26" lean-forward="false" selection-start-line="49" selection-start-column="26" selection-end-line="49" selection-end-column="26" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="train_opencrf.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/structural_rnn/train_opencrf.py">
+      <file leaf-file-name="structural_RNN_dataset.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/structural_RNN_dataset.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="62">
-              <caret line="66" column="22" lean-forward="true" selection-start-line="66" selection-start-column="22" selection-end-line="66" selection-end-column="22" />
+            <state relative-caret-position="950">
+              <caret line="44" column="21" lean-forward="false" selection-start-line="44" selection-start-column="21" selection-end-line="44" selection-end-column="21" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="train.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AU_rcnn/train.py">
+      <file leaf-file-name="dataset_mixin.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/dataset/dataset_mixin.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="55">
-              <caret line="199" column="55" lean-forward="false" selection-start-line="199" selection-start-column="55" selection-end-line="199" selection-end-column="55" />
+            <state relative-caret-position="1625">
+              <caret line="66" column="0" lean-forward="false" selection-start-line="66" selection-start-column="0" selection-end-line="66" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="AU_evaluator.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AU_rcnn/extensions/AU_evaluator.py">
+      <file leaf-file-name="serial_iterator.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/iterators/serial_iterator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-200">
-              <caret line="47" column="0" lean-forward="false" selection-start-line="47" selection-start-column="0" selection-end-line="47" selection-end-column="0" />
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="1875">
+              <caret line="79" column="0" lean-forward="false" selection-start-line="79" selection-start-column="0" selection-end-line="79" selection-end-column="0" />
+              <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setup.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/setup.py">
+      <file leaf-file-name="bptt_updater.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/structural_rnn/updater/bptt_updater.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="300">
-              <caret line="20" column="31" lean-forward="true" selection-start-line="20" selection-start-column="31" selection-end-line="20" selection-end-column="31" />
+            <state relative-caret-position="1025">
+              <caret line="44" column="0" lean-forward="false" selection-start-line="44" selection-start-column="0" selection-end-line="44" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="variable.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/variable.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="7925">
+              <caret line="332" column="0" lean-forward="false" selection-start-line="332" selection-start-column="0" selection-end-line="332" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -214,9 +210,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>len(label_dict)</find>
-      <find>k</find>
-      <find>ka</find>
       <find>la</find>
       <find>label</find>
       <find>label_dic</find>
@@ -244,6 +237,9 @@
       <find>evalua</find>
       <find>SGD</find>
       <find>feature_model</find>
+      <find>add_edge</find>
+      <find>val</find>
+      <find>validate_iter</find>
     </findStrings>
     <replaceStrings>
       <replace>tf.stack</replace>
@@ -344,16 +340,16 @@
         <option value="$PROJECT_DIR$/structural_rnn/script/gen_data_json.py" />
         <option value="$PROJECT_DIR$/structural_rnn/dataset/structural_RNN_dataset.py" />
         <option value="$PROJECT_DIR$/structural_rnn/train_opencrf.py" />
-        <option value="$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py" />
-        <option value="$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py" />
-        <option value="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" />
         <option value="$PROJECT_DIR$/structural_rnn/updater/bptt_updater.py" />
-        <option value="$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py" />
         <option value="$PROJECT_DIR$/AU_rcnn/extensions/AU_evaluator.py" />
         <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/open_crf_layer.py" />
         <option value="$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pyx" />
         <option value="$PROJECT_DIR$/AU_rcnn/train.py" />
         <option value="$PROJECT_DIR$/structural_rnn/dataset/graph_dataset_reader.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py" />
+        <option value="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" />
       </list>
     </option>
   </component>
@@ -430,8 +426,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
-      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -686,6 +680,8 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scope" />
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -735,7 +731,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.train_opencrf">
+  <component name="RunManager" selected="Python.train_structural_rnn_plus">
     <configuration default="false" name="gen_data_json" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -774,25 +770,6 @@
       <option name="EMULATE_TERMINAL" value="false" />
       <method />
     </configuration>
-    <configuration default="false" name="train_structural_rnn_plus" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/structural_rnn" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="S-RNN++" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" />
-      <option name="PARAMETERS" value="--train /home/machen/face_expr/result/graph/BP4D_3_fold_1/train --valid  /home/machen/face_expr/result/graph/BP4D_3_fold_1/valid/ --epoch 2 --database BP4D --lr 0.01" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <method />
-    </configuration>
     <configuration default="false" name="train" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -808,6 +785,25 @@
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/AU_rcnn/train.py" />
       <option name="PARAMETERS" value="--database BP4D --pid /tmp/AU_R_CNN/BP4D/ --need_validate --proc_num 10 --fold 3 --split_idx 3 --mean /home/machen/dataset/BP4D/idx/mean_no_enhance.npy --feature_model vgg --extract_len 1000  --pretrained_model /home/machen/face_expr/result/VGG/BP4D_3_fold_3/3_fold_3_vgg_linear_model_snapshot_440000.npz  --batch_size 5 -g 0 --use_sigmoid_cross_entropy --out /home/machen/face_expr/result/resnet/BP4D_3_fold_3/ --eval_mode" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="train_structural_rnn_plus" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/structural_rnn" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="S-RNN++" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py" />
+      <option name="PARAMETERS" value="--train /home/machen/face_expr/result/graph/BP4D_3_fold_1/train --valid  /home/machen/face_expr/result/graph/BP4D_3_fold_1/valid/ --epoch 2 --database BP4D --lr 0.1" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <method />
@@ -1165,13 +1161,13 @@
       <item index="8" class="java.lang.String" itemvalue="Python.train_opencrf" />
       <item index="9" class="java.lang.String" itemvalue="Python.gen_data_json" />
       <item index="10" class="java.lang.String" itemvalue="Python.check_generate_feature_SVM" />
-      <item index="11" class="java.lang.String" itemvalue="Python.train_structural_rnn_plus" />
-      <item index="12" class="java.lang.String" itemvalue="Python.train" />
+      <item index="11" class="java.lang.String" itemvalue="Python.train" />
+      <item index="12" class="java.lang.String" itemvalue="Python.train_structural_rnn_plus" />
     </list>
     <recent_temporary>
       <list size="4">
-        <item index="0" class="java.lang.String" itemvalue="Python.train" />
-        <item index="1" class="java.lang.String" itemvalue="Python.train_structural_rnn_plus" />
+        <item index="0" class="java.lang.String" itemvalue="Python.train_structural_rnn_plus" />
+        <item index="1" class="java.lang.String" itemvalue="Python.train" />
         <item index="2" class="java.lang.String" itemvalue="Python.gen_data_json" />
         <item index="3" class="java.lang.String" itemvalue="Python.check_generate_feature_SVM" />
       </list>
@@ -1307,24 +1303,24 @@
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32580262" sideWeight="0.47567567" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.1510107" sideWeight="0.08594595" order="8" side_tool="true" content_ui="tabs" />
-      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.38882282" sideWeight="0.26108107" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.41854936" sideWeight="0.91405404" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.1117717" sideWeight="0.48702702" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.43638524" sideWeight="0.46756756" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.77051127" sideWeight="0.91405404" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28537455" sideWeight="0.67189187" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32939914" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32756758" sideWeight="0.85255647" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3372973" sideWeight="0.85255647" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.26540542" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39001188" sideWeight="0.66594595" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2664865" sideWeight="0.14744352" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.38882282" sideWeight="0.66594595" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.19297297" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.38882282" sideWeight="0.26108107" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.46135554" sideWeight="0.46972972" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18668252" sideWeight="0.46972972" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
     <layout-to-restore>
@@ -1334,20 +1330,20 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.1510107" sideWeight="0.08594595" order="8" side_tool="true" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.064209275" sideWeight="0.26108107" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.38882282" sideWeight="0.26108107" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.41854936" sideWeight="0.91405404" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.1117717" sideWeight="0.48702702" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.43638524" sideWeight="0.46756756" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.7883472" sideWeight="0.91405404" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28537455" sideWeight="0.67189187" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32939914" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3227027" sideWeight="0.85255647" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33243242" sideWeight="0.85255647" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.46135554" sideWeight="0.46972972" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.26540542" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39001188" sideWeight="0.66594595" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2664865" sideWeight="0.14744352" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26753864" sideWeight="0.66594595" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.19297297" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
     </layout-to-restore>
   </component>
@@ -1473,19 +1469,9 @@
           <option name="timeStamp" value="662" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/structural_rnn/dataset/structural_RNN_dataset.py</url>
-          <line>47</line>
-          <option name="timeStamp" value="906" />
-        </line-breakpoint>
-        <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/AU_rcnn/links/model/faster_rcnn/faster_rcnn_resnet101.py</url>
           <line>290</line>
           <option name="timeStamp" value="926" />
-        </line-breakpoint>
-        <line-breakpoint suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py</url>
-          <line>113</line>
-          <option name="timeStamp" value="951" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/AU_rcnn/extensions/AU_evaluator.py</url>
@@ -1508,19 +1494,11 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="959" />
+      <option name="time" value="976" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/serializers/npz.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="91">
-          <caret line="131" column="0" lean-forward="false" selection-start-line="131" selection-start-column="0" selection-end-line="131" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/dataset_toolkit/scripts/data_index_file_gen.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -1583,7 +1561,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1409">
           <caret line="294" column="35" lean-forward="false" selection-start-line="294" selection-start-column="35" selection-end-line="294" selection-end-column="35" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1606,7 +1583,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1455">
           <caret line="199" column="62" lean-forward="false" selection-start-line="199" selection-start-column="62" selection-end-line="199" selection-end-column="62" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1642,15 +1618,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="261">
           <caret line="179" column="23" lean-forward="true" selection-start-line="179" selection-start-column="23" selection-end-line="179" selection-end-column="23" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/iterators/serial_iterator.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="103">
-          <caret line="56" column="0" lean-forward="false" selection-start-line="56" selection-start-column="0" selection-end-line="56" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1658,13 +1625,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="123">
           <caret line="19" column="52" lean-forward="false" selection-start-line="19" selection-start-column="38" selection-end-line="19" selection-end-column="52" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/dataset/dataset_mixin.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="103">
-          <caret line="66" column="0" lean-forward="false" selection-start-line="66" selection-start-column="0" selection-end-line="66" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -1686,39 +1646,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="223">
           <caret line="57" column="4" lean-forward="false" selection-start-line="57" selection-start-column="4" selection-end-line="57" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/variable.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="122">
-          <caret line="332" column="0" lean-forward="false" selection-start-line="332" selection-start-column="0" selection-end-line="332" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2450">
-          <caret line="107" column="46" lean-forward="false" selection-start-line="107" selection-start-column="46" selection-end-line="107" selection-end-column="46" />
-          <folding>
-            <element signature="e#0#35#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2500">
-          <caret line="101" column="18" lean-forward="false" selection-start-line="101" selection-start-column="18" selection-end-line="101" selection-end-column="18" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/structural_rnn/updater/bptt_updater.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1175">
-          <caret line="50" column="0" lean-forward="false" selection-start-line="50" selection-start-column="0" selection-end-line="50" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1761,7 +1688,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="475">
           <caret line="22" column="26" lean-forward="false" selection-start-line="22" selection-start-column="26" selection-end-line="22" selection-end-column="26" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1784,7 +1710,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1700">
           <caret line="69" column="65" lean-forward="false" selection-start-line="69" selection-start-column="65" selection-end-line="69" selection-end-column="65" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1792,15 +1717,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3550">
           <caret line="150" column="22" lean-forward="false" selection-start-line="150" selection-start-column="22" selection-end-line="150" selection-end-column="22" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2000">
-          <caret line="89" column="29" lean-forward="false" selection-start-line="89" selection-start-column="29" selection-end-line="89" selection-end-column="29" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1808,29 +1724,19 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="554">
           <caret line="32" column="56" lean-forward="false" selection-start-line="32" selection-start-column="56" selection-end-line="32" selection-end-column="56" />
-          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/AU_rcnn/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="55">
+        <state relative-caret-position="4975">
           <caret line="199" column="55" lean-forward="false" selection-start-line="199" selection-start-column="55" selection-end-line="199" selection-end-column="55" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/structural_rnn/train_opencrf.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="62">
-          <caret line="66" column="22" lean-forward="true" selection-start-line="66" selection-start-column="22" selection-end-line="66" selection-end-column="22" />
-          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/AU_rcnn/extensions/AU_evaluator.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-200">
+        <state relative-caret-position="1175">
           <caret line="47" column="0" lean-forward="false" selection-start-line="47" selection-start-column="0" selection-end-line="47" selection-end-column="0" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
@@ -1841,56 +1747,127 @@
     <entry file="file://$PROJECT_DIR$/setup.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="300">
-          <caret line="20" column="31" lean-forward="true" selection-start-line="20" selection-start-column="31" selection-end-line="20" selection-end-column="31" />
+          <caret line="20" column="31" lean-forward="false" selection-start-line="20" selection-start-column="31" selection-end-line="20" selection-end-column="31" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/train_opencrf.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="512">
+          <caret line="66" column="22" lean-forward="false" selection-start-line="66" selection-start-column="22" selection-end-line="66" selection-end-column="22" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/open_crf.pyx">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2079">
-          <caret line="333" column="113" lean-forward="true" selection-start-line="333" selection-start-column="113" selection-end-line="333" selection-end-column="113" />
-          <folding />
+        <state relative-caret-position="375">
+          <caret line="333" column="113" lean-forward="false" selection-start-line="333" selection-start-column="113" selection-end-line="333" selection-end-column="113" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/extensions/opencrf_evaluator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1850">
+          <caret line="83" column="28" lean-forward="false" selection-start-line="83" selection-start-column="28" selection-end-line="83" selection-end-column="28" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/structural_rnn/model/open_crf/cython/factor_graph.pyx">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1527">
-          <caret line="282" column="127" lean-forward="false" selection-start-line="282" selection-start-column="127" selection-end-line="282" selection-end-column="127" />
+        <state relative-caret-position="534">
+          <caret line="284" column="34" lean-forward="true" selection-start-line="284" selection-start-column="34" selection-end-line="284" selection-end-column="34" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/dataset/dataset_mixin.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1625">
+          <caret line="66" column="0" lean-forward="false" selection-start-line="66" selection-start-column="0" selection-end-line="66" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/iterators/serial_iterator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1875">
+          <caret line="79" column="0" lean-forward="false" selection-start-line="79" selection-start-column="0" selection-end-line="79" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/variable.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="7925">
+          <caret line="332" column="0" lean-forward="false" selection-start-line="332" selection-start-column="0" selection-end-line="332" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/updater/bptt_updater.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1025">
+          <caret line="44" column="0" lean-forward="false" selection-start-line="44" selection-start-column="0" selection-end-line="44" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/remote_sources/-29008127/-420072412/chainer/functions/array/transpose.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="800">
+          <caret line="35" column="4" lean-forward="false" selection-start-line="35" selection-start-column="4" selection-end-line="35" selection-end-column="4" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/structural_RNN_dataset.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="727">
-          <caret line="44" column="12" lean-forward="false" selection-start-line="44" selection-start-column="12" selection-end-line="44" selection-end-column="12" />
+        <state relative-caret-position="950">
+          <caret line="44" column="21" lean-forward="false" selection-start-line="44" selection-start-column="21" selection-end-line="44" selection-end-column="21" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/graph_dataset_reader.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="165" column="22" lean-forward="false" selection-start-line="165" selection-start-column="22" selection-end-line="165" selection-end-column="22" />
+        <state relative-caret-position="4750">
+          <caret line="200" column="33" lean-forward="true" selection-start-line="200" selection-start-column="33" selection-end-line="200" selection-end-column="33" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/structural_rnn/dataset/crf_pact_structure.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1700">
-          <caret line="17" column="13" lean-forward="false" selection-start-line="17" selection-start-column="13" selection-end-line="17" selection-end-column="13" />
+        <state relative-caret-position="1150">
+          <caret line="49" column="26" lean-forward="false" selection-start-line="49" selection-start-column="26" selection-end-line="49" selection-end-column="26" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/structural_rnn/extensions/opencrf_evaluator.py">
+    <entry file="file://$PROJECT_DIR$/structural_rnn/train_structural_rnn_plus.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="107">
-          <caret line="73" column="0" lean-forward="false" selection-start-line="73" selection-start-column="0" selection-end-line="74" selection-end-column="0" />
+        <state relative-caret-position="-1566">
+          <caret line="43" column="85" lean-forward="false" selection-start-line="43" selection-start-column="85" selection-end-line="43" selection-end-column="85" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/structural_rnn.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2852">
+          <caret line="193" column="27" lean-forward="false" selection-start-line="193" selection-start-column="27" selection-end-line="193" selection-end-column="27" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/structural_rnn/model/s_rnn/s_rnn_plus.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="384">
+          <caret line="131" column="44" lean-forward="true" selection-start-line="131" selection-start-column="44" selection-end-line="131" selection-end-column="44" />
+          <folding>
+            <element signature="e#0#35#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

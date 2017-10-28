@@ -41,7 +41,7 @@ def main():
                         help='database to train for')
     parser.add_argument("--stop_eps", '-eps', type=float, default=1e-3, help="f - old_f < eps ==> early stop")
     parser.add_argument('--with_crf', '-crf', action='store_true', help='whether to use open crf layer')
-    parser.add_argument('--lr', '-l', type=float, default=1e-3)
+    parser.add_argument('--lr', '-l', type=float, default=0.1)  #FIXME may be too big
     parser.add_argument('--crf_lr', type=float, default=0.1)
     parser.add_argument('--hidden_size', type=int, default=512, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
     parser.add_argument('--eval_mode', action='store_true', help='whether to evaluate the model')
@@ -115,7 +115,7 @@ def main():
                    trigger=print_interval)
     trainer.extend(chainer.training.extensions.PrintReport(
         ['iteration', 'epoch', 'elapsed_time', 'lr',
-         'main/loss', "opencrf_val/main/hit",  # "opencrf_validation/main/U_hit",
+         'main/loss', "main/accuracy","opencrf_val/main/hit",  # "opencrf_validation/main/U_hit",
          "opencrf_val/main/miss",  # "opencrf_validation/main/U_miss",
          "opencrf_val/main/F1",  # "opencrf_validation/main/U_F1"
          'opencrf_val/main/accuracy',
@@ -151,8 +151,9 @@ def main():
     # trainer.extend(Evaluator(validate_iter, model, converter=convert, device=-1), trigger=val_interval,
     #                name='accu_validation')
     # if args.with_crf:
-    crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
-    trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
+
+    # crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
+    # trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
 
     trainer.run()
 
