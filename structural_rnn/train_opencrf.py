@@ -73,7 +73,7 @@ def main():
         from structural_rnn.model.open_crf.cython.open_crf_layer import OpenCRFLayer
 
     print_interval = 1, 'iteration'
-    val_interval = (3, 'iteration')
+    val_interval = (5, 'iteration')
     adaptive_AU_database(args.database)
     dataset = GlobalDataSet(os.path.dirname(args.train) + os.sep + "data_info.json")
     file_name = list(filter(lambda e:e.endswith(".txt"),os.listdir(args.train)))[0]

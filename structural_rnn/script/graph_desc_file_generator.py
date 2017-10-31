@@ -19,7 +19,8 @@ import re
 import multiprocessing as mp
 from structural_rnn.handcraft_feature.roi_sift import RoISift
 from functools import lru_cache
-import pickle
+import itertools
+
 
 def delegate_mask_crop(img_path, channal_first, queue):
     try:
@@ -178,8 +179,9 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
      # each is dict : {"img": /path/to/img, "mask_path_dict":{(2,3,4): /pathtomask}, }
     BP4D_base_dir_path = config.DATA_PATH["BP4D"]
     label_file_dir = BP4D_base_dir_path + "/AUCoding/"
-
+    c = 0
     for file_name in os.listdir(label_file_dir):  # each file is a video
+
         subject_name = file_name[:file_name.index("_")]
         sequence_name = file_name[file_name.index("_") + 1: file_name.rindex(".")]
         is_train = True if subject_name in train_subject else False
@@ -199,6 +201,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
             pool = mp.Pool(processes=proc_num)
             with open(label_file_dir + "/" + file_name, "r") as au_file_obj:  # each file is a video
                 for idx, line in enumerate(au_file_obj):
+
                     if idx == 0:
                         continue
                     lines = line.split(",")
@@ -231,6 +234,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
             zfill_len = len(one_image_path[:one_image_path.rindex(".")])
             with open(label_file_dir + "/" + file_name, "r") as au_file_obj:  # each file is a video
                 for idx, line in enumerate(au_file_obj):
+
                     if idx == 0:
                         continue
                     lines = line.split(",")
@@ -253,6 +257,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
 
             video_info = []
             for idx, line in enumerate(au_file_obj):  # each line represent a frame image
+
                 line = line.rstrip()
                 lines = line.split(",")
                 if idx == 0:  # header define which column is which Action Unit
@@ -338,7 +343,8 @@ def has_edge(AU_couple_a, AU_couple_b, database):
                 return True
     return False
 
-def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_generate, proc_num, cut:bool, extract_key, train_subject, test_subject):
+def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_generate, proc_num, cut:bool, extract_key,
+                train_subject, test_subject):
     '''
     currently CRF can only deal with single label situation
     so use /home/machen/dataset/BP4D/label_dict.txt to regard combine label as new single label
@@ -476,6 +482,209 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
             temporal_edges.clear()
             h_info_array.clear()
 
+def load_fp(data_path):
+    fp = set()
+    with open(data_path, "r") as file_obj:
+        for line in file_obj:
+            fp.add(tuple(line.strip().split(',')))
+    return fp
+
+def build_graph_roi_single_label(fp_path, faster_rcnn, reader_func, output_dir, database_name, force_generate, proc_num, cut:bool, extract_key, train_subject, test_subject):
+    '''
+    currently CRF can only deal with single label situation
+    so use /home/machen/dataset/BP4D/label_dict.txt to regard combine label as new single label
+    example(each file contains one video!):
+    node_id kown_label features
+    1_12 +1 np_file:/path/to/npy features:1,3,4,5,5,...
+    node_id specific: ${frame}_${roi}, eg: 1_12
+    or
+    444 +[0,0,0,1,0,1,0] np_file:/path/to/npy features:1,3,4,5,5,...
+    spatio can have two factor node here, for example spatio_1 means upper face, and spatio_2 means lower face relation
+    #edge 143 4289 spatio_1
+    #edge 143 4289 spatio_2
+    #edge 112 1392 temporal
+
+    mode: RNN or CRF
+    '''
+    adaptive_AU_database(database_name)
+    adaptive_AU_relation(database_name)
+    au_couple_dict = get_zip_ROI_AU()  # value is AU couple tuple, each tuple denotes an RoI
+    # max_au_couple_len = max(len(couple) for couple in au_couple_dict.values())  # we use itertools.product instead
+    label_bin_len = config.BOX_NUM[database_name]  # each box/ROI only have 1 or 0
+    au_couple_set = set(au_couple_dict.values())
+    au_couple_list = list(au_couple_set)
+    au_couple_list.append(("1","2","5","7")) # because it is symmetric area
+    is_binary_AU = True
+
+    fp_set = load_fp(fp_path)
+    for video_info, subject_id in reader_func(output_dir, is_binary_AU=is_binary_AU, is_need_adaptive_AU_relation=False,
+                                  force_generate=force_generate, proc_num=proc_num, cut=cut, train_subject=train_subject):
+
+        extracted_feature_cache = dict()  # key = np.ndarray_hash , value = h. speed up
+        frame_box_cache = dict()  # key = frame, value = boxes
+        frame_labels_cache = dict()
+        frame_AU_couple_bbox_dict_cache = dict()
+        # each video file is copying multiple version but differ in label
+        for couples_tuple in itertools.product(*au_couple_list):  # couples_tuple = ("1","3","5",.."4") cross AU_couple
+            couples_tuple = tuple(map(str, sorted(map(int, couples_tuple))))
+            couples_tuple_array = np.array(couples_tuple) # for write file_name purpose
+            couples_tuple_set = set(couples_tuple)  # use cartesian product to iterator over
+            if len(couples_tuple_set) < len(couples_tuple):
+                continue
+            reorder_index = OrderedDict()
+            # limit too many combination
+            count = 0
+            for fp in fp_set:
+                inter_set = couples_tuple_set & set(fp)
+                union_set = couples_tuple_set | set(fp)
+                iou = len(inter_set) / len(union_set)
+                if iou > 0.6:
+                    count += 1
+            if count < 20:
+                continue
+
+            node_list = []
+            temporal_edges = []
+            spatio_edges = []
+            h_info_array = []
+            for entry_dict in video_info:
+                frame = entry_dict["frame"]
+                cropped_face = entry_dict["cropped_face"]
+                print("processing frame:{}".format(frame))
+                all_couple_mask_dict = entry_dict["all_couple_mask_dict"]  # key is AU couple tuple,不管脸上有没有该AU都返回回来
+                image_labels = entry_dict["all_labels"]  # each region has a label(binary or AU)
+
+                bboxes = []
+                labels = []
+                AU_couple_bbox_dict = OrderedDict()
+
+                if frame in frame_box_cache:
+                    bboxes = frame_box_cache[frame]
+                    labels = frame_labels_cache[frame]
+                    AU_couple_bbox_dict = frame_AU_couple_bbox_dict_cache[frame]
+                else:
+                    for idx, (AU_couple, mask) in enumerate(all_couple_mask_dict.items()):  # AU may contain single_true AU or AU binary tuple (depends on need_adaptive_AU_relation)
+                        region_label = image_labels[idx]  # str or tuple, so all_labels index must be the same as all_couple_mask_dict
+                        connect_arr = cv2.connectedComponents(mask, connectivity=8, ltype=cv2.CV_32S)
+                        component_num = connect_arr[0]
+                        label_matrix = connect_arr[1]
+                        for component_label in range(1, component_num):
+                            row_col = list(zip(*np.where(label_matrix == component_label)))
+                            row_col = np.array(row_col)
+                            y_min_index = np.argmin(row_col[:, 0])
+                            y_min = row_col[y_min_index, 0]
+                            x_min_index = np.argmin(row_col[:, 1])
+                            x_min = row_col[x_min_index, 1]
+                            y_max_index = np.argmax(row_col[:, 0])
+                            y_max = row_col[y_max_index, 0]
+                            x_max_index = np.argmax(row_col[:, 1])
+                            x_max = row_col[x_max_index, 1]
+                            # same region may be shared by different AU, we must deal with it
+                            coordinates = (y_min, x_min, y_max, x_max)
+
+                            if y_min == y_max and x_min == x_max:
+                                continue
+
+                            if coordinates not in bboxes:
+                                bboxes.append(coordinates)
+                                labels.append(region_label)  # AU may contain single_true AU or AU binary tuple (depends on need_adaptive_AU_relation)
+                                AU_couple_bbox_dict[coordinates] = AU_couple
+                        del label_matrix
+                    if len(bboxes) != config.BOX_NUM[database_name]:
+                        print("boxes num != {0}, real box num= {1}".format(config.BOX_NUM[database_name], len(bboxes)))
+                        continue
+                frame_box_cache[frame] = bboxes
+                frame_AU_couple_bbox_dict_cache[frame] = AU_couple_bbox_dict
+                frame_labels_cache[frame] = labels
+                cropped_face.flags.writeable = False
+                key = hash(cropped_face.data.tobytes())
+                if key in extracted_feature_cache:
+                    h = extracted_feature_cache[key]
+                else:
+                    with chainer.no_backprop_mode():
+                        h = faster_rcnn.extract(cropped_face, bboxes, layer=extract_key)  # shape = R' x 2048
+                        extracted_feature_cache[key] = h
+                    assert h.shape[0] == len(bboxes)
+                h = chainer.cuda.to_cpu(h)
+                h = h.reshape(len(bboxes), -1)
+
+                # 这个indent级别都是同一张图片内部
+                # print("box number, all_mask:", len(bboxes),len(all_couple_mask_dict))
+
+                for box_idx in range(len(bboxes)):
+                    label = np.zeros(shape=label_bin_len, dtype=np.int32)  # bin length became box number > AU_couple number
+                    current_AU_couple = set(list(AU_couple_bbox_dict.values())[box_idx])
+                    intersect_set = current_AU_couple & couples_tuple_set
+                    current_AU = list(intersect_set)[0]
+                    if len(intersect_set) > 1:
+                        current_AU = list(intersect_set)[box_idx]
+                    current_AU_couple_index = couples_tuple.index(current_AU)
+                    reorder_index[box_idx] = current_AU_couple_index
+
+                    current_AU_squeeze_idx = config.AU_SQUEEZE.inv[current_AU]
+                    label[box_idx] = labels[box_idx][current_AU_squeeze_idx]  # labels[box_idx] = 0,0,1,1,...,0  but we want only look at specific idx
+                    label = tuple(label)
+                    if isinstance(label, tuple):
+                        label_arr = np.char.mod("%d", label)
+                        label = "({})".format(",".join(label_arr))
+                    h_flat = h[box_idx]
+                    # nonzero_idx = np.nonzero(h_flat)[0]
+                    # h_flat_nonzero = h_flat[nonzero_idx]
+                    # h_info = ",".join("{}:{:.4f}".format(idx, val) for idx,val in zip(nonzero_idx,h_flat_nonzero))
+
+                    node_id = "{0}_{1}".format(frame, box_idx)
+                    node_list.append("{0} {1} feature_idx:{2}".format(node_id, label, len(h_info_array)))
+                    h_info_array.append(h_flat)
+
+                # 同一张画面两两组合，看有没连接线，注意AU=0，就是未出现的AU动作的区域也参与连接
+                for box_idx_a, box_idx_b in map(sorted, itertools.combinations(range(len(bboxes)), 2)):
+                    node_id_a = "{0}_{1}".format(frame, box_idx_a)
+                    node_id_b = "{0}_{1}".format(frame, box_idx_b)
+                    AU_couple_a = AU_couple_bbox_dict[bboxes[box_idx_a]]  # AU couple represent region( maybe symmetry in face)
+                    AU_couple_b = AU_couple_bbox_dict[bboxes[box_idx_b]]
+                    if AU_couple_a == AU_couple_b or has_edge(AU_couple_a, AU_couple_b, database_name):
+                        spatio_edges.append("#edge {0} {1} spatio".format(node_id_a, node_id_b))
+
+            box_id_temporal_dict = defaultdict(list)  # key = roi/bbox id, value = node_id list cross temporal
+            for node_info in node_list:
+                node_id = node_info[0: node_info.index(" ")]
+                box_id = node_id[node_id.index("_")+1:]
+                box_id_temporal_dict[box_id].append(node_id)
+
+            for node_id_list in box_id_temporal_dict.values():
+                for idx, node_id in enumerate(node_id_list):
+                    if idx + 1 < len(node_id_list):
+                        node_id_next = node_id_list[idx+1]
+                        temporal_edges.append("#edge {0} {1} temporal".format(node_id, node_id_next))
+            train_AU_out_path = "{0}/train/{1}/{2}.txt".format(output_dir, "_".join(map(str, couples_tuple_array[list(reorder_index.values())])),
+                                                               video_info[0]["video_id"] )
+            test_AU_out_path = "{0}/test/{1}/{2}.txt".format(output_dir, "_".join(map(str,couples_tuple_array[list(reorder_index.values())])),
+                                                             video_info[0]["video_id"] )
+            reorder_index.clear()
+            if subject_id in train_subject:
+                output_path = train_AU_out_path
+                npy_path = output_dir + os.sep + "train" + os.sep + os.path.basename(output_path)[
+                                                                    :os.path.basename(output_path).rindex(".")] + ".npy"
+            elif subject_id in test_subject:
+                output_path = test_AU_out_path
+                npy_path = output_dir + os.sep + "test" + os.sep + os.path.basename(output_path)[
+                                                                    :os.path.basename(output_path).rindex(".")] + ".npy"
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+            if not os.path.exists(npy_path):
+                np.save(npy_path, h_info_array)
+            with open(output_path, "w") as file_obj:
+                for line in node_list:
+                    file_obj.write("{}\n".format(line))
+                for line in spatio_edges:
+                    file_obj.write("{}\n".format(line))
+                for line in temporal_edges:
+                    file_obj.write("{}\n".format(line))
+                file_obj.flush()
+                node_list.clear()
+                spatio_edges.clear()
+                temporal_edges.clear()
+                h_info_array.clear()
 
 
 
@@ -519,6 +728,10 @@ if __name__ == "__main__":
     parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument("--cut_zero", '-cut', action="store_true")
     parser.add_argument("--sift","-sift",action="store_true")
+    parser.add_argument("--single_label", "-single", action="store_true",
+                        help="single label to help to refine label in video sequence more reasonable")
+    parser.add_argument("--fp_path", "-fp", default="/home/machen/dataset/BP4D/idx/frequent_pattern_AU.txt",
+                        help="frequent pattern file contain possible many co-occur AU couple")
 
     args = parser.parse_args()
     kfold_pattern = re.compile('.*?(\d+)_.*?fold_(\d+).*',re.DOTALL)
@@ -570,9 +783,16 @@ if __name__ == "__main__":
     else:
         print("you can not specify database other than BP4D/DISFA")
         sys.exit(1)
-    build_graph(faster_rcnn, read_func, output, database_name=args.database, force_generate=False,
-                proc_num=args.proc_num, cut=args.cut_zero, extract_key=extract_key,train_subject=train_subject,
-                test_subject=test_subject)
+    if args.single_label:
+        build_graph_roi_single_label(args.fp_path, faster_rcnn, read_func, output, database_name=args.database,
+                                     force_generate=True,
+                                     proc_num=args.proc_num, cut=args.cut_zero, extract_key=extract_key,
+                                     train_subject=train_subject,
+                                     test_subject=test_subject)
+    else:
+        build_graph(faster_rcnn, read_func, output, database_name=args.database, force_generate=False,
+                    proc_num=args.proc_num, cut=args.cut_zero, extract_key=extract_key, train_subject=train_subject,
+                    test_subject=test_subject)
 
 
 

@@ -8,10 +8,7 @@ else:
 from bidict import bidict
 
 import json
-import random
-import copy
-from collections import defaultdict
-
+import os
 class MappingDict(object):
 
     def __init__(self):
@@ -82,8 +79,9 @@ class DataNode(object):
     @property
     def label(self):
         nonzero_idx = np.nonzero(self.label_bin)[0]
+        assert len(nonzero_idx) <= 1
         if len(nonzero_idx) > 0:
-            return random.choice(nonzero_idx) + 1 # random pick, +1 is for the reason 0 also will be one label
+            return nonzero_idx[0] + 1 # random pick, +1 is for the reason 0 also will be one label
         return 0  # all zero became 0
 
     def __hash__(self):
@@ -134,7 +132,6 @@ class GlobalDataSet(object):
         self.edge_type_dict = MappingDict()
         self.num_attrib_type = 0
         self.info_json = None
-        self.use_label_idx = None
         self.load_data_info_dict(info_dict_path)  # {"num_label":233, "non_zero_attrib_index":[0,1,4,5,6,...] }
         self.label_bin_len = 0
 
@@ -144,20 +141,19 @@ class GlobalDataSet(object):
         with open(info_dict_path, "r") as file_obj:
             self.info_json = json.loads(file_obj.read())
         self.num_attrib_type = self.info_json["num_attrib_type"]
-        self.use_label_idx = sorted(map(int,self.info_json["label_dict"].keys())) # a dict , key=label_idx, value= AU
 
         for pred_idx, true_label_str in self.info_json["label_dict"].items():
             pred_idx = int(pred_idx)
             self.label_dict.mapping_dict[pred_idx] = true_label_str   # pred_idx <=> true label
             self.label_dict.keys.append(pred_idx)
 
-    @profile
     def load_data(self, path):
         curt_sample = DataSample()
         curt_sample.label_dict = self.label_dict
-        npy_path = path[:path.rindex(".")] + ".npy"
+        parent_path = os.path.dirname(os.path.dirname(path)) # cd ../
+        base_path = os.path.basename(path)
+        npy_path = parent_path + os.sep + base_path[:base_path.rindex(".")] + ".npy"
         h_info_array = np.load(npy_path)
-        all_label_array = list()
         # main_label is label set which continuous occurrence >= 5, we pick all each main_label as one sample(by deepcopy),
         # only if current label_set doesn't have main_label, we pick up the rest label (minor occurence)
         with open(path, "r") as file_obj:
@@ -186,12 +182,6 @@ class GlobalDataSet(object):
                     node_id = curt_sample.nodeid_line_no_dict.get_id(node_id)   #nodeid convert to line number int，original string nodeid into dict
                     if node_labels.startswith("(") and node_labels.endswith(")"):  #open-crf cannot use bin form label, but can combine as one to use, located in Node constructor
                         label_bin = np.asarray(list(map(int,node_labels[1:-1].split(",") )), dtype=np.int32)
-                        narrow_label_bin = label_bin[self.use_label_idx]
-                        all_zeros = not np.any(narrow_label_bin)
-                        if not all_zeros:
-                            rest_index = set(np.arange(len(label_bin))) - set(self.use_label_idx)
-                            label_bin[list(rest_index)] = 0
-                        all_label_array.append(label_bin)
 
                     if tokens[2].startswith("feature"):
                         feature_idx = int(tokens[2][len("feature_idx:"):])
@@ -210,21 +200,6 @@ class GlobalDataSet(object):
         if len(curt_sample.node_list) > 0:
             curt_sample.num_node = len(curt_sample.node_list)
             curt_sample.num_edge = len(curt_sample.edge_list)
-        all_label_array = np.asarray(all_label_array)
-        trans_label_array = np.transpose(all_label_array) # Y x N
-        main_Y = set()
-        for Y, label_array in enumerate(trans_label_array):
-            count_arr = np.bincount(label_array)
-            if count_arr.size > 1 and count_arr[1] >= 5:
-                main_Y.add(Y)
-
-        if len(main_Y) > 0:
-            Y = random.choice(list(main_Y))  # each time random choice Y regard as main Y
-            for node_idx, node in enumerate(curt_sample.node_list):
-                if all_label_array[node_idx, Y] > 0:  # 这句话仍旧有问题，剩下的Y也应该设置
-                    all_label_array[node_idx, :] = 0
-                    all_label_array[node_idx, Y] = 1
-                node.label_bin = all_label_array[node_idx]
 
         # graph desc file read done
         self.num_edge_type = self.edge_type_dict.get_size()  # 这个是所有sample数据文件整体的edge种类

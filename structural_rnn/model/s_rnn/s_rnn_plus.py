@@ -130,7 +130,8 @@ class StructuralRNNPlus(chainer.Chain):
             ts = chainer.Variable(ts.reshape(-1))
             h = h.reshape(-1, h.shape[-1])
             assert ts.shape[0] == h.shape[0]
-            loss = F.softmax_cross_entropy(h, ts)
+            loss = F.hinge(h, ts, reduce='mean')
+
             accuracy = F.accuracy(h,ts)
 
         report_dict = {'loss': loss}

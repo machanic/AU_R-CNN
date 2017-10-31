@@ -16,6 +16,8 @@ import os
 from structural_rnn.trigger.EarlyStopTrigger import EarlyStoppingTrigger
 from chainer.training.extensions.evaluator import Evaluator
 import json
+import cProfile
+import pstats
 
 def main():
     parser = argparse.ArgumentParser()
@@ -52,7 +54,7 @@ def main():
     parser.set_defaults(test=False)
     args = parser.parse_args()
     print_interval = 1, 'iteration'
-    val_interval = 1, 'iteration'
+    val_interval = 2, 'iteration'
 
     adaptive_AU_database(args.database)
 
@@ -152,10 +154,13 @@ def main():
     #                name='accu_validation')
     # if args.with_crf:
 
-    # crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
-    # trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
-
+    crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
+    trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
     trainer.run()
+
+    # cProfile.runctx("trainer.run()", globals(), locals(), "Profile.prof")
+    # s = pstats.Stats("Profile.prof")
+    # s.strip_dirs().sort_stats("time").print_stats()
 
     # # evaluate the final model
     # test_data = S_RNNPlusDataset(args.valid, attrib_size=args.hidden_size, global_dataset=dataset)

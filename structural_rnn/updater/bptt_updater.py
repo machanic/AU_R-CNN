@@ -44,7 +44,7 @@ class BPTTUpdater(training.StandardUpdater):
         xs, crf_pact_structure_batch = self.converter(batch, self.device)
         loss = optimizer.target(chainer.Variable(xs), crf_pact_structure_batch)
 
-        optimizer.target.cleargrads()
-        loss.backward()
-        # loss.unchain_backward()
-        optimizer.update()
+        optimizer.target.cleargrads() # Clear the parameter gradients
+        loss.backward() # Backprop
+        loss.unchain_backward() # Truncate the graph
+        optimizer.update() # Update the parameters
