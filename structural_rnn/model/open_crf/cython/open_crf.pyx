@@ -306,7 +306,7 @@ class CRFFunction(Function):
         self.crf.calc_gradient(dx, dw, x, W, labeled_given=True)
         self.crf.calc_gradient(dx, dw, x, W, labeled_given=False)
         dw *= -1.0
-        dx *= -1.0
+        dx *= -1.0       #FIXME  当配合S-RNN使用的时候，效果不好，把dx 负号注释掉,仍然效果不好，暂时不知道怎么办，或许open-crf无法配合s-rnn吗？
         # normalize gradient
         g_norm = sqrt(np.sum(dw*dw))
         if g_norm > 1e-8:

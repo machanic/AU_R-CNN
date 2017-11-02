@@ -31,7 +31,7 @@ def main():
                         help='Gradient norm threshold to clip')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--snapshot', '-snap', type=float, default=0.5, help='snapshot epochs for save checkpoint')
+    parser.add_argument('--snapshot', '-snap', type=int, default=1, help='snapshot epochs for save checkpoint')
     parser.add_argument('--test_mode', action='store_true',
                         help='Use tiny datasets for quick tests')
     parser.add_argument('--valid', '-v', default='valid',
@@ -43,21 +43,26 @@ def main():
                         help='database to train for')
     parser.add_argument("--stop_eps", '-eps', type=float, default=1e-3, help="f - old_f < eps ==> early stop")
     parser.add_argument('--with_crf', '-crf', action='store_true', help='whether to use open crf layer')
-    parser.add_argument('--lr', '-l', type=float, default=0.1)  #FIXME may be too big
+    parser.add_argument('--lr', '-l', type=float, default=0.001)
     parser.add_argument('--crf_lr', type=float, default=0.1)
-    parser.add_argument('--hidden_size', type=int, default=512, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
+    parser.add_argument('--hidden_size', type=int, default=1024, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
     parser.add_argument('--eval_mode', action='store_true', help='whether to evaluate the model')
     parser.add_argument("--fold", "-fd", type=int,
                         help="which fold of K-fold")
     parser.add_argument("--split_idx", '-sp', type=int, help="which split_idx")
     parser.add_argument("--proc_num",'-proc', type=int,default=1, help="process number of dataset reader")
+    parser.add_argument("--use_bi_lstm", '-bilstm', action='store_true', help="Use bi_lstm as basic component of S-RNN")
     parser.set_defaults(test=False)
     args = parser.parse_args()
     print_interval = 1, 'iteration'
-    val_interval = 2, 'iteration'
+    val_interval = 5, 'iteration'
 
     adaptive_AU_database(args.database)
-
+    train_str = args.train
+    if train_str[-1] == "/":
+        train_str = train_str[:-1]
+    trainer_keyword = os.path.basename(train_str)
+    assert "_" in trainer_keyword
 
     # for the StructuralRNN constuctor need first frame factor graph_backup
     dataset = GlobalDataSet(info_dict_path=os.path.dirname(args.train)+os.sep + "data_info.json")
@@ -65,30 +70,16 @@ def main():
     sample = dataset.load_data(args.train + os.sep + file_name)  # we load first sample for construct S-RNN, it must passed to constructor argument
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size)  # 只读取其中的一个视频的第一帧，由于node个数相对稳定，因此可以construct RNN
 
-    print("in_size:{}".format(dataset.num_attrib_type))
     model = StructuralRNNPlus(crf_pact_structure, in_size=dataset.num_attrib_type, out_size=dataset.label_bin_len,
-                              hidden_size=args.hidden_size, with_crf=args.with_crf)
+                              hidden_size=args.hidden_size, with_crf=args.with_crf, use_bi_lstm=args.use_bi_lstm)
 
-    if args.eval_mode:
-        test_data = S_RNNPlusDataset(args.test,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True)
-        test_iter = chainer.iterators.SerialIterator(test_data,1,shuffle=False,repeat=True)
-        gpu = int(args.gpu)
-        evaluator = ActionUnitEvaluator(test_iter, model, device=gpu,database=args.database)
-        observation = evaluator.evaluate()
-        with open(args.out + os.sep + "S-eval_result.txt", "w") as file_obj:
-            file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
-            file_obj.flush()
-        return
 
     train_data = S_RNNPlusDataset(args.train,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True)  # train 传入文件夹
     valid_data = S_RNNPlusDataset(args.valid,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True)  # attrib_size控制open-crf层的weight长度
 
-    if args.proc_num == 1:
-        train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True, repeat=True)
-    elif args.proc_num > 1:
-        train_iter = chainer.iterators.MultiprocessIterator(train_data, batch_size=1, n_processes=args.proc_num,
-                                                            repeat=True, shuffle=True, n_prefetch=10,
-                                                            shared_mem=31457280)
+
+    train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True, repeat=True)
+
     validate_iter = chainer.iterators.SerialIterator(valid_data, 1, shuffle=False, repeat=False)
 
 
@@ -108,7 +99,7 @@ def main():
         model.open_crf.W.update_rule.hyperparam.lr = float(args.crf_lr)
         model.open_crf.to_cpu()
     else:
-        trainer = chainer.training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+        trainer = chainer.training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)  #FIXME
 
     interval = (1, 'iteration')
     if args.test_mode:
@@ -125,8 +116,9 @@ def main():
 
     trainer.extend(chainer.training.extensions.LogReport(trigger=interval,log_name='s_rnn_plus.log'))
     trainer.extend(chainer.training.extensions.ProgressBar(update_interval=1, training_length=(args.epoch, 'epoch')))
-    optimizer_snapshot_name = "{0}_{1}_{2}_srnn_plus_optimizer.npz".format(args.database, args.fold, args.split_idx)
-    model_snapshot_name = "{0}_{1}_{2}_srnn_plus_model.npz".format(args.database, args.fold, args.split_idx)
+    optimizer_snapshot_name = "{0}_{1}_{2}_{3}_srnn_plus_optimizer.npz".format(trainer_keyword, args.database, args.fold, args.split_idx)
+    model_snapshot_name = "{0}_{1}_{2}_{3}_srnn_plus_{4}_model.npz".format(trainer_keyword, args.database, args.fold, args.split_idx,
+                                                                           "crf" if args.with_crf else "")
     trainer.extend(
         chainer.training.extensions.snapshot_object(optimizer,
                                                     filename=optimizer_snapshot_name),

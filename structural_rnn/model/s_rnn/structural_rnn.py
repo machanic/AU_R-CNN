@@ -26,14 +26,18 @@ edgeRNNs[em] = [TemporalInputFeatures(nodeFeatureLength[nm]),
 
 class NodeRNN(chainer.Chain):
 
-    def __init__(self, insize, outsize, initialW=None):
+    def __init__(self, insize, outsize, initialW=None, use_bi_lstm=False):
         super(NodeRNN, self).__init__()
         if not initialW:
             initialW = initializers.HeNormal()
         self.n_layer = 1
+        if use_bi_lstm:
+            assert outsize % 2 ==0
         with self.init_scope():
-
-            self.lstm1 = L.NStepLSTM(self.n_layer, insize, 512, dropout=0) #dropout = 0.0
+            if use_bi_lstm:
+                self.lstm1 = L.NStepBiLSTM(self.n_layer, insize, 256, dropout=0) #dropout = 0.0
+            else:
+                self.lstm1 = L.NStepLSTM(self.n_layer, insize, 512, dropout=0)
             self.fc2 = L.Linear(512, 256, initialW=initialW)
             self.fc3 = L.Linear(256, 100, initialW=initialW)
             self.fc4 = L.Linear(100, outsize, initialW=initialW)
@@ -54,17 +58,23 @@ class NodeRNN(chainer.Chain):
 
 class EdgeRNN(chainer.Chain):
 
-    def __init__(self, insize, outsize, initialW=None):
+    def __init__(self, insize, outsize, initialW=None, use_bi_lstm=False):
         super(EdgeRNN, self).__init__()
         self.n_layer = 1
         self.outsize = outsize
+        if use_bi_lstm:
+            assert outsize % 2 == 0
+
         if not initialW:
             initialW = initializers.HeNormal()
 
         with self.init_scope():
             self.fc1 = L.Linear(insize, 256, initialW=initialW)
             self.fc2 = L.Linear(256, 256, initialW=initialW)
-            self.lstm3 = L.NStepLSTM(self.n_layer, 256, outsize, dropout=0.0)  #dropout = 0.0
+            if use_bi_lstm:
+                self.lstm3 = L.NStepBiLSTM(self.n_layer, 256, outsize//2, dropout=0.0)  #dropout = 0.0
+            else:
+                self.lstm3 = L.NStepLSTM(self.n_layer, 256, outsize, dropout=0.0)
 
     def __call__(self, xs):
         xp = chainer.cuda.cupy.get_array_module(xs[0].data)
@@ -87,7 +97,7 @@ class StructuralRNN(chainer.Chain):
     #  上面一层是node层，输入来自与他相连的node层和与相连的edge层，每个组件都是一个component, 类似ResNet的Block
     #  参数G是描述性的Graph，可以取第一帧Graph，但切不可传入整个video的Graph，而out_size是输出的node outsize可以根据是否叠加OpenCRF来定
     # in_size 指的是每个node的input feature length
-    def __init__(self, G:FactorGraph,  in_size, out_size, initialW=None):
+    def __init__(self, G:FactorGraph,  in_size, out_size, use_bi_lstm=True, initialW=None):
 
         super(StructuralRNN, self).__init__()
         self.out_size = out_size
@@ -109,7 +119,8 @@ class StructuralRNN(chainer.Chain):
                 var_node_b = neighbors[1]
                 feature_len = 2 * in_size
                 edge_RNN_id = ",".join(map(str, sorted([int(var_node_a.id), int(var_node_b.id)])))
-                self.add_link("EdgeRNN_{}".format(edge_RNN_id), EdgeRNN(insize=feature_len, outsize=self.node_feature_convert_len))
+                self.add_link("EdgeRNN_{}".format(edge_RNN_id), EdgeRNN(insize=feature_len,
+                                                                        outsize=self.node_feature_convert_len,use_bi_lstm=use_bi_lstm))
                 self.bottom[edge_RNN_id] = getattr(self, "EdgeRNN_{}".format(edge_RNN_id))  # 输出是node feature, 最后node feature concat起来
             # build top layer NodeRNN
             for node in G.var_node:
@@ -125,7 +136,7 @@ class StructuralRNN(chainer.Chain):
                 for key, val_list in self.node_id_neighbor.items():
                     self.node_id_neighbor[key] = sorted(val_list)
                 feature_len = self.node_feature_convert_len * (len(neighbors) + 1)  # concat edgeRNN out and node feature(after convert dim)
-                self.add_link("NodeRNN_{}".format(node_id), NodeRNN(insize=feature_len, outsize=out_size) )
+                self.add_link("NodeRNN_{}".format(node_id), NodeRNN(insize=feature_len, outsize=out_size, use_bi_lstm=use_bi_lstm) )
                 self.top[str(node_id)] = getattr(self, "NodeRNN_{}".format(node_id))
 
     def predict(self, x, crf_pact_structure, is_bin=False):

@@ -13,7 +13,7 @@ from structural_rnn.model.s_rnn.structural_rnn import StructuralRNN
 class StructuralRNNPlus(chainer.Chain):
 
     # note that out_size must == label_bin_len not combine label_num
-    def __init__(self, crf_pact_structure:CRFPackageStructure, in_size, hidden_size, out_size, with_crf=True):
+    def __init__(self, crf_pact_structure:CRFPackageStructure, in_size, hidden_size, out_size, with_crf=True,use_bi_lstm=True):
         super(StructuralRNNPlus, self).__init__()
         self.with_crf = with_crf
 
@@ -69,23 +69,30 @@ class StructuralRNNPlus(chainer.Chain):
 
         with self.init_scope():
             if self.with_crf:
-                self.structural_rnn = StructuralRNN(factor_graph, in_size, hidden_size)
+                self.structural_rnn = StructuralRNN(factor_graph, in_size, hidden_size,use_bi_lstm=use_bi_lstm)
                 self.open_crf = OpenCRFLayer(node_in_size=hidden_size, weight_len=crf_pact_structure.num_feature)
             else:
-                self.structural_rnn = StructuralRNN(factor_graph, in_size, out_size)  # 若只有一个模块，则out_size=label_bin_len
+                self.structural_rnn = StructuralRNN(factor_graph, in_size, out_size,use_bi_lstm=use_bi_lstm)  # 若只有一个模块，则out_size=label_bin_len
+
+    def get_gt_label_one_batch(self, xp, crf_pact_structure, is_bin=True):
+        sample = crf_pact_structure.sample
+        if not is_bin:
+            node_label_one_video = xp.zeros(shape=len(sample.node_list))
+        else:
+            node_label_one_video = xp.zeros(shape=(len(sample.node_list), sample.label_bin_len))
+        for node in sample.node_list:
+            if is_bin:
+                label_bin = node.label_bin
+                node_label_one_video[node.id] = label_bin
+            else:
+                label = node.label
+                node_label_one_video[node.id] = label
+        return node_label_one_video
 
     def get_gt_labels(self, xp, crf_pact_structures, is_bin=True):
         targets = list()
         for crf_pact in crf_pact_structures:
-            sample = crf_pact.sample
-            node_label_one_video = xp.zeros(shape=len(sample.node_list))
-            for node in sample.node_list:
-                if is_bin:
-                    label_bin = node.label_bin
-                    node_label_one_video[node.id] = label_bin
-                else:
-                    label = node.label
-                    node_label_one_video[node.id] = label
+            node_label_one_video = self.get_gt_label_one_batch(xp, crf_pact,is_bin)
             targets.append(node_label_one_video)
         return xp.stack(targets).astype(xp.int32)  # shape = B x N x D but B = 1 forever and D is data_info specified number (picked index)
 

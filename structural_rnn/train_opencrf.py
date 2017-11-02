@@ -5,8 +5,6 @@ import argparse
 import chainer
 
 
-import json
-
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 
 from chainer.training import StandardUpdater
@@ -33,7 +31,7 @@ def main():
                         help='Directory to output the result')
     parser.add_argument('--pretrain', '-pr', default='',
                         help='Resume the training from snapshot')
-    parser.add_argument('--snapshot', '-snap', type=int, default=100, help='snapshot iteration for save checkpoint')
+    parser.add_argument('--snapshot', '-snap', type=int, default=1, help='snapshot iteration for save checkpoint')
     parser.add_argument('--test_mode', action='store_true',
                         help='Use tiny datasets for quick tests')
     parser.add_argument('--valid', '-val', default='graph_valid',
@@ -73,7 +71,7 @@ def main():
         from structural_rnn.model.open_crf.cython.open_crf_layer import OpenCRFLayer
 
     print_interval = 1, 'iteration'
-    val_interval = (5, 'iteration')
+    val_interval = (2, 'iteration')
     adaptive_AU_database(args.database)
     dataset = GlobalDataSet(os.path.dirname(args.train) + os.sep + "data_info.json")
     file_name = list(filter(lambda e:e.endswith(".txt"),os.listdir(args.train)))[0]
@@ -83,25 +81,12 @@ def main():
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=dataset.num_attrib_type, need_s_rnn=False)
     model = OpenCRFLayer(node_in_size=dataset.num_attrib_type, weight_len=crf_pact_structure.num_feature)
 
-    if args.eval_mode:
-        if not os.path.exists(args.pretrain):
-            raise FileNotFoundError("pretrain file:{} not found".format(args.pretrain))
-            sys.exit(-1)
-        chainer.serializers.load_npz(args.pretrain, model)
-        with chainer.no_backprop_mode():
-            test_data = S_RNNPlusDataset(args.test,attrib_size=dataset.num_attrib_type,
-                                  global_dataset=dataset,need_s_rnn=False,need_cache_factor_graph=args.need_cache_graph)
-            if args.proc_num == 1:
-                test_iter = chainer.iterators.SerialIterator(test_data, 1, shuffle=False)
-            elif args.proc_num > 1:
-                test_iter = chainer.iterators.MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
-                                                  repeat=False, shuffle=False, n_prefetch=10, shared_mem=31457280)
-            au_evaluator = ActionUnitEvaluator(test_iter, model, device=-1,database=args.database, data_info_path=os.path.dirname(args.train) + os.sep + "data_info.json")
-            observation = au_evaluator.evaluate()
-            with open(args.out + os.sep + "opencrf_eval.json", "w") as file_obj:
-                file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
-                file_obj.flush()
-        return
+    train_str = args.train
+    if train_str[-1] == "/":
+        train_str = train_str[:-1]
+    trainer_keyword = os.path.basename(train_str)
+    assert "_" in trainer_keyword
+
 
 
     train_data = S_RNNPlusDataset(args.train, attrib_size=dataset.num_attrib_type,
@@ -117,7 +102,7 @@ def main():
     optimizer.add_hook(chainer.optimizer.GradientClipping(args.gradclip))
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
     updater = StandardUpdater(train_iter, optimizer, converter=convert)
-    trainer = chainer.training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+    trainer = chainer.training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)  #FIXME
 
     interval = 1
     if args.test_mode:
@@ -134,8 +119,8 @@ def main():
                    trigger=print_interval)
     trainer.extend(chainer.training.extensions.LogReport(trigger=print_interval,log_name="open_crf.log"))
 
-    optimizer_snapshot_name = "{0}_{1}_{2}_crf_optimizer.npz".format(args.database, args.fold, args.split_idx)
-    model_snapshot_name = "{0}_{1}_{2}_crf_model.npz".format(args.database, args.fold, args.split_idx)
+    optimizer_snapshot_name = "{0}_{1}_opencrf_optimizer.npz".format(trainer_keyword, args.database)
+    model_snapshot_name = "{0}_{1}_opencrf_model.npz".format(trainer_keyword, args.database)
     trainer.extend(
         chainer.training.extensions.snapshot_object(optimizer,
                                                     filename=optimizer_snapshot_name),
@@ -144,7 +129,7 @@ def main():
     trainer.extend(
             chainer.training.extensions.snapshot_object(model,
                                                         filename=model_snapshot_name),
-            trigger=(args.snapshot, 'iteration'))
+            trigger=(5, 'iteration'))
     # trainer.extend(chainer.training.extensions.ProgressBar(update_interval=1))
     # trainer.extend(chainer.training.extensions.snapshot(),
     #                trigger=(args.snapshot, 'epoch'))

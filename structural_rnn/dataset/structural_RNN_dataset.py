@@ -13,13 +13,20 @@ class S_RNNPlusDataset(chainer.dataset.DatasetMixin):
         # self.mc = mc_manager
         self.need_s_rnn = need_s_rnn
         self.attrib_size = attrib_size
-        self.directory = directory
         self.dataset = global_dataset
         self.file_name_dict = dict()
         self.need_cache = need_cache_factor_graph
         self.crf_pact_structure_dict = LRU(500)
-        for idx, path in enumerate(filter(lambda p:p.endswith("txt"), os.listdir(directory))):
-            self.file_name_dict[idx] = directory + os.sep + path
+        idx = 0
+        if len(list(filter(lambda p:p.endswith("txt"), os.listdir(directory)))) == 0:
+            for folder_name in os.listdir(directory):
+                if os.path.isdir(directory + os.sep + folder_name):
+                    for file_name in os.listdir(directory + os.sep + folder_name):
+                        self.file_name_dict[idx] = directory + os.sep + folder_name + os.sep +file_name
+                        idx+=1
+        else:
+            for idx, path in enumerate(filter(lambda p:p.endswith("txt"), os.listdir(directory))):
+                self.file_name_dict[idx] = directory + os.sep + path
 
     def __len__(self):
         return len(self.file_name_dict)

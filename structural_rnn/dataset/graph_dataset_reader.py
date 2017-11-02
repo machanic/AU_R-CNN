@@ -102,13 +102,15 @@ class DataEdge(object):
 
 class DataSample(object):
 
-    def __init__(self, num_node=None, num_edge=None,  label_dict=None):
+    def __init__(self, num_node=None, num_edge=None,  label_dict=None, file_path=None):
+        self.file_path = file_path
         self.num_node = num_node   # note that the num_node attribute of FactorGraph is node count + edge count
         self.num_edge = num_edge
         self.node_list = []
         self.edge_list = []
         self.nodeid_line_no_dict = MappingDict()
         self.label_dict = label_dict
+        self.label_bin_len = 0
 
 
     def clear(self):
@@ -149,6 +151,7 @@ class GlobalDataSet(object):
 
     def load_data(self, path):
         curt_sample = DataSample()
+        curt_sample.file_path = path
         curt_sample.label_dict = self.label_dict
         parent_path = os.path.dirname(os.path.dirname(path)) # cd ../
         base_path = os.path.basename(path)
@@ -171,7 +174,6 @@ class GlobalDataSet(object):
                     curt_edge = DataEdge(edge_id, self.edge_type_dict, a, b, edge_type=edge_type)  # a 和 b是行号，相当于是node_id，原来OpenCRF代码中这个id是var_node的index
                     curt_sample.edge_list.append(curt_edge)
                 else:  # read node, 会将num_label也得到
-                    assert len(tokens) == 3
                     node_id = tokens[0]
                     node_labels = tokens[1]
                     if node_id.startswith("?"):
@@ -197,6 +199,7 @@ class GlobalDataSet(object):
                     curt_sample.node_list.append(curt_node)
                     self.num_label = len(label_bin) + 1  # label length is bin vector length, 0 will also seems be one label
                     self.label_bin_len = len(label_bin)
+                    curt_sample.label_bin_len = len(label_bin)
         if len(curt_sample.node_list) > 0:
             curt_sample.num_node = len(curt_sample.node_list)
             curt_sample.num_edge = len(curt_sample.edge_list)

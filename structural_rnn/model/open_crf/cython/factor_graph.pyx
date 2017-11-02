@@ -55,7 +55,7 @@ cdef class Node:
         self.neighbor_pos = dict() # neighbor => position (index in neighbor vector)
         self.msg = None # length == num_label
         self.belief_list = []
-        self.belief = None # this is belief，actually 2-D array，0_th axis is neighbor number，2_nd axis is label_num（L）. for the reason neighbor number is varies in different node, thus why it is list
+        self.belief = None # this is belief，actually 2-D array，0_th axis is neighbor number，1_th axis is label_num（L）. for the reason neighbor number is varies in different node, thus why it is list
 
     cpdef init(self, int num_label):
         pass
