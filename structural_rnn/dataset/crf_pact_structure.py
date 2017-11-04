@@ -9,6 +9,7 @@ else:
     from structural_rnn.model.open_crf.cython.factor_graph import EdgeFactorFunction, FactorGraph
 
 
+# this call contains structural of spatial-temporal graph, wich will be use by s-rnnn and open-crf
 # this class mean to be composite of `factor_graph` and `DataSample` class which used to pass to open_crf_layer
 # this class should only contains one graph_backup or one part of graph_backup which will then pass to open_crf_layer __call__ method
 class CRFPackageStructure(object):
@@ -54,7 +55,7 @@ class CRFPackageStructure(object):
             for node_id, nodeRNN_id in sorted(self.node_id_convert.items(), key=lambda e: int(e[0])):
                 self.nodeRNN_id_dict[nodeRNN_id].append(node_id)
 
-
+    # this function is used by open-crf layer
     def gen_feature(self):
         num_feature = 0
         self.num_attrib_parameter = self.num_label * self.num_attrib_type  # feature有多少种 x num_label

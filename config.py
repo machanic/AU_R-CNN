@@ -5,7 +5,7 @@ import cv2
 from bidict import bidict
 
 ROOT_PATH = "/home/machen/dataset/"
-# ROOT_PATH = "D:/work/face_expr/data/"
+# ROOT_PATH = "D:/work/S-RNN++/data/"
 
 DATA_PATH = {
     "ck+": ROOT_PATH + "/CK+",

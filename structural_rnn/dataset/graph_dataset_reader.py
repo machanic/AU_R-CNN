@@ -77,7 +77,7 @@ class DataNode(object):
 
 
     @property
-    def label(self):
+    def label(self):  # note that (0,0,0,0,0...,0) will use label=0, thus we +1 here
         nonzero_idx = np.nonzero(self.label_bin)[0]
         assert len(nonzero_idx) <= 1
         if len(nonzero_idx) > 0:
@@ -128,6 +128,7 @@ class DataSample(object):
 class GlobalDataSet(object):
 
     def __init__(self, info_dict_path):
+        assert os.path.exists(info_dict_path), info_dict_path
         self.num_edge_type = 0
         self.num_label = 0
         self.label_dict = MappingDict()  # pred_idx <=> true label

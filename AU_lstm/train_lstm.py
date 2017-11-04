@@ -54,7 +54,7 @@ def main():
     parser.add_argument('--snapshot', '-snap', type=int, default=1, help='snapshot epochs for save checkpoint')
     parser.add_argument('--eval_mode', action='store_true',
                         help='Use tiny datasets for quick tests')
-    parser.add_argument('--valid', '-v', default='graph_valid',
+    parser.add_argument('--valid', '-v', default='',
                         help='Test directory path contains test txt file')
     parser.add_argument('--train', '-t', default="D:/toy/",
                         help='Train directory path contains train txt file')

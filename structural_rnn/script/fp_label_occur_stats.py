@@ -81,7 +81,7 @@ if __name__ == "__main__":
         for entry in all_print_tuple:
             print(entry)
     elif data_base == "BP4D":
-        freq_seqs = pyfpgrowth.find_frequent_patterns(data, 10000)
+        freq_seqs = pyfpgrowth.find_frequent_patterns(data, 5000)
         rules = pyfpgrowth.generate_association_rules(freq_seqs, 0.6)   # {('12', '24'): (('17',), 0.841812865497076), ...}
         defined_rules = {}
         for AU_couple, rule in rules.items():

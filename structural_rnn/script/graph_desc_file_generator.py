@@ -23,6 +23,7 @@ import itertools
 
 def delegate_mask_crop(img_path, channal_first, queue):
     try:
+        print("before crop {}".format(img_path))
         cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(img_path, channal_first)
         print("crop {} done".format(img_path))
         queue.put((img_path, cropped_face, AU_mask_dict), block=True)
@@ -100,7 +101,7 @@ def read_DISFA_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relatio
                         video_img_path_set.add((frame,img_path))
                         if frame not in frame_label:
                             frame_label[frame] = set()
-                        if AU_intensity >= 3:
+                        if AU_intensity >= 1:  # NOTE that we apply AU_intensity >= 1
                             frame_label[int(frame)].add(AU)  #存储str类型
             for frame, img_path in sorted(video_img_path_set,key=lambda e:int(e[0])):
                 if img_path not in resultdict:
@@ -217,7 +218,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
 
             for i in range(procs):
                 try:
-                    entry = queue.get(block=True, timeout=60)
+                    entry = queue.get(block=True, timeout=360)
                     resultdict[entry[0]] = (entry[1], entry[2])
                 except Exception:
                     print("queue block time out")
@@ -244,6 +245,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                         resultdict[img_path] = (cropped_face, AU_mask_dict)
                         print("one image :{} done".format(img_path))
                     except IndexError:
+                        print("index error!")
                         pass
         # for p in procs:
         #     p.join()
@@ -256,7 +258,6 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                 line = line.rstrip()
                 lines = line.split(",")
                 if idx == 0:  # header define which column is which Action Unit
-                    print("read header")
                     for col_idx, AU in enumerate(lines[1:]):
                         AU_column_idx[AU] = col_idx + 1  # read header
                     continue  # read head over , continue
@@ -473,12 +474,6 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
             temporal_edges.clear()
             h_info_array.clear()
 
-def load_fp(data_path):
-    fp = set()
-    with open(data_path, "r") as file_obj:
-        for line in file_obj:
-            fp.add(tuple(line.strip().split(',')))
-    return fp
 
 def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_name, force_generate, proc_num, cut:bool, extract_key, train_subject, test_subject):
     '''
@@ -510,7 +505,7 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
     for video_info, subject_id in reader_func(output_dir, is_binary_AU=is_binary_AU, is_need_adaptive_AU_relation=False,
                                   force_generate=force_generate, proc_num=proc_num, cut=cut, train_subject=train_subject):
 
-        extracted_feature_cache = dict()  # key = np.ndarray_hash , value = h. speed up
+        extracted_feature_cache_key = set()  # key = np.ndarray_hash , value = h. speed up
         frame_box_cache = dict()  # key = frame, value = boxes
         frame_labels_cache = dict()
         frame_AU_couple_bbox_dict_cache = dict()
@@ -605,15 +600,12 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
 
                 cropped_face.flags.writeable = False
                 key = hash(cropped_face.data.tobytes())
-                if key in extracted_feature_cache:
-                    h = extracted_feature_cache[key]
-                else:
+                if key not in extracted_feature_cache_key:
                     with chainer.no_backprop_mode():
                         h = faster_rcnn.extract(cropped_face, bboxes, layer=extract_key)  # shape = R' x 2048
-                        extracted_feature_cache[key] = h
                     assert h.shape[0] == len(bboxes)
-                h = chainer.cuda.to_cpu(h)
-                h = h.reshape(len(bboxes), -1)
+                    h = chainer.cuda.to_cpu(h)
+                    h = h.reshape(len(bboxes), -1)
 
                 # 这个indent级别都是同一张图片内部
                 # print("box number, all_mask:", len(bboxes),len(all_couple_mask_dict))
@@ -625,10 +617,12 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
                     label = tuple(label)
                     label_arr = np.char.mod("%d", label)
                     label = "({})".format(",".join(label_arr))
-                    h_flat = h[box_idx]
+                    if key not in extracted_feature_cache_key:
+                        h_flat = h[box_idx]
+                        h_info_array.append(h_flat)
                     node_id = "{0}_{1}".format(frame, box_idx)
                     node_list.append("{0} {1} feature_idx:{2} AU_couple:{3} AU:{4}".format(node_id, label, len(h_info_array), AU_couple, AU))
-                    h_info_array.append(h_flat)
+                extracted_feature_cache_key.add(key)
 
                 # 同一张画面两两组合，看有没连接线，注意AU=0，就是未出现的AU动作的区域也参与连接
                 for box_idx_a, box_idx_b in map(sorted, itertools.combinations(range(len(bboxes)), 2)):
@@ -778,7 +772,7 @@ if __name__ == "__main__":
         sys.exit(1)
     if args.single_label:
         build_graph_roi_single_label(faster_rcnn, read_func, output, database_name=args.database,
-                                     force_generate=True,
+                                     force_generate=False,
                                      proc_num=args.proc_num, cut=args.cut_zero, extract_key=extract_key,
                                      train_subject=train_subject,
                                      test_subject=test_subject)

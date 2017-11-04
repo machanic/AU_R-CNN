@@ -120,7 +120,7 @@ class FaceMaskCropper(object):
 
 if __name__ == "__main__":
 
-    new_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask("/home/machen/dataset/BP4D/BP4D-training/F012/T5/0098.jpg", channel_first=False)
+    new_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask("/home/machen/dataset//BP4D/BP4D-training//M018/T8/187.jpg", channel_first=False)
     cv2.imwrite("/home/machen/tmp/newface.jpg", new_face)
     for AU, mask in AU_mask_dict.items():
         mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)

@@ -197,7 +197,7 @@ def main():
                                           use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
             test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=args.use_lstm))
             if args.proc_num == 1:
-                test_iter = SerialIterator(test_data, 1, False, True)
+                test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=True)
             else:
                 test_iter = MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
                                                                    repeat=False, shuffle=True,
@@ -296,9 +296,11 @@ def main():
         updater = BPTTUpdater(train_iter, optimizer, args.bptt_steps, device=int(args.gpu),
                               converter=lambda batch, device: concat_examples(batch, device, padding=-99))
     elif "," in args.gpu:
-        gpu0, gpu1 = int(args.gpu.split(',')[0]), int(args.gpu.split(',')[1])
+        gpu_dict = {"main": int(args.gpu.split(",")[0])} # many gpu will use
+        for slave_gpu in args.gpu.split(",")[1:]:
+            gpu_dict[slave_gpu] = int(slave_gpu)
         updater = chainer.training.ParallelUpdater(train_iter, optimizer,
-                                                   devices={'main': gpu0, 'second': gpu1},
+                                                   devices=gpu_dict,
                                                    converter=lambda batch, device: concat_examples(batch, device,
                                                                                                    padding=-99))
     else:

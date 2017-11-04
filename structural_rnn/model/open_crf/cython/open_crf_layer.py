@@ -27,6 +27,21 @@ class OpenCRFLayer(chainer.Link):
             self)
         return f
 
+    def get_gt_label_one_graph(self, xp, crf_pact_structure, is_bin=True):
+        sample = crf_pact_structure.sample
+        if not is_bin:
+            node_label_one_video = xp.zeros(shape=len(sample.node_list))
+        else:
+            node_label_one_video = xp.zeros(shape=(len(sample.node_list), sample.label_bin_len))
+        for node in sample.node_list:
+            if is_bin:
+                label_bin = node.label_bin
+                node_label_one_video[node.id] = label_bin
+            else:
+                label = node.label
+                node_label_one_video[node.id] = label
+        return node_label_one_video
+
     def predict(self, x:np.ndarray, crf_pact_structure:CRFPackageStructure, is_bin=False):  # x is one video's node feature
         xp = chainer.cuda.get_array_module(x)
         label_bin_len = crf_pact_structure.label_bin_len
@@ -64,8 +79,10 @@ class OpenCRFLayer(chainer.Link):
             #         v_best = v
             #     label_prob[i,y] = v
             #     v_sum += v
-            inf_label[i] = y_best  # N x 1
-            label_prob[i,:] = prod_result
+            node_id = sample.node_list[i].id
+            assert node_id == i
+            inf_label[node_id] = y_best  # N x 1
+            label_prob[node_id,:] = prod_result
 
         if is_bin:
             bin_inf_label = []

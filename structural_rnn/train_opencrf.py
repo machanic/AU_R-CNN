@@ -31,10 +31,10 @@ def main():
                         help='Directory to output the result')
     parser.add_argument('--pretrain', '-pr', default='',
                         help='Resume the training from snapshot')
-    parser.add_argument('--snapshot', '-snap', type=int, default=1, help='snapshot iteration for save checkpoint')
+    parser.add_argument('--snapshot', '-snap', type=int, default=100, help='snapshot iteration for save checkpoint')
     parser.add_argument('--test_mode', action='store_true',
                         help='Use tiny datasets for quick tests')
-    parser.add_argument('--valid', '-val', default='graph_valid',
+    parser.add_argument('--valid', '-val', default='',
                         help='Test directory path contains test txt file')
     parser.add_argument('--test', '-tt', default='graph_test',
                         help='Test directory path contains test txt file')
@@ -47,9 +47,6 @@ def main():
     parser.add_argument("--profile","-p", action="store_true",help="whether to profile to examine speed bottleneck")
 
 
-    parser.add_argument("--fold", "-fd", type=int,
-                        help="which fold of K-fold")
-    parser.add_argument("--split_idx", '-sp', type=int, help="which split_idx")
     parser.add_argument("--need_cache_graph", "-ng", action="store_true",
                         help="whether to cache factor graph to LRU cache")
     parser.add_argument("--eval_mode",'-eval', action="store_true", help="whether to evaluation or not")
@@ -71,9 +68,10 @@ def main():
         from structural_rnn.model.open_crf.cython.open_crf_layer import OpenCRFLayer
 
     print_interval = 1, 'iteration'
-    val_interval = (2, 'iteration')
+    val_interval = (10, 'iteration')
     adaptive_AU_database(args.database)
-    dataset = GlobalDataSet(os.path.dirname(args.train) + os.sep + "data_info.json")
+    root_dir = os.path.dirname(os.path.dirname(args.train))
+    dataset = GlobalDataSet(root_dir + os.sep + "data_info.json")
     file_name = list(filter(lambda e:e.endswith(".txt"),os.listdir(args.train)))[0]
     sample = dataset.load_data(args.train + os.sep + file_name)
     print("pre load done")
@@ -129,21 +127,22 @@ def main():
     trainer.extend(
             chainer.training.extensions.snapshot_object(model,
                                                         filename=model_snapshot_name),
-            trigger=(5, 'iteration'))
+            trigger=(args.snapshot, 'iteration'))
     # trainer.extend(chainer.training.extensions.ProgressBar(update_interval=1))
     # trainer.extend(chainer.training.extensions.snapshot(),
     #                trigger=(args.snapshot, 'epoch'))
-    trainer.extend(chainer.training.extensions.ExponentialShift('lr', 0.1), trigger=(10, 'epoch'))
+    trainer.extend(chainer.training.extensions.ExponentialShift('lr', 0.9), trigger=(1, 'epoch'))
 
 
     if chainer.training.extensions.PlotReport.available():
         trainer.extend(chainer.training.extensions.PlotReport(['main/loss']))
-    valid_data = S_RNNPlusDataset(args.valid, attrib_size=dataset.num_attrib_type,
-                                  global_dataset=dataset, need_s_rnn=False, need_cache_factor_graph=args.need_cache_graph)
-    validate_iter = chainer.iterators.SerialIterator(valid_data, 1, repeat=False, shuffle=False)
-    evaluator = OpenCRFEvaluator(
-        iterator=validate_iter, target=model,  device=-1)
-    trainer.extend(evaluator, trigger=val_interval)
+    if args.valid:
+        valid_data = S_RNNPlusDataset(args.valid, attrib_size=dataset.num_attrib_type,
+                                      global_dataset=dataset, need_s_rnn=False, need_cache_factor_graph=args.need_cache_graph)
+        validate_iter = chainer.iterators.SerialIterator(valid_data, 1, repeat=False, shuffle=False)
+        evaluator = OpenCRFEvaluator(
+            iterator=validate_iter, target=model,  device=-1)
+        trainer.extend(evaluator, trigger=val_interval)
 
     if args.profile:
         cProfile.runctx("trainer.run()", globals(), locals(), "Profile.prof")

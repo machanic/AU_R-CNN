@@ -12,16 +12,16 @@ from structural_rnn.model.s_rnn.structural_rnn import StructuralRNN
 
 class StructuralRNNPlus(chainer.Chain):
 
-    # note that out_size must == label_bin_len not combine label_num
+    # note that out_size must == label_bin_len not combine label_num, TODO 更加合理化：注意这里的out_size 我们传入的是不带0 label_num,所以=label_bin_len
     def __init__(self, crf_pact_structure:CRFPackageStructure, in_size, hidden_size, out_size, with_crf=True,use_bi_lstm=True):
         super(StructuralRNNPlus, self).__init__()
         self.with_crf = with_crf
 
         if not self.with_crf:
-            assert out_size == crf_pact_structure.label_bin_len # num_label指的是二进制label_bin的维度
-        else:
+            assert out_size == crf_pact_structure.num_label # num_label指的是二进制label_bin的维度
+        else: # if we use crf, hidden_size will be the same of crf_pact_structure.num_attrib_type
             # actually, hidden_size come from args.hidden_size
-            assert hidden_size == crf_pact_structure.num_attrib_type  # 由于要用到crf_pact_structure.num_feature, 而setup_graph提前装好的EdgeFunction也要用到这个长度
+            assert hidden_size == crf_pact_structure.num_attrib_type, "{0}!={1}".format(hidden_size, crf_pact_structure.num_attrib_type)  # 由于要用到crf_pact_structure.num_feature, 而setup_graph提前装好的EdgeFunction也要用到这个长度
         sample = crf_pact_structure.sample
         n = sample.num_node
         m = sample.num_edge
@@ -72,9 +72,9 @@ class StructuralRNNPlus(chainer.Chain):
                 self.structural_rnn = StructuralRNN(factor_graph, in_size, hidden_size,use_bi_lstm=use_bi_lstm)
                 self.open_crf = OpenCRFLayer(node_in_size=hidden_size, weight_len=crf_pact_structure.num_feature)
             else:
-                self.structural_rnn = StructuralRNN(factor_graph, in_size, out_size,use_bi_lstm=use_bi_lstm)  # 若只有一个模块，则out_size=label_bin_len
+                self.structural_rnn = StructuralRNN(factor_graph, in_size, out_size, use_bi_lstm=use_bi_lstm)  # 若只有一个模块，则out_size=label_bin_len
 
-    def get_gt_label_one_batch(self, xp, crf_pact_structure, is_bin=True):
+    def get_gt_label_one_graph(self, xp, crf_pact_structure, is_bin=True):
         sample = crf_pact_structure.sample
         if not is_bin:
             node_label_one_video = xp.zeros(shape=len(sample.node_list))
@@ -92,7 +92,7 @@ class StructuralRNNPlus(chainer.Chain):
     def get_gt_labels(self, xp, crf_pact_structures, is_bin=True):
         targets = list()
         for crf_pact in crf_pact_structures:
-            node_label_one_video = self.get_gt_label_one_batch(xp, crf_pact,is_bin)
+            node_label_one_video = self.get_gt_label_one_graph(xp, crf_pact, is_bin)
             targets.append(node_label_one_video)
         return xp.stack(targets).astype(xp.int32)  # shape = B x N x D but B = 1 forever and D is data_info specified number (picked index)
 
@@ -134,8 +134,8 @@ class StructuralRNNPlus(chainer.Chain):
             loss = self.open_crf(h, crf_pact_structures)
         else:  # only s_rnn
             ts = self.get_gt_labels(xp, crf_pact_structures, is_bin=False)  # B x N x 1, and B = 1 forever
-            ts = chainer.Variable(ts.reshape(-1))
-            h = h.reshape(-1, h.shape[-1])
+            ts = chainer.Variable(ts.reshape(-1))  # because ts label is 0~L which is one more than ground truth, 0 represent 0,0,0,0,0
+            h = h.reshape(-1, h.shape[-1])  # h must have 0~L which = L+1 including non_AU = 0(also background class)
             assert ts.shape[0] == h.shape[0]
             loss = F.hinge(h, ts, reduce='mean')
 

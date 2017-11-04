@@ -188,7 +188,7 @@ if __name__ == "__main__":
     # cv2.imwrite("D:/Structural RNN++ paper/latex/figure/ROI_face.jpg", trn_img)
     # exit(0)
     # imgs = ["D:/1084.jpg", "D:/007.jpg"]
-    check_box_and_cropface("D:/tmp/2119.jpg")
+    check_box_and_cropface("/home/machen/dataset//BP4D/BP4D-training//M018/T8/187.jpg")
     # from collections import defaultdict
     #
     # couple_mask_dict = defaultdict(list)

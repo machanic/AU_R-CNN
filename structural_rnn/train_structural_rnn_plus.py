@@ -14,8 +14,6 @@ from structural_rnn.dataset.crf_pact_structure import CRFPackageStructure
 from structural_rnn.updater.bptt_updater import convert
 import os
 from structural_rnn.trigger.EarlyStopTrigger import EarlyStoppingTrigger
-from chainer.training.extensions.evaluator import Evaluator
-import json
 import cProfile
 import pstats
 
@@ -31,27 +29,27 @@ def main():
                         help='Gradient norm threshold to clip')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--snapshot', '-snap', type=int, default=1, help='snapshot epochs for save checkpoint')
+    parser.add_argument('--snapshot', '-snap', type=int, default=100, help='snapshot epochs for save checkpoint')
     parser.add_argument('--test_mode', action='store_true',
                         help='Use tiny datasets for quick tests')
-    parser.add_argument('--valid', '-v', default='valid',
-                        help='Test directory path contains test txt file')
+    parser.add_argument('--valid', '-v', default='',
+                        help='Test directory path contains validate txt file')
     parser.add_argument("--test", '-tt', default='test',help='Test directory path contains test txt file to evaluation')
     parser.add_argument('--train', '-t', default="train",
                         help='Train directory path contains train txt file')
     parser.add_argument('--database',  default="BP4D",
                         help='database to train for')
-    parser.add_argument("--stop_eps", '-eps', type=float, default=1e-3, help="f - old_f < eps ==> early stop")
+    parser.add_argument("--stop_eps", '-eps', type=float, default=1e-4, help="f - old_f < eps ==> early stop")
     parser.add_argument('--with_crf', '-crf', action='store_true', help='whether to use open crf layer')
     parser.add_argument('--lr', '-l', type=float, default=0.001)
-    parser.add_argument('--crf_lr', type=float, default=0.1)
-    parser.add_argument('--hidden_size', type=int, default=1024, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
+    parser.add_argument('--crf_lr', type=float, default=0.05)
+    parser.add_argument('--hidden_size', type=int, default=256, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
     parser.add_argument('--eval_mode', action='store_true', help='whether to evaluate the model')
-    parser.add_argument("--fold", "-fd", type=int,
-                        help="which fold of K-fold")
-    parser.add_argument("--split_idx", '-sp', type=int, help="which split_idx")
+
     parser.add_argument("--proc_num",'-proc', type=int,default=1, help="process number of dataset reader")
-    parser.add_argument("--use_bi_lstm", '-bilstm', action='store_true', help="Use bi_lstm as basic component of S-RNN")
+    parser.add_argument("--need_cache_graph", "-ng", action="store_true",
+                        help="whether to cache factor graph to LRU cache")
+    parser.add_argument("--bi_lstm", '-bilstm', action='store_true', help="Use bi_lstm as basic component of S-RNN")
     parser.set_defaults(test=False)
     args = parser.parse_args()
     print_interval = 1, 'iteration'
@@ -70,17 +68,16 @@ def main():
     sample = dataset.load_data(args.train + os.sep + file_name)  # we load first sample for construct S-RNN, it must passed to constructor argument
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size)  # 只读取其中的一个视频的第一帧，由于node个数相对稳定，因此可以construct RNN
 
-    model = StructuralRNNPlus(crf_pact_structure, in_size=dataset.num_attrib_type, out_size=dataset.label_bin_len,
-                              hidden_size=args.hidden_size, with_crf=args.with_crf, use_bi_lstm=args.use_bi_lstm)
+    model = StructuralRNNPlus(crf_pact_structure, in_size=dataset.num_attrib_type, out_size=dataset.num_label,
+                              hidden_size=args.hidden_size, with_crf=args.with_crf, use_bi_lstm=args.bi_lstm)
 
-
-    train_data = S_RNNPlusDataset(args.train,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True)  # train 传入文件夹
-    valid_data = S_RNNPlusDataset(args.valid,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True)  # attrib_size控制open-crf层的weight长度
-
+    # note that the following code attrib_size will be used by open_crf for parameter number, thus we cannot pass dataset.num_attrib_type!
+    train_data = S_RNNPlusDataset(args.train,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True,
+                                  need_cache_factor_graph=args.need_cache_graph)  # train 传入文件夹
 
     train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True, repeat=True)
 
-    validate_iter = chainer.iterators.SerialIterator(valid_data, 1, shuffle=False, repeat=False)
+
 
 
 
@@ -95,7 +92,7 @@ def main():
     updater = BPTTUpdater(train_iter, optimizer, int(args.gpu))
     early_stop = EarlyStoppingTrigger(args.epoch, key='main/loss', eps=float(args.stop_eps))
     if args.with_crf:
-        trainer = chainer.training.Trainer(updater, stop_trigger=early_stop, out=args.out)
+        trainer = chainer.training.Trainer(updater, stop_trigger=(args.epoch, "epoch"), out=args.out) # FIXME
         model.open_crf.W.update_rule.hyperparam.lr = float(args.crf_lr)
         model.open_crf.to_cpu()
     else:
@@ -116,8 +113,8 @@ def main():
 
     trainer.extend(chainer.training.extensions.LogReport(trigger=interval,log_name='s_rnn_plus.log'))
     trainer.extend(chainer.training.extensions.ProgressBar(update_interval=1, training_length=(args.epoch, 'epoch')))
-    optimizer_snapshot_name = "{0}_{1}_{2}_{3}_srnn_plus_optimizer.npz".format(trainer_keyword, args.database, args.fold, args.split_idx)
-    model_snapshot_name = "{0}_{1}_{2}_{3}_srnn_plus_{4}_model.npz".format(trainer_keyword, args.database, args.fold, args.split_idx,
+    optimizer_snapshot_name = "{0}_{1}_srnn_plus_optimizer.npz".format(trainer_keyword, args.database)
+    model_snapshot_name = "{0}_{1}_srnn_plus_{2}_model.npz".format(trainer_keyword, args.database,
                                                                            "crf" if args.with_crf else "")
     trainer.extend(
         chainer.training.extensions.snapshot_object(optimizer,
@@ -145,9 +142,14 @@ def main():
     # trainer.extend(Evaluator(validate_iter, model, converter=convert, device=-1), trigger=val_interval,
     #                name='accu_validation')
     # if args.with_crf:
+    if args.valid:
+        valid_data = S_RNNPlusDataset(args.valid, attrib_size=args.hidden_size, global_dataset=dataset,
+                                      need_s_rnn=True,need_cache_factor_graph=args.need_cache_graph)  # attrib_size控制open-crf层的weight长度
+        validate_iter = chainer.iterators.SerialIterator(valid_data, 1, shuffle=False, repeat=False)
+        crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
+        trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
 
-    crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
-    trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")
+
     trainer.run()
 
     # cProfile.runctx("trainer.run()", globals(), locals(), "Profile.prof")

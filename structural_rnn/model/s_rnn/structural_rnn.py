@@ -107,7 +107,7 @@ class StructuralRNN(chainer.Chain):
         if not initialW:
             initialW = initializers.HeNormal()
         with self.init_scope():
-            self.node_feature_convert_len = 512
+            self.node_feature_convert_len = 256
             self.node_feature_convert_fc = L.Linear(in_size, self.node_feature_convert_len, initialW=initialW)
 
             self.bottom = dict() # key is ",".join(box_id_a,box_id_b)
@@ -152,7 +152,7 @@ class StructuralRNN(chainer.Chain):
             pred_score_array = xs.data[0]
             pred = np.argmax(pred_score_array, axis=1)
             assert len(pred) == x.shape[0]
-        return pred.astype(np.int32)  # return N x 1, where N is number of nodes
+        return pred.astype(np.int32)  # return N x 1, where N is number of nodes. note that we predict label = 0...L
 
 
     def __call__(self, xs, crf_pact_structures):  # xs is chainer.Variable
@@ -203,6 +203,7 @@ class StructuralRNN(chainer.Chain):
                 concat_features = F.transpose(concat_features, (1, 0, 2))  # shape = T x (neighbor + 1) x 256
                 concat_features = F.reshape(concat_features, (frame_num, -1))  # shape = T x ((neighbor + 1) x 256)
                 node_output.append(node_RNN([concat_features])[0])  # output= list of T x out_size
+            edge_out_dict.clear() # save GPU memory
             node_output = F.stack(node_output)  # shape nodeRNN_num x T x out_size
             node_output = F.transpose(node_output,axes=(1,0,2))  # reorder
             node_output = node_output.reshape(-1, self.out_size)  # shape N x out_size
