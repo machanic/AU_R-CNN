@@ -1,18 +1,21 @@
-import chainer
-from overrides import overrides
-from chainer import Reporter
-from chainer import DictSummary
 import copy
-import numpy as np
-import config
-from collections import defaultdict
-from action_unit_metric.F1_frame import get_F1_frame
-from action_unit_metric.get_ROC import get_ROC
-from action_unit_metric.F1_event import get_F1_event
-from chainer.training.extensions import Evaluator
-import json
 import os
+from collections import defaultdict
+
+import chainer
+import numpy as np
+from chainer import DictSummary
+from chainer import Reporter
+from chainer.training.extensions import Evaluator
+from overrides import overrides
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+
+import config
+from action_unit_metric.F1_frame import get_F1_frame
 from structural_rnn.updater.bptt_updater import convert
+
+
 class ActionUnitEvaluator(Evaluator):
 
     trigger = 1, 'epoch'
@@ -59,27 +62,24 @@ class ActionUnitEvaluator(Evaluator):
                     print("error {} not pre-trained".format(train_keyword))
                     continue
                 target = self.target_dict[train_keyword]  # choose the right predictor
-                pred_labels = target.predict(x, crf_pact_structure, is_bin=False)  # pred_labels is  N x D, but open-crf predict only produce shape = N
-                gt_labels = target.get_gt_label_one_graph(np, crf_pact_structure, is_bin=True)  # return N x D
+                pred_labels = target.predict(x, crf_pact_structure, is_bin=False)  # pred_labels is  N x 1, but open-crf predict only produce shape = N
+                gt_labels = target.get_gt_label_one_graph(np, crf_pact_structure, is_bin=False)  # return N x 1
                 assert pred_labels.ndim == 1
                 pred_bins = []  # pred_bins is labels in one video sequence
                 gt_bins = [] # gt_bins is labels in one video sequence
-                for pred_label in pred_labels:
+                for pred_label in pred_labels: # N times iterator, N is number of nodes
                     pred_bin = np.zeros(shape=len(config.AU_SQUEEZE), dtype=np.int32)  # shape = Y
                     if pred_label > 0:
                         AU = train_keyword.split("_")[pred_label - 1]
                         AU_idx = config.AU_SQUEEZE.inv[AU]
                         pred_bin[AU_idx] = 1  # CRF can only predict one label, translate to AU_squeeze length
                     pred_bins.append(pred_bin)
-                for gt_label_bin in gt_labels:
-                    assert len(gt_label_bin) == len(train_keyword.split("_"))
+                for gt_label in gt_labels: # N times iterator, N is number of nodes
                     gt_bin = np.zeros(shape=len(config.AU_SQUEEZE), dtype=np.int32)  # shape = Y
-                    non_zero_gt_idx = np.nonzero(gt_label_bin)[0]
-                    if len(non_zero_gt_idx) > 0:
-                        for gt_idx in non_zero_gt_idx:
-                            AU = train_keyword.split("_")[gt_idx]  # note that we didn't -1 here , because it is not predict value
-                            AU_idx = config.AU_SQUEEZE.inv[AU]
-                            gt_bin[AU_idx] = 1  # translate to AU_squeeze length
+                    if gt_label > 0:
+                        AU = train_keyword.split("_")[gt_label - 1]
+                        AU_idx = config.AU_SQUEEZE.inv[AU]
+                        gt_bin[AU_idx] = 1
                     gt_bins.append(gt_bin)
 
                 pred_bins = np.asarray(pred_bins)  # shape = N x Y (Y is AU_squeeze length)
@@ -90,7 +90,7 @@ class ActionUnitEvaluator(Evaluator):
                 video_gt_bin_dict[video_id].append(gt_bins)  # each gt_bins is shape = N x Y. but N of each graph is different
         assert len(video_gt_bin_dict) == len(video_pred_bin_dict)
         # predict final is determined by vote
-        video_pred_final = []  # shape = list of  N x Y ,each N is different
+        video_pred_final = []  # shape = list of  N x Y ,each N is different in each video
         video_gt_final = []   # shape = list of N x Y, each N is different
         for video_id, pred_bins_list in sorted(video_pred_bin_dict.items(), key=lambda e:e[0]):
             assert len(video_gt_bin_dict[video_id]) == len(pred_bins_list), (len(pred_bins_list), len(video_gt_bin_dict[video_id]))
@@ -98,6 +98,7 @@ class ActionUnitEvaluator(Evaluator):
             count_array = np.zeros(shape=(pred_bins_array.shape[1], pred_bins_array.shape[2], 2), dtype=np.int32)  # N x Y x 2 (+1/-1) for vote
             for pred_bins in pred_bins_array: # pred_bins_array shape = U x N x Y
                 for n, pred_bin in enumerate(pred_bins):  # pred_bins shape = N x Y
+                    assert len(pred_bin) == len(config.AU_SQUEEZE)
                     for pred_idx, pred_val in enumerate(pred_bin): # pred_bin shape = Y
                         count_array[n, pred_idx, pred_val] += 1
             video_pred_final.append(np.argmax(count_array, axis=2)) # list of shape = N x Y, because in video_pred_final, each N is different, thus we need list.append
@@ -124,16 +125,19 @@ class ActionUnitEvaluator(Evaluator):
             if AU in self.paper_use_AU:
                 pred_label = pred_labels_batch[gt_idx]
                 # met_E = get_F1_event(gt_label, pred_label)
+                F1 = f1_score(y_true=gt_label, y_pred=pred_label)
+                accuracy = accuracy_score(gt_label, pred_label)
                 met_F = get_F1_frame(gt_label, pred_label)
                 # roc = get_ROC(gt_label, pred_label)
                 report["f1_frame"][AU] = met_F.f1f
                 # report["AUC"][AU] = roc.auc
-                report["accuracy"][AU] = met_F.accuracy
-                summary.add({"f1_frame_avg": met_F.f1f})
+                report["accuracy"][AU] = accuracy
+                summary.add({"f1_frame_avg": F1})
                 # summary.add({"AUC_avg": roc.auc})
-                summary.add({"accuracy_avg": met_F.accuracy})
+                summary.add({"accuracy_avg": accuracy})
         observation = {}
         with reporter.scope(observation):
             reporter.report(report, _target)
             reporter.report(summary.compute_mean(), _target)
+        print(observation)
         return observation
