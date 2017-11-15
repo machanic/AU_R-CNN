@@ -8,6 +8,8 @@ from action_unit_metric.F1_norm import get_F1_norm
 import matplotlib
 from matplotlib.pyplot import savefig
 
+from sklearn.metrics import f1_score
+
 def demo(mat_file_path):
     '''
     Facial action unit event detection by cascade of tasks
@@ -20,8 +22,13 @@ def demo(mat_file_path):
     decV = decV[mask]
     metR = get_ROC(label, decV)
 
-    metF = get_F1_frame(label, decV)
+    decV[decV>0] =1
+    decV[decV<0] = 0
+    label[label != 1] = 0
+    f1 = f1_score(label, decV)
 
+    metF = get_F1_frame(label, decV)
+    print(f1, metF.f1f)
     # Compute f1-norm
     metN = get_F1_norm(label, decV)
 
@@ -62,4 +69,4 @@ def demo(mat_file_path):
     plt.show()
 
 if __name__ == "__main__":
-    demo("D:/work/face_expr/data/test.mat")
+    demo("D:/work/S-RNN++/data/test.mat")

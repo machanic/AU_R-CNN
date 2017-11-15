@@ -107,7 +107,7 @@ class StructuralRNN(chainer.Chain):
         if not initialW:
             initialW = initializers.HeNormal()
         with self.init_scope():
-            self.node_feature_convert_len = 256
+            self.node_feature_convert_len = 512
             self.node_feature_convert_fc = L.Linear(in_size, self.node_feature_convert_len, initialW=initialW)
 
             self.bottom = dict() # key is ",".join(box_id_a,box_id_b)

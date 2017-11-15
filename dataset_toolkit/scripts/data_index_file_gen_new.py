@@ -150,7 +150,7 @@ def single_AU_DISFA_subject_id_file(idx_folder_path, kfold=None, partition_file_
                             AU_intensity = int(AU_intensity)
                             if frame not in frame_label:
                                 frame_label[frame] = set()
-                            if AU_intensity >= 3:   # FIXME 是否需要改为>= 3?
+                            if AU_intensity >= 1:   # FIXME 是否需要改为>= 1?
                                 frame_label[frame].add(AU)
             for orientation in orientations:
                 img_folder = DISFA_base_dir + "/Img_{}Camera".format(orientation)

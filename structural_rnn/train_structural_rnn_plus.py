@@ -14,12 +14,15 @@ from structural_rnn.dataset.crf_pact_structure import CRFPackageStructure
 from structural_rnn.updater.bptt_updater import convert
 import os
 from structural_rnn.trigger.EarlyStopTrigger import EarlyStoppingTrigger
+import matplotlib
+matplotlib.use('Agg')
+
 import cProfile
 import pstats
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epoch', '-e', type=int, default=30,
+    parser.add_argument('--epoch', '-e', type=int, default=20,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=0,
                         help='GPU ID (negative value indicates CPU)')  # open_crf layer only works for CPU mode
@@ -29,11 +32,11 @@ def main():
                         help='Gradient norm threshold to clip')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
-    parser.add_argument('--snapshot', '-snap', type=int, default=100, help='snapshot epochs for save checkpoint')
+    parser.add_argument('--snapshot', '-snap', type=int, default=1, help='snapshot epochs for save checkpoint')
     parser.add_argument('--test_mode', action='store_true',
                         help='Use tiny datasets for quick tests')
     parser.add_argument('--valid', '-v', default='',
-                        help='Test directory path contains validate txt file')
+                        help='validate directory path contains validate txt file')
     parser.add_argument("--test", '-tt', default='test',help='Test directory path contains test txt file to evaluation')
     parser.add_argument('--train', '-t', default="train",
                         help='Train directory path contains train txt file')
@@ -41,17 +44,21 @@ def main():
                         help='database to train for')
     parser.add_argument("--stop_eps", '-eps', type=float, default=1e-4, help="f - old_f < eps ==> early stop")
     parser.add_argument('--with_crf', '-crf', action='store_true', help='whether to use open crf layer')
-    parser.add_argument('--lr', '-l', type=float, default=0.001)
-    parser.add_argument('--crf_lr', type=float, default=0.05)
-    parser.add_argument('--hidden_size', type=int, default=256, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
+    parser.add_argument('--lr', '-l', type=float, default=0.01)
+    parser.add_argument('--crf_lr', type=float, default=0.1)
+    parser.add_argument('--hidden_size', type=int, default=1024, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
     parser.add_argument('--eval_mode', action='store_true', help='whether to evaluate the model')
-
+    parser.add_argument("--num_attrib", type=int, default=2048, help="number of dimension of each node feature")
     parser.add_argument("--proc_num",'-proc', type=int,default=1, help="process number of dataset reader")
     parser.add_argument("--need_cache_graph", "-ng", action="store_true",
                         help="whether to cache factor graph to LRU cache")
     parser.add_argument("--bi_lstm", '-bilstm', action='store_true', help="Use bi_lstm as basic component of S-RNN")
+    parser.add_argument("--resume",action="store_true", help="whether to load npz pretrained file")
+    parser.add_argument("--exclude",action="store_true", help="exclude the has already pretrained model file") #FIXME 临时添加
+    parser.add_argument('--train_edge', default="all", help="train temporal/all to comparision")
     parser.set_defaults(test=False)
     args = parser.parse_args()
+    assert not args.resume == args.exclude  # conflict with args.resume
     print_interval = 1, 'iteration'
     val_interval = 5, 'iteration'
 
@@ -63,7 +70,7 @@ def main():
     assert "_" in trainer_keyword
 
     # for the StructuralRNN constuctor need first frame factor graph_backup
-    dataset = GlobalDataSet(info_dict_path=os.path.dirname(args.train)+os.sep + "data_info.json")
+    dataset = GlobalDataSet(num_attrib=args.num_attrib, train_edge=args.train_edge)
     file_name = list(filter(lambda e: e.endswith(".txt"), os.listdir(args.train)))[0]
     sample = dataset.load_data(args.train + os.sep + file_name)  # we load first sample for construct S-RNN, it must passed to constructor argument
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size)  # 只读取其中的一个视频的第一帧，由于node个数相对稳定，因此可以construct RNN
@@ -92,11 +99,11 @@ def main():
     updater = BPTTUpdater(train_iter, optimizer, int(args.gpu))
     early_stop = EarlyStoppingTrigger(args.epoch, key='main/loss', eps=float(args.stop_eps))
     if args.with_crf:
-        trainer = chainer.training.Trainer(updater, stop_trigger=(args.epoch, "epoch"), out=args.out) # FIXME
+        trainer = chainer.training.Trainer(updater, stop_trigger=(args.epoch, "epoch"), out=args.out)
         model.open_crf.W.update_rule.hyperparam.lr = float(args.crf_lr)
         model.open_crf.to_cpu()
     else:
-        trainer = chainer.training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)  #FIXME
+        trainer = chainer.training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 
     interval = (1, 'iteration')
     if args.test_mode:
@@ -111,29 +118,41 @@ def main():
          'opencrf_val/main/accuracy',
          ]), trigger=print_interval)
 
-    trainer.extend(chainer.training.extensions.LogReport(trigger=interval,log_name='s_rnn_plus.log'))
-    trainer.extend(chainer.training.extensions.ProgressBar(update_interval=1, training_length=(args.epoch, 'epoch')))
+    log_name = "s_rnn_plus_{}.log".format(trainer_keyword)
+    trainer.extend(chainer.training.extensions.LogReport(trigger=interval,log_name=log_name))
+    # trainer.extend(chainer.training.extensions.ProgressBar(update_interval=1, training_length=(args.epoch, 'epoch')))
     optimizer_snapshot_name = "{0}_{1}_srnn_plus_optimizer.npz".format(trainer_keyword, args.database)
-    model_snapshot_name = "{0}_{1}_srnn_plus_{2}_model.npz".format(trainer_keyword, args.database,
-                                                                           "crf" if args.with_crf else "")
+    model_snapshot_name = "{0}_{1}_srnn_plus{2}_model.npz".format(trainer_keyword, args.database,
+                                                                           "_crf" if args.with_crf else "")
     trainer.extend(
         chainer.training.extensions.snapshot_object(optimizer,
                                                     filename=optimizer_snapshot_name),
-        trigger=(args.snapshot, 'iteration'))
+        trigger=(args.snapshot, 'epoch'))
 
     trainer.extend(
         chainer.training.extensions.snapshot_object(model,
                                                     filename=model_snapshot_name),
-        trigger=(args.snapshot, 'iteration'))
+        trigger=(args.snapshot, 'epoch'))
     trainer.extend(chainer.training.extensions.ExponentialShift('lr',0.7), trigger=(5, "epoch"))
+
+    if args.resume and os.path.exists(args.out + os.sep + model_snapshot_name):
+        print("loading model_snapshot_name to model")
+        chainer.serializers.load_npz(args.out + os.sep + model_snapshot_name, model)
+    elif args.exclude and os.path.exists(args.out + os.sep + model_snapshot_name):
+        print("pretrained file has already exists, exit program")
+        return
+    if args.resume and os.path.exists(args.out + os.sep + optimizer_snapshot_name):
+        print("loading optimizer_snapshot_name to optimizer")
+        chainer.serializers.load_npz( args.out + os.sep + optimizer_snapshot_name, optimizer)
 
 
     if chainer.training.extensions.PlotReport.available():
-        # trainer.extend(chainer.training.extensions.PlotReport(['au_validation/main/f1_frame'],file_name='au_validation.png'),
-        #                trigger=val_interval)
-        trainer.extend(
-            chainer.training.extensions.PlotReport(['opencrf_val/main/F1'], file_name='srnn_plus_f1.png'),
-            trigger=val_interval)
+        trainer.extend(chainer.training.extensions.PlotReport(['main/loss'],
+                                                              file_name="{}_train_loss.png".format(trainer_keyword)),
+                                                              trigger=(100,"iteration"))
+        trainer.extend(chainer.training.extensions.PlotReport(['opencrf_val/F1','opencrf_val/accuracy'],
+                                                              file_name="{}_val_f1.png".format(trainer_keyword)), trigger=val_interval)
+
 
 
     # au_evaluator = ActionUnitEvaluator(iterator=validate_iter, target=model, device=-1, database=args.database,

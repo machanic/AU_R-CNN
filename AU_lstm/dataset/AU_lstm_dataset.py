@@ -10,10 +10,10 @@ import config
 from structural_rnn.dataset.graph_dataset_reader import GlobalDataSet
 class AULstmDataset(chainer.dataset.DatasetMixin):
 
-    def __init__(self, directory,  database):
+    def __init__(self, directory,  database, num_attrib):
         self.directory = directory
-        info_dict_path = os.path.dirname(self.directory) + os.sep + "data_info.json"
-        self.dataset = GlobalDataSet(info_dict_path)
+
+        self.dataset = GlobalDataSet(num_attrib)
         self.database = database
         self.file_name_dict = dict()
         self.lru_cache = LRU(10000)

@@ -505,7 +505,7 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
     for video_info, subject_id in reader_func(output_dir, is_binary_AU=is_binary_AU, is_need_adaptive_AU_relation=False,
                                   force_generate=force_generate, proc_num=proc_num, cut=cut, train_subject=train_subject):
 
-        extracted_feature_cache_key = set()  # key = np.ndarray_hash , value = h. speed up
+        extracted_feature_cache = dict()  # key = np.ndarray_hash , value = h. speed up
         frame_box_cache = dict()  # key = frame, value = boxes
         frame_labels_cache = dict()
         frame_AU_couple_bbox_dict_cache = dict()
@@ -600,12 +600,15 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
 
                 cropped_face.flags.writeable = False
                 key = hash(cropped_face.data.tobytes())
-                if key not in extracted_feature_cache_key:
+                if key in extracted_feature_cache:
+                    h = extracted_feature_cache[key]
+                else:
                     with chainer.no_backprop_mode():
                         h = faster_rcnn.extract(cropped_face, bboxes, layer=extract_key)  # shape = R' x 2048
+                        extracted_feature_cache[key] = h
                     assert h.shape[0] == len(bboxes)
-                    h = chainer.cuda.to_cpu(h)
-                    h = h.reshape(len(bboxes), -1)
+                h = chainer.cuda.to_cpu(h)
+                h = h.reshape(len(bboxes), -1)
 
                 # 这个indent级别都是同一张图片内部
                 # print("box number, all_mask:", len(bboxes),len(all_couple_mask_dict))
@@ -617,12 +620,10 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
                     label = tuple(label)
                     label_arr = np.char.mod("%d", label)
                     label = "({})".format(",".join(label_arr))
-                    if key not in extracted_feature_cache_key:
-                        h_flat = h[box_idx]
-                        h_info_array.append(h_flat)
+                    h_flat = h[box_idx]                     
                     node_id = "{0}_{1}".format(frame, box_idx)
                     node_list.append("{0} {1} feature_idx:{2} AU_couple:{3} AU:{4}".format(node_id, label, len(h_info_array), AU_couple, AU))
-                extracted_feature_cache_key.add(key)
+                    h_info_array.append(h_flat)
 
                 # 同一张画面两两组合，看有没连接线，注意AU=0，就是未出现的AU动作的区域也参与连接
                 for box_idx_a, box_idx_b in map(sorted, itertools.combinations(range(len(bboxes)), 2)):

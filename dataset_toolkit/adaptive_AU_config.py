@@ -29,7 +29,7 @@ def adaptive_AU_database(database_name, use_paper_only=False):
     config.AU_ROI = new_AU_ROI
     config.AU_SQUEEZE = bidict({idx: str(AU) for idx, AU in enumerate(sorted(map(int, list(config.AU_ROI.keys()))))})
     NEW_LABEL_INCORPORATE = {}
-    for key,val_ls in config.LABEL_INCORPORATE.items():
+    for key,val_ls in config.LABEL_FETCH.items():
         new_key = []
         for k in key:
             if k in config.AU_ROI:
@@ -45,7 +45,7 @@ def adaptive_AU_database(database_name, use_paper_only=False):
 
         if len(new_key) > 0 and len(new_val_ls) > 0:
             NEW_LABEL_INCORPORATE[tuple(new_key)] = new_val_ls
-    config.LABEL_INCORPORATE = NEW_LABEL_INCORPORATE
+    config.LABEL_FETCH = NEW_LABEL_INCORPORATE
     NEW_BOX_SHIFT = {}
     for key ,val in config.BOX_SHIFT.items():
         new_key = []

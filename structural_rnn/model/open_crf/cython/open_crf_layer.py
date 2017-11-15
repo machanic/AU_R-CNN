@@ -30,9 +30,9 @@ class OpenCRFLayer(chainer.Link):
     def get_gt_label_one_graph(self, xp, crf_pact_structure, is_bin=True):
         sample = crf_pact_structure.sample
         if not is_bin:
-            node_label_one_video = xp.zeros(shape=len(sample.node_list))
+            node_label_one_video = xp.zeros(shape=len(sample.node_list),dtype=xp.int32)
         else:
-            node_label_one_video = xp.zeros(shape=(len(sample.node_list), sample.label_bin_len))
+            node_label_one_video = xp.zeros(shape=(len(sample.node_list), sample.label_bin_len),dtype=xp.int32)
         for node in sample.node_list:
             if is_bin:
                 label_bin = node.label_bin

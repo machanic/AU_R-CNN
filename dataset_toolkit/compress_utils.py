@@ -46,7 +46,7 @@ def get_AU_couple_child(AU_couple_dict):
         if contains_b and len(region_set_a) > len(region_set_b):
             AU_couple_child[AU_couple_dict[AU_a]].add(AU_couple_dict[AU_b])
     # 增加一个逻辑，修正label更好 must be called after def adaptive_AU_database
-    for AU_couple, AU_couple_incorporate_lst in config.LABEL_INCORPORATE.items():
+    for AU_couple, AU_couple_incorporate_lst in config.LABEL_FETCH.items():
         AU_couple_child[AU_couple].update(AU_couple_incorporate_lst)
     return AU_couple_child
 

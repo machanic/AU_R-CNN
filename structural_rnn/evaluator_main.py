@@ -5,7 +5,7 @@ sys.path.append("/home/machen/face_expr")
 import chainer
 from structural_rnn.dataset.graph_dataset_reader import GlobalDataSet
 from structural_rnn.dataset.structural_RNN_dataset import S_RNNPlusDataset
-from structural_rnn.extensions.AU_evaluator import ActionUnitEvaluator
+from structural_rnn.extensions.AU_evaluator_respectively import ActionUnitEvaluator # FIXME
 from structural_rnn.dataset.crf_pact_structure import CRFPackageStructure
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import os
@@ -44,13 +44,15 @@ def main():
     parser.add_argument("--test", "-tt", default="", help="test txt folder path")
     parser.add_argument("--hidden_size", "-hs",default=1024, type=int, help="hidden_size of srnn++")
     parser.add_argument("--database","-db",default="BP4D", help="which database you want to evaluate")
-    parser.add_argument("--bi_lstm","-bi", action="store_true", help="srnn++ use bi_lstm or not")
+    parser.add_argument("--bi_lstm","-bi", action="store_true", help="srnn++ use bi_lstm or not, if pretrained model use bi_lstm, you must set this flag on")
     parser.add_argument("--check", "-ck", action="store_true", help="default not to check the npy file and all list file generate correctly")
+    parser.add_argument("--num_attrib",type=int,default=2048, help="feature dimension")
+    parser.add_argument("--train_edge",default="all",help="all/spatio/temporal")
     args = parser.parse_args()
     adaptive_AU_database(args.database)
     test_dir = args.test if not args.test.endswith("/") else args.test[:-1]
     assert args.database in test_dir
-    dataset = GlobalDataSet(os.path.dirname(test_dir) + os.sep + "data_info.json") # ../data_info.json
+    dataset = GlobalDataSet(num_attrib=args.num_attrib, train_edge=args.train_edge) # ../data_info.json
     file_name = None
     for folder in os.listdir(args.test):
         if os.path.isdir(args.test + os.sep + folder):
@@ -60,7 +62,8 @@ def main():
             break
     sample = dataset.load_data(file_name)
     print("pre load done")
-    crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size, need_s_rnn=True)
+
+
     target_dict = {}
     need_srnn = False
     use_crf = False
@@ -71,9 +74,12 @@ def main():
                 assert need_srnn == False
                 use_crf = True
                 # note that open_crf layer doesn't support GPU
+                crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=dataset.num_attrib_type, need_s_rnn=False)
                 model = OpenCRFLayer(node_in_size=dataset.num_attrib_type, weight_len=crf_pact_structure.num_feature)
+                print("loading {}".format(args.target_dir + os.sep + model_path, model))
                 chainer.serializers.load_npz(args.target_dir + os.sep + model_path, model)
             elif "srnn_plus" in model_path:
+                crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size, need_s_rnn=True)
                 with_crf = "crf" in model_path
                 need_srnn = True
                 model = StructuralRNNPlus(crf_pact_structure, in_size=dataset.num_attrib_type,
@@ -85,21 +91,28 @@ def main():
                 if args.gpu >= 0:
                     chainer.cuda.get_device_from_id(args.gpu).use()
                     model.to_gpu(args.gpu)
-                    model.open_crf.to_cpu()
+                    if with_crf:
+                        model.open_crf.to_cpu()
             trainer_keyword_pattern = re.compile(".*?((\d+_)+)_*")
             matcher = trainer_keyword_pattern.match(model_path)
             assert matcher
             trainer_keyword = matcher.group(1)[:-1]
             target_dict[trainer_keyword] = model
+    if len(target_dict) == 0:
+        print("error , no pretrained npz file in {}".format(args.target_dir))
+        return
     if args.check:
         check_pretrained_model_match_file(target_dict, args.test)
     with chainer.no_backprop_mode():
         test_data = S_RNNPlusDataset(directory=args.test, attrib_size=args.hidden_size, global_dataset=dataset,
-                                     need_s_rnn=need_srnn, need_cache_factor_graph=True, target_dict=target_dict)  # if there is one file that use s_rnn, all the pact_structure need s_rnn
+                                     need_s_rnn=need_srnn, need_cache_factor_graph=False, target_dict=target_dict)  # if there is one file that use s_rnn, all the pact_structure need s_rnn
         test_iter = chainer.iterators.SerialIterator(test_data, 1, shuffle=False, repeat=False)
         gpu = args.gpu if not use_crf else -1
-        au_evaluator = ActionUnitEvaluator(test_iter, target_dict, device=gpu, database=args.database)
-        observation = au_evaluator.evaluate()
+        print('using gpu :{}'.format(gpu))
+        chainer.config.train = False
+        with chainer.no_backprop_mode():
+            au_evaluator = ActionUnitEvaluator(test_iter, target_dict, device=gpu, database=args.database)
+            observation = au_evaluator.evaluate()
         with open(args.target_dir + os.sep + "evaluation_result.json", "w") as file_obj:
             file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
             file_obj.flush()

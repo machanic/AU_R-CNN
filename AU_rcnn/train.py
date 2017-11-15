@@ -19,7 +19,7 @@ from chainer.datasets import TransformDataset
 from AU_rcnn.links.model.faster_rcnn import FasterRCNNTrainChain, FasterRCNNVGG16, FasterRCNNResnet101
 from AU_rcnn import transforms
 
-from AU_rcnn.datasets.bp4d.AU_dataset_speed_optimized import AUDataset
+from AU_rcnn.datasets.bp4d.AU_dataset import AUDataset
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 from AU_rcnn.updater.update_bptt import BPTTUpdater

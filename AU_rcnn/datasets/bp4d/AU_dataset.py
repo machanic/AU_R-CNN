@@ -2,52 +2,55 @@ import os
 from collections import defaultdict, OrderedDict
 
 import chainer
-import cv2
 import numpy as np
 
 import config
-from AU_rcnn.utils import read_image
 from dataset_toolkit.compress_utils import get_zip_ROI_AU, get_AU_couple_child
 from img_toolkit.face_mask_cropper import FaceMaskCropper
 
 
-# obtain the cropped face image and
+# obtain the cropped face image and bounding box and ground truth label for each box
 class AUDataset(chainer.dataset.DatasetMixin):
 
-    def __init__(self, database, dir, fold, split_name, split_index, mc_manager, use_lstm, label_bin_output):
-        self.dir = dir
+    def __init__(self, database, fold, split_name, split_index, mc_manager, use_lstm, train_all_data, prefix="", pretrained_target=""):
+        self.database = database
         self.split_name = split_name
         self.use_lstm = use_lstm
         self.au_couple_dict = get_zip_ROI_AU()
         self.mc_manager = mc_manager
         self.au_couple_child_dict = get_AU_couple_child(self.au_couple_dict)
         self.AU_intensity_label = {}  # subject + "/" + emotion_seq + "/" + frame => ... not implemented
-        id_list_file_path = os.path.join(self.dir + "/idx/{}_fold".format(fold), "id_{0}_{1}.txt".format(split_name, split_index))
+        self.pretrained_target = pretrained_target
+        self.dir = config.DATA_PATH[database] # BP4D/DISFA/ BP4D_DISFA
+        if train_all_data:
+            id_list_file_path = os.path.join(self.dir + "/idx/{}_fold".format(fold),
+                                             "full_pretrain.txt")
+        else:
+            id_list_file_path = os.path.join(self.dir + "/idx/{0}_fold{1}".format(fold, prefix), "id_{0}_{1}.txt".format(split_name, split_index))
         self.result_data = []
 
         self.video_offset = OrderedDict()
         self.video_count = defaultdict(int)
-
         print("idfile:{}".format(id_list_file_path))
         with open(id_list_file_path, "r") as file_obj:
             for idx, line in enumerate(file_obj):
                 if line.rstrip():
                     line = line.rstrip()
-                    img_path, au_set_str, from_img_path, database_name = line.split("\t")
-                    AU_set = set(au_set_str.split(','))
+                    img_path, au_set_str, from_img_path, current_database_name = line.split("\t")
+                    AU_set = set(AU for AU in au_set_str.split(',') if AU in config.AU_ROI)
                     if au_set_str == "0":
                         AU_set = set()
                     from_img_path = img_path if from_img_path == "#" else from_img_path
 
-                    img_path = config.TRAINING_PATH[database] + os.sep + img_path  # id file 是相对路径
-                    from_img_path = config.TRAINING_PATH[database] + os.sep + from_img_path
+                    img_path = config.TRAINING_PATH[current_database_name] + os.sep + img_path  # id file 是相对路径
+                    from_img_path = config.TRAINING_PATH[current_database_name] + os.sep + from_img_path
 
                     video_id = "/".join([img_path.split("/")[-3], img_path.split("/")[-2]])
                     if video_id not in self.video_offset:
                         self.video_offset[video_id] = len(self.result_data)
                     self.video_count[video_id] += 1
-
-                    self.result_data.append((img_path, from_img_path, AU_set, database_name))
+                    if os.path.exists(img_path):
+                        self.result_data.append((img_path, from_img_path, AU_set, current_database_name))
 
         self._num_examples = len(self.result_data)
         print("read id file done, all examples:{}".format(self._num_examples))
@@ -55,23 +58,25 @@ class AUDataset(chainer.dataset.DatasetMixin):
     def __len__(self):
         return self._num_examples
 
-    def assign_label(self, couple_mask_dict, current_AU_couple, bbox, label):
+    def assign_label(self, couple_box_dict, current_AU_couple, bbox, label, AU_couple_lst):
         AU_couple_bin = dict()
-        for au_couple_tuple, mask in sorted(couple_mask_dict.items(), key=lambda e: ",".join(e[0])):
+        for au_couple_tuple, _ in sorted(couple_box_dict.items(), key=lambda e: ",".join(e[0])):
             # use connectivity components to seperate polygon
             AU_inside_box_set = current_AU_couple[au_couple_tuple]
 
             AU_bin = np.zeros(shape=len(config.AU_SQUEEZE), dtype=np.int32)  # 全0表示背景，脸上没有运动
             for AU in AU_inside_box_set:  # AU_inside_box_set may has -3 or ?3
+                if AU not in config.AU_SQUEEZE.inv:
+                    continue
                 if (not AU.startswith("?")) and (not AU.startswith("-")):
                     AU_squeeze = config.AU_SQUEEZE.inv[AU]  # AU_squeeze type = int
                     np.put(AU_bin, AU_squeeze, 1)
-                elif AU.startswith("?"):
-                    AU_squeeze = config.AU_SQUEEZE.inv[AU[1:]]
-                    np.put(AU_bin, AU_squeeze, -1)  # ignore label
+                # elif AU.startswith("?"):
+                #     AU_squeeze = config.AU_SQUEEZE.inv[AU[1:]]
+                #     np.put(AU_bin, AU_squeeze, -1)  # ignore label
             AU_couple_bin[au_couple_tuple] = AU_bin  # for the child
         # 循环两遍，第二遍拿出child_AU_couple
-        for au_couple_tuple, mask in sorted(couple_mask_dict.items(), key=lambda e: ",".join(e[0])):
+        for au_couple_tuple, box_list in sorted(couple_box_dict.items(), key=lambda e: ",".join(e[0])):
             AU_child_bin = np.zeros(shape=len(config.AU_SQUEEZE), dtype=np.int32)
             if au_couple_tuple in self.au_couple_child_dict:
                 for au_couple_child in self.au_couple_child_dict[au_couple_tuple]:
@@ -84,39 +89,10 @@ class AUDataset(chainer.dataset.DatasetMixin):
                 for unknown_index in unknown_indices:
                     if AU_child_bin[unknown_index] == 1 or AU_bin_tmp[unknown_index] == 1:
                         AU_bin[unknown_index] = 1
-
-            connect_arr = cv2.connectedComponents(mask, connectivity=8, ltype=cv2.CV_32S) # mask shape = 1 x H x W
-            component_num = connect_arr[0]
-            label_matrix = connect_arr[1]
-            # convert mask polygon to rectangle
-            region_box = []  # for RNN, to sort to correct order
-            region_label = []
-            for component_label in range(1, component_num):
-
-                row_col = list(zip(*np.where(label_matrix == component_label)))
-                row_col = np.array(row_col)
-                y_min_index = np.argmin(row_col[:, 0])
-                y_min = row_col[y_min_index, 0]
-                x_min_index = np.argmin(row_col[:, 1])
-                x_min = row_col[x_min_index, 1]
-                y_max_index = np.argmax(row_col[:, 0])
-                y_max = row_col[y_max_index, 0]
-                x_max_index = np.argmax(row_col[:, 1])
-                x_max = row_col[x_max_index, 1]
-                # same region may be shared by different AU, we must deal with it
-                coordinates = (y_min, x_min, y_max, x_max)
-
-
-                if y_min == y_max and x_min == x_max:  # 尖角处会产生孤立的单个点，会不会有一个mask只有尖角？
-                    # print(("single point mask: img:{0} mask:{1}".format(self._images[i], mask_path)))
-                    # 然后用concat_example来拼接起来
-                    continue
-                region_box.append(coordinates)
-                region_label.append(AU_bin)
-            bbox.extend(region_box)
-            label.extend(region_label)
-            del label_matrix
-            del mask
+            bbox.extend(box_list)
+            for _ in box_list:
+                label.append(AU_bin)
+                AU_couple_lst.append(au_couple_tuple)
 
     def get_example(self, i):
         '''
@@ -137,11 +113,13 @@ class AUDataset(chainer.dataset.DatasetMixin):
             read_img_path = img_path if from_img_path == "#" else from_img_path
             img_id = "/".join((read_img_path.split("/")[-3], read_img_path.split("/")[-2],
                                read_img_path.split("/")[-1][:read_img_path.split("/")[-1].index(".")]))
-            cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(read_img_path,
+            key_prefix = self.database+"|"
+            if self.pretrained_target is not None and len(self.pretrained_target) > 0:
+                key_prefix = self.pretrained_target+"|"
+            cropped_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(read_img_path,
                                                                                channel_first=True,
-                                                                               mc_manager=self.mc_manager)
-            if read_img_path != img_path:
-                cropped_face = read_image(img_path, color=True)
+                                                                               mc_manager=self.mc_manager, key_prefix=key_prefix)
+
         except IndexError:
             return self.get_example(i-1)  # 不得已为之
             # raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(read_img_path))
@@ -163,7 +141,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
         all_AU_set.update(known_AU_set)
 
         current_AU_couple = defaultdict(set) # key = AU couple, value = AU 用于合并同一个区域的不同AU
-        couple_mask_dict = defaultdict(list) # key= AU couple
+        couple_box_dict = defaultdict(list) # key= AU couple
 
         # mask_path_dict's key AU maybe 3 or -2 or ?5
         for AU in all_AU_set:
@@ -174,15 +152,13 @@ class AUDataset(chainer.dataset.DatasetMixin):
             except KeyError:
                 print(list(self.au_couple_dict.keys()), _AU)
                 raise
-        flip = "flip" in img_path
-        for AU, mask in AU_mask_dict.items():
+        for AU, box_list in AU_box_dict.items():
             _AU = AU if AU.isdigit() else AU[1:]
-            if flip:
-                mask = np.fliplr(mask)
-            couple_mask_dict[self.au_couple_dict[_AU]] = mask  # 所以这一步会把脸上有的，没有的AU都加上
+            couple_box_dict[self.au_couple_dict[_AU]] = box_list  # 所以这一步会把脸上有的，没有的AU都加上
         label = []  # one box may have multiple labels. so each entry is 10101110 binary code
         bbox = []  # AU = 0背景的box是随机取的
-        self.assign_label(couple_mask_dict, current_AU_couple, bbox, label)
+        AU_couple_lst = []
+        self.assign_label(couple_box_dict, current_AU_couple, bbox, label, AU_couple_lst)
         # print("assigned label over")
         if len(bbox) == 0:
             print("no box found on face")
@@ -193,4 +169,4 @@ class AUDataset(chainer.dataset.DatasetMixin):
         assert bbox.shape[0] == label.shape[0]
         if self.use_lstm:
             return cropped_face, bbox, label, img_id  # 注意最后返回的label是压缩过的AU_SQUEEZE长度，并且label是01000100这种每个box一个二进制的ndarray的情况
-        return cropped_face, bbox, label
+        return cropped_face, bbox, label, AU_couple_lst # AU_couple_lst为了random shift bbox

@@ -2,6 +2,7 @@ from collections import defaultdict
 
 import chainer
 import chainer.functions as F
+import chainer.links as L
 import numpy as np
 
 from structural_rnn.dataset.crf_pact_structure import CRFPackageStructure
@@ -77,10 +78,11 @@ class StructuralRNNPlus(chainer.Chain):
     def get_gt_label_one_graph(self, xp, crf_pact_structure, is_bin=True):
         sample = crf_pact_structure.sample
         if not is_bin:
-            node_label_one_video = xp.zeros(shape=len(sample.node_list))
+            node_label_one_video = xp.zeros(shape=len(sample.node_list), dtype=xp.int32)
         else:
-            node_label_one_video = xp.zeros(shape=(len(sample.node_list), sample.label_bin_len))
-        for node in sample.node_list:
+            node_label_one_video = xp.zeros(shape=(len(sample.node_list), sample.label_bin_len), dtype=xp.int32)
+        for idx, node in enumerate(sample.node_list):
+            assert node.id == idx
             if is_bin:
                 label_bin = node.label_bin
                 node_label_one_video[node.id] = label_bin
@@ -94,7 +96,7 @@ class StructuralRNNPlus(chainer.Chain):
         for crf_pact in crf_pact_structures:
             node_label_one_video = self.get_gt_label_one_graph(xp, crf_pact, is_bin)
             targets.append(node_label_one_video)
-        return xp.stack(targets).astype(xp.int32)  # shape = B x N x D but B = 1 forever and D is data_info specified number (picked index)
+        return xp.stack(targets).astype(xp.int32)  # shape = B x N x D but B = 1 forever
 
 
     def predict(self, x:np.ndarray, crf_pact_structure:CRFPackageStructure,is_bin=False):
@@ -108,7 +110,7 @@ class StructuralRNNPlus(chainer.Chain):
                 x = chainer.Variable(x)
             xp = chainer.cuda.get_array_module(x)
             # return shape = B * N * D , B is batch_size(=1 only), N is one video all nodes count, D is each node output vector
-            if self.with_crf:
+            if self.with_crf:  # 作废，这句if不会进去
                 xs = F.expand_dims(x,axis=0)
                 crf_pact_structures = [crf_pact_structure]
                 hs = self.structural_rnn(xs, crf_pact_structures)  # hs shape = B x N x D, B is batch_size
@@ -129,6 +131,9 @@ class StructuralRNNPlus(chainer.Chain):
 
         if self.with_crf:
             #  open_crf only support CPU mode
+            # convert_xs = self.bn(self.convert_dim_fc(xs.reshape(-1, xs.shape[-1])))  # note that we remove batch = 1 dimension
+            # h = F.relu(h.reshape(-1, h.shape[-1]) + convert_xs) # just like ResNet
+            # h = F.expand_dims(h, 0)  # add one batch dimension
             h = F.copy(h, -1)
             # gt_label is hidden inside crf_pact_structure's sample. this step directly compute loss
             loss = self.open_crf(h, crf_pact_structures)
@@ -137,7 +142,7 @@ class StructuralRNNPlus(chainer.Chain):
             ts = chainer.Variable(ts.reshape(-1))  # because ts label is 0~L which is one more than ground truth, 0 represent 0,0,0,0,0
             h = h.reshape(-1, h.shape[-1])  # h must have 0~L which = L+1 including non_AU = 0(also background class)
             assert ts.shape[0] == h.shape[0]
-            loss = F.hinge(h, ts, reduce='mean')
+            loss = F.hinge(h, ts, norm='L2', reduce='mean')
 
             accuracy = F.accuracy(h,ts)
 

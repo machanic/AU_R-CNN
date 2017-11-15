@@ -61,6 +61,7 @@ def main():
     parser.add_argument("--database", '-d', default="BP4D")
     parser.add_argument('--lr', '-l', type=float, default=0.001)
     parser.add_argument("--gpu", '-g', type=int, default=0)
+    parser.add_argument("--num_attrib", type=int,default=2048)
     parser.set_defaults(test=False)
     args = parser.parse_args()
     print_interval = 1, 'iteration'
@@ -68,10 +69,10 @@ def main():
     plot_interval= 100,'iteration'
     adaptive_AU_database(args.database)
 
-    train_data = AULstmDataset(directory=args.train, database=args.database)
+    train_data = AULstmDataset(directory=args.train, database=args.database, num_attrib=args.num_attrib)
     train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True)
 
-    dataset = GlobalDataSet(os.path.dirname(args.train)+os.sep + "data_info.json")
+    dataset = GlobalDataSet(num_attrib=args.num_attrib)
     au_lstm = AU_LSTM(in_size=dataset.num_attrib_type, out_size=dataset.num_label)
     model = L.Classifier(predictor=au_lstm, lossfun=au_lstm.loss_func, accfun=au_lstm.accuracy_func)
     if args.gpu >= 0:
@@ -117,7 +118,7 @@ def main():
             ),
             trigger=plot_interval
         )
-    validate_data = AULstmDataset(directory=args.valid, database=args.database)
+    validate_data = AULstmDataset(directory=args.valid, database=args.database,num_attrib=args.num_attrib)
     validate_iter = chainer.iterators.SerialIterator(validate_data, 1, repeat=False, shuffle=False)
     evaluator = extensions.Evaluator(
         iterator=validate_iter, target=model,  device=args.gpu)

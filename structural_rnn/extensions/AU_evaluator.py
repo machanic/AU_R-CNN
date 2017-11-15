@@ -50,7 +50,10 @@ class ActionUnitEvaluator(Evaluator):
 
         video_gt_bin_dict = defaultdict(list) # key = video_id, value = predict bin list
         video_pred_bin_dict = defaultdict(list)  # key = video_id, value = predict bin list
+        video_pred_prob_dict = defaultdict(list)
+
         for batch in it:
+
             batch = convert(batch, self.device)
             for x, crf_pact_structure in zip(*batch):
 
@@ -62,12 +65,25 @@ class ActionUnitEvaluator(Evaluator):
                     print("error {} not pre-trained".format(train_keyword))
                     continue
                 target = self.target_dict[train_keyword]  # choose the right predictor
-                pred_labels = target.predict(x, crf_pact_structure, is_bin=False)  # pred_labels is  N x 1, but open-crf predict only produce shape = N
+                # pred_probs is N x (Y+1)
+                pred_labels, pred_probs = target.predict(x, crf_pact_structure, is_bin=False)  # pred_labels is  N x 1, but open-crf predict only produce shape = N
                 gt_labels = target.get_gt_label_one_graph(np, crf_pact_structure, is_bin=False)  # return N x 1
                 assert pred_labels.ndim == 1
                 pred_bins = []  # pred_bins is labels in one video sequence
                 gt_bins = [] # gt_bins is labels in one video sequence
-                for pred_label in pred_labels: # N times iterator, N is number of nodes
+                prod_prob_bins = []
+                for idx, pred_label in enumerate(pred_labels): # N times iterator, N is number of nodes
+                    pred_prob = pred_probs[idx]  # probability is len = Y+1
+                    pred_prob_bin = np.zeros(shape=(len(config.AU_SQUEEZE)+1), dtype=np.float32) # Y + 1 because pred=0 also have prob
+                    for pred_idx in range(pred_prob.shape[0]):
+                        if pred_idx == 0:
+                            pred_prob_bin[0] = pred_prob[0]  # 第0位置上表示全都是0
+                        else:
+                            AU = train_keyword.split("_")[pred_idx - 1]
+                            AU_idx = config.AU_SQUEEZE.inv[AU]
+                            pred_prob_bin[AU_idx + 1] = pred_prob[pred_idx]
+                    prod_prob_bins.append(pred_prob_bin) # list of Y + 1
+
                     pred_bin = np.zeros(shape=len(config.AU_SQUEEZE), dtype=np.int32)  # shape = Y
                     if pred_label > 0:
                         AU = train_keyword.split("_")[pred_label - 1]
@@ -84,24 +100,29 @@ class ActionUnitEvaluator(Evaluator):
 
                 pred_bins = np.asarray(pred_bins)  # shape = N x Y (Y is AU_squeeze length)
                 gt_bins = np.asarray(gt_bins)
+                prod_prob_bins = np.asarray(prod_prob_bins)
                 assert len(pred_bins) == len(sample.node_list)
                 assert len(gt_bins) == len(sample.node_list)
                 video_pred_bin_dict[video_id].append(pred_bins)  # each pred_bins is shape = N x Y. but N of each graph is different
                 video_gt_bin_dict[video_id].append(gt_bins)  # each gt_bins is shape = N x Y. but N of each graph is different
+                video_pred_prob_dict[video_id].append(prod_prob_bins)  # each pred_probs = N x (Y+1)
         assert len(video_gt_bin_dict) == len(video_pred_bin_dict)
         # predict final is determined by vote
         video_pred_final = []  # shape = list of  N x Y ,each N is different in each video
         video_gt_final = []   # shape = list of N x Y, each N is different
-        for video_id, pred_bins_list in sorted(video_pred_bin_dict.items(), key=lambda e:e[0]):
-            assert len(video_gt_bin_dict[video_id]) == len(pred_bins_list), (len(pred_bins_list), len(video_gt_bin_dict[video_id]))
-            pred_bins_array = np.asarray(pred_bins_list)  # shape = U x N x Y , where U is different trainer number, this time N is the same cross diferent video
-            count_array = np.zeros(shape=(pred_bins_array.shape[1], pred_bins_array.shape[2], 2), dtype=np.int32)  # N x Y x 2 (+1/-1) for vote
-            for pred_bins in pred_bins_array: # pred_bins_array shape = U x N x Y
-                for n, pred_bin in enumerate(pred_bins):  # pred_bins shape = N x Y
-                    assert len(pred_bin) == len(config.AU_SQUEEZE)
-                    for pred_idx, pred_val in enumerate(pred_bin): # pred_bin shape = Y
-                        count_array[n, pred_idx, pred_val] += 1
-            video_pred_final.append(np.argmax(count_array, axis=2)) # list of shape = N x Y, because in video_pred_final, each N is different, thus we need list.append
+        for video_id, prod_prob_bins in video_pred_prob_dict.items():
+            prod_prob_bins_array = np.asarray(prod_prob_bins)  # shape = U x N x (Y+1) , where U is different trainer number, this time N is the same cross diferent video
+            prod_prob_bins_array = np.transpose(prod_prob_bins_array,(1,0,2))  # shape = N x U x (Y+1)
+            prod_prob_bins_index = np.argmax(prod_prob_bins_array, axis=2)  # shape = N x U choose the biggest Y index in last axis
+            prod_prob_bins_array = np.max(prod_prob_bins_array, axis=2)  # shape = N x U. each element is prob number
+            choice_trainer_index = np.argmax(prod_prob_bins_array, axis=1)  # shape = N, each element is which U is biggest
+            pred_labels = prod_prob_bins_index[np.arange(len(prod_prob_bins_index)), choice_trainer_index]  #shape = N, each element is correct Y
+
+            pred_bins_array = np.zeros(shape=(pred_labels.shape[0], len(config.AU_SQUEEZE)),dtype=np.int32)
+            for pred_idx, pred_label in enumerate(pred_labels):
+                if pred_label != 0:
+                    pred_bins_array[pred_idx, pred_label - 1] = 1
+            video_pred_final.append(pred_bins_array) # list of N x Y
 
             # for gt_label part, we don't need vote, we only need element-wise or
             gt_bins_array = np.asarray(video_gt_bin_dict[video_id])  #  # shape = U x N x Y , where U is different trainer number

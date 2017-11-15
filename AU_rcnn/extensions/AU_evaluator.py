@@ -9,6 +9,7 @@ from action_unit_metric.F1_event import get_F1_event
 import config
 from collections import defaultdict
 from chainer import DictSummary
+from sklearn.metrics import f1_score
 
 
 class AUEvaluator(chainer.training.extensions.Evaluator):
@@ -79,7 +80,9 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
                 # met_E = get_F1_event(gt_label, pred_label)
                 met_F = get_F1_frame(gt_label, pred_label)
                 roc =get_ROC(gt_label, pred_label)
+                f1 = f1_score(gt_label, pred_label)
                 report["f1_frame"][AU] = met_F.f1f
+                report["f1_score"][AU] = f1
                 report["AUC"][AU] = roc.auc
                 report["accuracy"][AU] = met_F.accuracy
                 # report["f1_event"][AU] = np.median(met_E.f1EventCurve)

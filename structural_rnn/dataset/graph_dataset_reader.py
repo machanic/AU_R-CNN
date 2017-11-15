@@ -81,7 +81,7 @@ class DataNode(object):
         nonzero_idx = np.nonzero(self.label_bin)[0]
         assert len(nonzero_idx) <= 1
         if len(nonzero_idx) > 0:
-            return nonzero_idx[0] + 1 # random pick, +1 is for the reason 0 also will be one label
+            return nonzero_idx[0] + 1  #+1 is for the reason 0 also will be one label
         return 0  # all zero became 0
 
     def __hash__(self):
@@ -102,14 +102,13 @@ class DataEdge(object):
 
 class DataSample(object):
 
-    def __init__(self, num_node=None, num_edge=None,  label_dict=None, file_path=None):
+    def __init__(self, num_node=None, num_edge=None,   file_path=None):
         self.file_path = file_path
         self.num_node = num_node   # note that the num_node attribute of FactorGraph is node count + edge count
         self.num_edge = num_edge
         self.node_list = []
         self.edge_list = []
         self.nodeid_line_no_dict = MappingDict()
-        self.label_dict = label_dict
         self.label_bin_len = 0
 
 
@@ -127,37 +126,27 @@ class DataSample(object):
 
 class GlobalDataSet(object):
 
-    def __init__(self, info_dict_path):
-        assert os.path.exists(info_dict_path), info_dict_path
+    def __init__(self, num_attrib, train_edge="all"):
+        self.num_attrib_type = num_attrib
         self.num_edge_type = 0
         self.num_label = 0
-        self.label_dict = MappingDict()  # pred_idx <=> true label
         self.edge_type_dict = MappingDict()
-        self.num_attrib_type = 0
         self.info_json = None
-        self.load_data_info_dict(info_dict_path)  # {"num_label":233, "non_zero_attrib_index":[0,1,4,5,6,...] }
         self.label_bin_len = 0
+        self.train_edge = train_edge
 
 
 
-    def load_data_info_dict(self, info_dict_path):
-        with open(info_dict_path, "r") as file_obj:
-            self.info_json = json.loads(file_obj.read())
-        self.num_attrib_type = self.info_json["num_attrib_type"]
 
-        for pred_idx, true_label_str in self.info_json["label_dict"].items():
-            pred_idx = int(pred_idx)
-            self.label_dict.mapping_dict[pred_idx] = true_label_str   # pred_idx <=> true label
-            self.label_dict.keys.append(pred_idx)
 
     def load_data(self, path):
         curt_sample = DataSample()
         curt_sample.file_path = path
-        curt_sample.label_dict = self.label_dict
         parent_path = os.path.dirname(os.path.dirname(path)) # cd ../
         base_path = os.path.basename(path)
         npy_path = parent_path + os.sep + base_path[:base_path.rindex(".")] + ".npy"
         h_info_array = np.load(npy_path)
+        assert h_info_array.shape[1] == self.num_attrib_type
         # main_label is label set which continuous occurrence >= 5, we pick all each main_label as one sample(by deepcopy),
         # only if current label_set doesn't have main_label, we pick up the rest label (minor occurence)
         with open(path, "r") as file_obj:
@@ -168,6 +157,8 @@ class GlobalDataSet(object):
                     # note that a and b must start from 0! because nodeid start from 0
                     a = curt_sample.nodeid_line_no_dict.get_id_const(tokens[1])  # 如果没有这个node的行号，返回-1
                     b = curt_sample.nodeid_line_no_dict.get_id_const(tokens[2])  # 如果没有这个node，返回-1
+                    if self.train_edge != "all" and tokens[3] != self.train_edge:
+                        continue  # filter unwanted edge to comparision
                     edge_type = self.edge_type_dict.get_id(tokens[3])  # 比如temporal 对应的id
                     edge_id = curt_sample.nodeid_line_no_dict.get_id("{0}#{1}&{2}".format(tokens[3],tokens[1],tokens[2]))
                     if a == -1 or b == -1:
@@ -198,7 +189,7 @@ class GlobalDataSet(object):
 
                     assert len(curt_sample.node_list) == node_id
                     curt_sample.node_list.append(curt_node)
-                    self.num_label = len(label_bin) + 1  # label length is bin vector length, 0 will also seems be one label
+                    self.num_label = len(label_bin) + 1 # label length is bin vector length, 0 will also seems be one label
                     self.label_bin_len = len(label_bin)
                     curt_sample.label_bin_len = len(label_bin)
         if len(curt_sample.node_list) > 0:
