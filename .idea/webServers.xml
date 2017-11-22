@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="756514d3-b0ff-4f19-a2f0-2bcb3af2c627" name="166.111.80.36" url="http://166.111.80.36">
+        <fileTransfer host="166.111.80.36" port="22" rootFolder="/home/machen/face_expr" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="fa93b25d-fddf-4505-a469-2b352de2f34a" name="223.223.188.69" url="http://223.223.188.69">
+        <fileTransfer host="223.223.188.69" port="22" rootFolder="/home/machen/face_expr" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="5d9b16b5-53c2-416b-b925-cc045fedf1db" name="166.111.81.67" url="http://166.111.81.67">
+        <fileTransfer host="166.111.81.67" port="22" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

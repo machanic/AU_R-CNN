@@ -90,11 +90,6 @@ TRN_TEST_FOLD = 5
 CV_PRETRAIN_MODEL = ROOT_PATH + "/cv_train_model"
 DLIB_LANDMARK_PRETRAIN = CV_PRETRAIN_MODEL + os.sep + "shape_predictor_68_face_landmarks.dat"
 
-PY_CAFFE_PATH = "/home2/mac/caffe_orig/python"
-CAFFE_PATH = "/home2/mac/caffe_mac/build/tools/caffe"
-
-
-FLOW_PYRAMID_LEVEL = 4
 
 DEBUG = True
 
