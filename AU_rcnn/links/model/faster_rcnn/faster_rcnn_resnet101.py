@@ -262,7 +262,7 @@ class ResRoIHead(chainer.Chain):
         ])
         self.n_class = n_class
         self.roi_size = roi_size
-        self.spatial_scale = spatial_scale  # 这个很关键,一般都是16
+        self.spatial_scale = spatial_scale  # 这个很关键,一般都是1/16.0
         self.activation = dict()
 
     def reset_state(self):

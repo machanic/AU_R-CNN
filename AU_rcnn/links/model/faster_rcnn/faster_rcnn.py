@@ -246,9 +246,7 @@ class FasterRCNN(chainer.Chain):
 
 
     def predict(self, imgs, bbox): # 传入的是一个batch的数据
-        """predict AU from image and bbox.
-
-        This method predicts objects for each image.
+        """predict AUs from image and bbox.
 
         Args:
             imgs(iterable of numpy.ndarray): Arrays holding images. shape = (B,C,H,W), where B is batch_size

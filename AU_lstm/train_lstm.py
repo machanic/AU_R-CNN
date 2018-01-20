@@ -10,7 +10,7 @@ import argparse
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import os
 import config
-from structural_rnn.dataset.graph_dataset_reader import GlobalDataSet
+from graph_learning.dataset.graph_dataset_reader import GlobalDataSet
 from chainer.training.extensions import LogReport, PrintReport
 from chainer import training
 

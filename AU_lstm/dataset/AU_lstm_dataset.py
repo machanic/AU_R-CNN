@@ -7,7 +7,7 @@ import numpy as np
 from collections import defaultdict
 from operator import itemgetter
 import config
-from structural_rnn.dataset.graph_dataset_reader import GlobalDataSet
+from graph_learning.dataset.graph_dataset_reader import GlobalDataSet
 class AULstmDataset(chainer.dataset.DatasetMixin):
 
     def __init__(self, directory,  database, num_attrib):

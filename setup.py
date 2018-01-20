@@ -32,7 +32,7 @@ if platform.system() == 'Linux':  # In macos there seems not to be -g in LDSHARE
 # Cython.Compiler.Options.get_directive_defaults()['binding'] = True
 
 
-extensions = [Extension("factor_graph", ["structural_rnn/model/open_crf/cython/factor_graph.pyx"],include_dirs = [numpy.get_include()],
+extensions = [Extension("factor_graph", ["graph_learning/model/open_crf/cython/factor_graph.pyx"],include_dirs = [numpy.get_include()],
                         extra_compile_args=["-fPIC", "-O3", "-ffast-math"],
                         extra_link_args=["-fPIC", "-O3", "-ffast-math"],
                         # libraries=["m"],
@@ -40,7 +40,7 @@ extensions = [Extension("factor_graph", ["structural_rnn/model/open_crf/cython/f
                         # define_macros=[('CYTHON_TRACE','1'),],
 
                         ),
-              Extension("open_crf",['structural_rnn/model/open_crf/cython/open_crf.pyx'], include_dirs = [numpy.get_include()],
+              Extension("open_crf",['graph_learning/model/open_crf/cython/open_crf.pyx'], include_dirs = [numpy.get_include()],
                         extra_compile_args=["-fPIC", "-O3", "-ffast-math",],
                         extra_link_args=["-fPIC", "-O3", "-ffast-math",],
                         # libraries=["m"],
@@ -50,10 +50,10 @@ extensions = [Extension("factor_graph", ["structural_rnn/model/open_crf/cython/f
               ]
 import os
 try:
-    os.remove("D:/work/face_expr/structural_rnn/model/open_crf/cython/factor_graph.c")
-    os.remove("D:/work/face_expr/structural_rnn/model/open_crf/cython/factor_graph.cp35-win_amd64.pyd")
-    os.remove("D:/work/face_expr/structural_rnn/model/open_crf/cython/open_crf.c")
-    os.remove("D:/work/face_expr/structural_rnn/model/open_crf/cython/open_crf.cp35-win_amd64.pyd")
+    os.remove("D:/work/face_expr/graph_learning/model/open_crf/cython/factor_graph.c")
+    os.remove("D:/work/face_expr/graph_learning/model/open_crf/cython/factor_graph.cp35-win_amd64.pyd")
+    os.remove("D:/work/face_expr/graph_learning/model/open_crf/cython/open_crf.c")
+    os.remove("D:/work/face_expr/graph_learning/model/open_crf/cython/open_crf.cp35-win_amd64.pyd")
     os.remove("D:/work/face_expr/factor_graph.cp35-win_amd64.pyd")
     os.remove("D:/work/face_expr/open_crf_parallel.cp35-win_amd64.pyd")
 except FileNotFoundError:
@@ -61,12 +61,12 @@ except FileNotFoundError:
 setup(
   name = 'open_crf cython',
   package_data = {
-    'structural_rnn/model/open_crf/cython': ['*.pxd'],
+    'graph_learning/model/open_crf/cython': ['*.pxd'],
   },
   ext_modules=cythonize(extensions,include_path=[numpy.get_include()] ) # ,compiler_directives={'linetrace': True,"binding":True})
 )
 import shutil
-# shutil.copyfile("D:/work/face_expr/open_crf_parallel.cp35-win_amd64.pyd","D:/work/face_expr/structural_rnn/model/open_crf/cython/open_crf_parallel.cp35-win_amd64.pyd")
-# shutil.copyfile("D:/work/face_expr/factor_graph.cp35-win_amd64.pyd","D:/work/face_expr/structural_rnn/model/open_crf/cython/factor_graph.cp35-win_amd64.pyd")
+# shutil.copyfile("D:/work/face_expr/open_crf_parallel.cp35-win_amd64.pyd","D:/work/face_expr/graph_learning/model/open_crf/cython/open_crf_parallel.cp35-win_amd64.pyd")
+# shutil.copyfile("D:/work/face_expr/factor_graph.cp35-win_amd64.pyd","D:/work/face_expr/graph_learning/model/open_crf/cython/factor_graph.cp35-win_amd64.pyd")
 # os.remove("D:/work/face_expr/factor_graph.cp35-win_amd64.pyd")
 # os.remove("D:/work/face_expr/open_crf_parallel.cp35-win_amd64.pyd")

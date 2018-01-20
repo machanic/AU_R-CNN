@@ -1,1 +1,0 @@
-from structural_rnn.dataset.structural_RNN_dataset import S_RNNPlusDataset

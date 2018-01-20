@@ -156,7 +156,7 @@ class FasterRCNNTrainChain(chainer.Chain):
                     gt_neg_index_array = np.asarray(list(gt_neg_index_set))
                     choice_rest = np.random.choice(np.arange(len(gt_neg_index_array)), size=rest_pick_count, replace=False)
                     gt_pos_index_lst.extend(list(map(tuple,gt_neg_index_array[choice_rest].tolist())))
-                # TODO need class imbalance?
+                # TODO need class imbalance? NO
 
                 pick_index = list(zip(*gt_pos_index_lst))
                 if len(union_gt) == 0:

@@ -13,10 +13,10 @@ for file in `ls $root_dir`;do
 			train_edge=all
 		fi
 		if [ "$database" = "BP4D" ];then
-			nohup "nohup $PYTHON structural_rnn/evaluator_main.py --target_dir ${root_dir}/${file} --bi_lstm --database $database --gpu $gpu --test ${root_dir}/test --train_edge all > ${root_dir}/eval.log 2>&1"
+			nohup "nohup $PYTHON graph_learning/evaluator_main.py --target_dir ${root_dir}/${file} --bi_lstm --database $database --gpu $gpu --test ${root_dir}/test --train_edge all > ${root_dir}/eval.log 2>&1"
 		else
 			echo "NONE"
-                        #nohup $PYTHON structural_rnn/evaluator_main.py --target_dir ${root_dir}/${file} --database $database --gpu $gpu --test ${root_dir}/test --train_edge all > ${root_dir}/eval.log 2>&1
+                        #nohup $PYTHON graph_learning/evaluator_main.py --target_dir ${root_dir}/${file} --database $database --gpu $gpu --test ${root_dir}/test --train_edge all > ${root_dir}/eval.log 2>&1
 		fi
 fi
 done
