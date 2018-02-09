@@ -8,7 +8,7 @@ from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 from graph_learning.dataset.structural_RNN_dataset import S_RNNPlusDataset
 from graph_learning.extensions.AU_evaluator import ActionUnitEvaluator
 from graph_learning.extensions.opencrf_evaluator import OpenCRFEvaluator
-from graph_learning.model.s_rnn.s_rnn_plus import StructuralRNNPlus
+from graph_learning.model.structural_rnn.s_rnn_plus import StructuralRNNPlus
 from graph_learning.updater.bptt_updater import BPTTUpdater
 from graph_learning.dataset.crf_pact_structure import CRFPackageStructure
 from graph_learning.updater.bptt_updater import convert
@@ -74,7 +74,7 @@ def main():
     file_name = list(filter(lambda e: e.endswith(".txt"), os.listdir(args.train)))[0]
     sample = dataset.load_data(args.train + os.sep + file_name)  # we load first sample for construct S-RNN, it must passed to constructor argument
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size)  # 只读取其中的一个视频的第一帧，由于node个数相对稳定，因此可以construct RNN
-
+    # 因为我们用多分类的hinge loss，所以需要num_label是来自于2进制形式的label数+1（+1代表全0）
     model = StructuralRNNPlus(crf_pact_structure, in_size=dataset.num_attrib_type, out_size=dataset.num_label,
                               hidden_size=args.hidden_size, with_crf=args.with_crf, use_bi_lstm=args.bi_lstm)
 
@@ -143,7 +143,7 @@ def main():
         return
     if args.resume and os.path.exists(args.out + os.sep + optimizer_snapshot_name):
         print("loading optimizer_snapshot_name to optimizer")
-        chainer.serializers.load_npz( args.out + os.sep + optimizer_snapshot_name, optimizer)
+        chainer.serializers.load_npz(args.out + os.sep + optimizer_snapshot_name, optimizer)
 
 
     if chainer.training.extensions.PlotReport.available():

@@ -50,13 +50,14 @@ class GraphAttentionBlock(chainer.Chain):
             # Attention head
             dense = F.squeeze(attn_fc(combinations)) # a(Wh_i, Wh_j) in the paper (N^2 x 1), then squeeze to remove last 1
             dense = dense.reshape(N, N)
+            dense = F.leaky_relu(dense)
             # Mask values before activation (Vaswani et al., 2017)
             comparison = (A == 0)  # true or false of each element
             mask = F.where(comparison, np.ones_like(A) * -10e9, np.zeros_like(A)) # if A ==0, choose -10e9, else choose 0
             # this mask elements: if A == 0: -10e9, if A!=0: 0
             masked = dense + mask  # push non-neighbor elements to -10e9, shape = N x N
             # Feed masked values to softmax
-            softmax_val = F.softmax(masked,axis=1)  # paper eqn.3 alpha
+            softmax_val = F.softmax(masked,axis=1)  # paper eqn.3 alpha,  push non-neighbor node value to almost 0
             dropout_val = F.dropout(softmax_val, ratio=self.attn_dropout)  # shape = N x N
             # Linear combination with neighbors' features
             node_features = F.matmul(dropout_val, linear_transfer_X)  # (N x N) x (N x F') = N x F'

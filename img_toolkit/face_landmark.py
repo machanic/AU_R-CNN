@@ -25,7 +25,8 @@ class FaceLandMark(object, metaclass=Singleton):
     def landmark(self, image, need_txt_img=False):
         # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         gray = image
-
+        if image is None:
+            print("None image!")
         if image.ndim >= 3 and image.shape[2] == 3:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # clahe_image = clahe.apply(gray)
@@ -35,7 +36,7 @@ class FaceLandMark(object, metaclass=Singleton):
         # only one face,so the dets will always be length = 1
         small_d = dets[0]
         # dlib.dlib.rectangle(d.left(),d.top(),d.right(),d.bottom())
-        d = dlib.dlib.rectangle(small_d.left() * 4, small_d.top() * 4, small_d.right()* 4, small_d.bottom() * 4)
+        d = dlib.rectangle(small_d.left() * 4, small_d.top() * 4, small_d.right()* 4, small_d.bottom() * 4)
         shape = self.predictor(gray, d)
         font = cv2.FONT_HERSHEY_SIMPLEX
         new_image = None

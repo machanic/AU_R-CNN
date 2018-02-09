@@ -29,7 +29,7 @@ class S_RNNPlusDataset(chainer.dataset.DatasetMixin):
                     if os.path.isdir(directory + os.sep + folder_name):
                         if folder_name in target_dict:  # only in target_dict file will load
                             for file_name in os.listdir(directory + os.sep + folder_name):
-                                self.file_name_dict[idx] = directory + os.sep + folder_name + os.sep +file_name
+                                self.file_name_dict[idx] = directory + os.sep + folder_name + os.sep + file_name
                                 idx+=1
         else:
             for idx, path in enumerate(filter(lambda p:p.endswith("txt"), os.listdir(directory))):
@@ -41,7 +41,7 @@ class S_RNNPlusDataset(chainer.dataset.DatasetMixin):
 
     def get_example(self, i):
         print("getting i:{}".format(i))
-        key = "S_RNN_{0}".format(self.file_name_dict[i])
+        key = "S_RNN_{0}".format(self.file_name_dict[i]) # just for cache to boost get_example fast speed
         if key in self.crf_pact_structure_dict and self.need_cache:
             x, sample = self.crf_pact_structure_dict[key]
 

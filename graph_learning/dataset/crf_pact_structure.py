@@ -41,8 +41,8 @@ class CRFPackageStructure(object):
             get_box = lambda e: int(e[e.index("_")+1:])
             box_min_id = dict()
             for node in self.sample.node_list:
-                node_key_str = self.sample.nodeid_line_no_dict.mapping_dict.inv[node.id]
-                box_id = get_box(node_key_str)
+                node_key_str = self.sample.nodeid_line_no_dict.mapping_dict.inv[node.id] # key: node_id, val: line number
+                box_id = get_box(node_key_str)  # each node_id in graph file consists of "frame_boxid"
                 if box_id not in box_min_id:
                     box_min_id[box_id] = node
                 elif get_frame(self.sample.nodeid_line_no_dict.mapping_dict.inv[box_min_id[box_id].id]) \
@@ -51,7 +51,7 @@ class CRFPackageStructure(object):
             for node in self.sample.node_list:
                 node_key_str = self.sample.nodeid_line_no_dict.mapping_dict.inv[node.id]
                 box_id = get_box(node_key_str)
-                self.node_id_convert[node.id] = box_min_id[box_id].id
+                self.node_id_convert[node.id] = box_min_id[box_id].id   # node_id_convert: all the node transform to first frame correspond box
 
 
             self.nodeRNN_id_dict = defaultdict(list)
@@ -98,7 +98,7 @@ class CRFPackageStructure(object):
             node_id = self.sample.node_list[i].id
             factor_graph.var_node[i].id = node_id
             factor_graph.p_node[node_id] = factor_graph.var_node[i]
-            factor_graph.var_node[i].init(self.num_label)
+            factor_graph.var_node[i].init(self.num_label)  # init marginal
             factor_graph.set_variable_label(i, self.sample.node_list[i].label)  # 这个label是int类型，代表字典里的数字
             factor_graph.var_node[i].label_type = self.sample.node_list[i].label_type  # ENUM的 KNOWN 或者UNKOWN
 
@@ -106,7 +106,7 @@ class CRFPackageStructure(object):
             factor_node_id = self.sample.edge_list[i].id
             factor_graph.factor_node[i].id = factor_node_id
             factor_graph.p_node[factor_node_id] = factor_graph.factor_node[i]
-            factor_graph.factor_node[i].init(self.num_label)
+            factor_graph.factor_node[i].init(self.num_label)  # init marginal
             factor_graph.add_edge(i, self.sample.edge_list[i].a, self.sample.edge_list[i].b,
                                   self.sample.edge_list[i].edge_type)
 

@@ -8,7 +8,7 @@ import numpy as np
 from graph_learning.dataset.crf_pact_structure import CRFPackageStructure
 from graph_learning.model.open_crf.cython.factor_graph import FactorGraph
 from graph_learning.model.open_crf.cython.open_crf_layer import OpenCRFLayer
-from graph_learning.model.s_rnn.structural_rnn import StructuralRNN
+from graph_learning.model.structural_rnn.structural_rnn import StructuralRNN
 
 
 class StructuralRNNPlus(chainer.Chain):
@@ -61,7 +61,7 @@ class StructuralRNNPlus(chainer.Chain):
                 remove_factor_node_index_ls.append(i)
        # We don't need self link EdgeRNN here(in original paper self to self link), I assume this can be done via RNN inherent nature
         for index in sorted(remove_var_node_index_ls, reverse=True):
-            del factor_graph.var_node[index]
+            del factor_graph.var_node[index]  # only preserve the first frame variable node and factor node to construct S-RNN
         for index in sorted(remove_factor_node_index_ls, reverse=True):
             del factor_graph.factor_node[index]
         factor_graph.n = len(factor_graph.var_node)
@@ -111,7 +111,7 @@ class StructuralRNNPlus(chainer.Chain):
             xp = chainer.cuda.get_array_module(x)
             # return shape = B * N * D , B is batch_size(=1 only), N is one video all nodes count, D is each node output vector
             if self.with_crf:  # 作废，这句if不会进去
-                xs = F.expand_dims(x,axis=0)
+                xs = F.expand_dims(x, axis=0)
                 crf_pact_structures = [crf_pact_structure]
                 hs = self.structural_rnn(xs, crf_pact_structures)  # hs shape = B x N x D, B is batch_size
                 hs = F.copy(hs, -1) # data transfer to cpu
@@ -137,7 +137,7 @@ class StructuralRNNPlus(chainer.Chain):
             h = F.copy(h, -1)
             # gt_label is hidden inside crf_pact_structure's sample. this step directly compute loss
             loss = self.open_crf(h, crf_pact_structures)
-        else:  # only s_rnn
+        else:  # only structural_rnn
             ts = self.get_gt_labels(xp, crf_pact_structures, is_bin=False)  # B x N x 1, and B = 1 forever
             ts = chainer.Variable(ts.reshape(-1))  # because ts label is 0~L which is one more than ground truth, 0 represent 0,0,0,0,0
             h = h.reshape(-1, h.shape[-1])  # h must have 0~L which = L+1 including non_AU = 0(also background class)

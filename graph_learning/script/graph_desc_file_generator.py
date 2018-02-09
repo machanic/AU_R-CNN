@@ -716,8 +716,9 @@ if __name__ == "__main__":
     parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument("--cut_zero", '-cut', action="store_true")
     parser.add_argument("--sift","-sift",action="store_true")
-    parser.add_argument("--single_label", "-single", action="store_true",
-                        help="single label to help to refine label in video sequence more reasonable")
+    parser.add_argument("--roi_label_split",  action="store_true",
+                        help="use 'roi label split' strategy to choose only one "
+                             "single label to help to refine label in video sequence more reasonable")
 
 
     args = parser.parse_args()
@@ -770,7 +771,7 @@ if __name__ == "__main__":
     else:
         print("you can not specify database other than BP4D/DISFA")
         sys.exit(1)
-    if args.single_label:
+    if args.roi_label_split:
         build_graph_roi_single_label(faster_rcnn, read_func, output, database_name=args.database,
                                      force_generate=False,
                                      proc_num=args.proc_num, cut=args.cut_zero, extract_key=extract_key,

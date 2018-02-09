@@ -19,7 +19,7 @@ from collections import defaultdict
 import chainer.functions as F
 import numpy as np
 cimport numpy as np
-from structural_rnn.model.open_crf.cython.factor_graph cimport FactorGraph
+from graph_learning.model.open_crf.cython.factor_graph cimport FactorGraph
 
 import time
 

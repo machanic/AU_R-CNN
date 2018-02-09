@@ -4,8 +4,8 @@ from collections import OrderedDict
 import cv2
 from bidict import bidict
 
-# ROOT_PATH = "/home/machen/dataset/"
-ROOT_PATH = "D:/work/S-RNN++/data/"
+ROOT_PATH = "/home/machen/dataset/"
+# ROOT_PATH = "D:/work/S-RNN++/data/"
 
 DATA_PATH = {
     "ck+": ROOT_PATH + "/CK+",
@@ -87,7 +87,7 @@ CHANNEL = 3
 MEAN_VALUE = 128
 TRN_TEST_FOLD = 5
 
-CV_PRETRAIN_MODEL = ROOT_PATH + "/cv_train_model"
+CV_PRETRAIN_MODEL = ROOT_PATH + "/landmark_model"
 DLIB_LANDMARK_PRETRAIN = CV_PRETRAIN_MODEL + os.sep + "shape_predictor_68_face_landmarks.dat"
 
 

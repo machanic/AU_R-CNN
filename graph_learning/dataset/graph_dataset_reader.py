@@ -157,6 +157,7 @@ class GlobalDataSet(object):
             for line in file_obj:
                 tokens = line.split()
                 if tokens[0] == "#edge": # read edge type, 一个文件必须先写node，后写#edge，要不然edge哪知道id对应哪一行
+                    # each line: #edge 042_0 042_3 spatio
                     assert len(tokens) == 4
                     # note that a and b must start from 0! because nodeid start from 0
                     a = curt_sample.nodeid_line_no_dict.get_id_const(tokens[1])  # 如果没有这个node的行号，返回-1
@@ -164,6 +165,7 @@ class GlobalDataSet(object):
                     if self.train_edge != "all" and tokens[3] != self.train_edge:
                         continue  # filter unwanted edge to comparision
                     edge_type = self.edge_type_dict.get_id(tokens[3])  # 比如temporal 对应的id
+                    # key: spatio#042_0&042_3 value: edge_id (self increment with calling)
                     edge_id = curt_sample.nodeid_line_no_dict.get_id("{0}#{1}&{2}".format(tokens[3],tokens[1],tokens[2]))
                     if a == -1 or b == -1:
                         raise TypeError("#edge error! nodeid={0} or nodeid={1} found in path={2}".format(tokens[1], tokens[2], path))
@@ -189,7 +191,7 @@ class GlobalDataSet(object):
                         print("Data format wrong! Label must start with features:/np_file:")
                         return
                     curt_node = DataNode(id=node_id, label_type=label_type, label_bin=label_bin,
-                                         feature=node_features)
+                                         feature=node_features)  # node_id是指行号了，但这个所谓行号从0开始
 
                     assert len(curt_sample.node_list) == node_id
                     curt_sample.node_list.append(curt_node)

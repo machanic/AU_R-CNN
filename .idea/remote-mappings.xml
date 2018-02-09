@@ -10,7 +10,21 @@
             </list>
           </settings>
         </remote-mappings>
+        <remote-mappings server-id="python@sftp://machen@166.111.80.36:22/usr/local/anaconda3/bin/python">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/home/machen/face_expr" />
+            </list>
+          </settings>
+        </remote-mappings>
         <remote-mappings server-id="python@ssh://machen@166.111.80.36:22/usr/local/anaconda3/bin/python">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/home/machen/face_expr" />
+            </list>
+          </settings>
+        </remote-mappings>
+        <remote-mappings server-id="python@sftp://machen@10.8.1.218:22/usr/bin/python">
           <settings>
             <list>
               <mapping local-root="$PROJECT_DIR$" remote-root="/home/machen/face_expr" />

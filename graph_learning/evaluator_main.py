@@ -11,7 +11,7 @@ from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import os
 
 import json
-from graph_learning.model.s_rnn.s_rnn_plus import StructuralRNNPlus
+from graph_learning.model.structural_rnn.s_rnn_plus import StructuralRNNPlus
 from graph_learning.model.open_crf.cython.open_crf_layer import OpenCRFLayer
 
 import re
@@ -105,7 +105,7 @@ def main():
         check_pretrained_model_match_file(target_dict, args.test)
     with chainer.no_backprop_mode():
         test_data = S_RNNPlusDataset(directory=args.test, attrib_size=args.hidden_size, global_dataset=dataset,
-                                     need_s_rnn=need_srnn, need_cache_factor_graph=False, target_dict=target_dict)  # if there is one file that use s_rnn, all the pact_structure need s_rnn
+                                     need_s_rnn=need_srnn, need_cache_factor_graph=False, target_dict=target_dict)  # if there is one file that use structural_rnn, all the pact_structure need structural_rnn
         test_iter = chainer.iterators.SerialIterator(test_data, 1, shuffle=False, repeat=False)
         gpu = args.gpu if not use_crf else -1
         print('using gpu :{}'.format(gpu))

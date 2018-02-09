@@ -110,13 +110,13 @@ class FasterRCNNTrainChain(chainer.Chain):
                     assert label.shape[0] == bbox.shape[0] and bbox.shape[0] > 0
                     # Sample RoIs and forward
                     sample_roi = bbox
-                    sample_roi_index = n * xp.ones((len(sample_roi),), dtype=xp.int32)
+                    sample_roi_index = n * np.ones((len(sample_roi),), dtype=xp.int32)
                     gt_roi_label.extend(label)  # list 可以extend ndarray
                     sample_roi_lst.extend(sample_roi)
                     sample_roi_index_lst.extend(sample_roi_index)
                 sample_roi_lst = xp.stack(sample_roi_lst).astype(dtype=xp.float32)
                 gt_roi_label = xp.stack(gt_roi_label).astype(dtype=xp.int32)
-                sample_roi_index_lst = xp.stack(sample_roi_index_lst).astype(dtype=xp.int32)
+                sample_roi_index_lst = xp.asarray(sample_roi_index_lst).astype(dtype=xp.int32)
 
             elif batch_size == 1:  # batch_size = 1
                 bbox = bboxes[0]

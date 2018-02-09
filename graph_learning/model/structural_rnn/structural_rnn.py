@@ -135,7 +135,7 @@ class StructuralRNN(chainer.Chain):
                             continue
                         self.node_id_neighbor[node_id].append(var_node.id)  # 这样应该也会将自己对自己相连的id包含在内
                 for key, val_list in self.node_id_neighbor.items():
-                    self.node_id_neighbor[key] = sorted(val_list)
+                    self.node_id_neighbor[key] = sorted(val_list)  # id相当于行号，self.node_id_neighbor的目的是找出neighbor是谁，便于构建连接关系
                 feature_len = self.node_feature_convert_len * (len(neighbors) + 1)  # concat edgeRNN out and node feature(after convert dim)
                 self.add_link("NodeRNN_{}".format(node_id), NodeRNN(insize=feature_len, outsize=out_size, use_bi_lstm=use_bi_lstm) )
                 self.top[str(node_id)] = getattr(self, "NodeRNN_{}".format(node_id))
@@ -182,7 +182,8 @@ class StructuralRNN(chainer.Chain):
                 assert len(node_list_a) == len(node_list_b)
                 fetch_x_index = np.array(list(zip(node_list_a, node_list_b)))  # T x 2
                 edge_feature = x[fetch_x_index.flatten(), :]  # (T x 2) x D
-                edge_feature = edge_feature.reshape(fetch_x_index.shape[0], 2 * x.shape[-1])  # x shape N x D, fetch_x_index shape = T x 2,
+                # concatenate corresponding node features feeds to edge-RNN
+                edge_feature = edge_feature.reshape(fetch_x_index.shape[0], 2 * x.shape[-1])  # convert to T x (2 x D) , x shape N x D, fetch_x_index shape = T x 2,
                 edge_out_dict[edge_RNN_id] = edge_RNN([edge_feature])[0]
 
             node_output = []
@@ -206,7 +207,7 @@ class StructuralRNN(chainer.Chain):
                 node_output.append(node_RNN([concat_features])[0])  # output= list of T x out_size
             edge_out_dict.clear() # save GPU memory
             node_output = F.stack(node_output)  # shape nodeRNN_num x T x out_size
-            node_output = F.transpose(node_output,axes=(1,0,2))  # reorder
+            node_output = F.transpose(node_output,axes=(1,0,2))  # reorder, shape = T x nodeRNN_num x out_size
             node_output = node_output.reshape(-1, self.out_size)  # shape N x out_size
             # reorder to nodeid list order
             # time_used = {int(node_RNN_id):0 for node_RNN_id in self.top.keys()}

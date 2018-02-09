@@ -19,13 +19,12 @@ from chainer.datasets import TransformDataset
 from AU_rcnn.links.model.faster_rcnn import FasterRCNNTrainChain, FasterRCNNVGG16, FasterRCNNResnet101
 from AU_rcnn import transforms
 
-from AU_rcnn.datasets.bp4d.AU_dataset import AUDataset
+from AU_rcnn.datasets.AU_dataset import AUDataset
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 from AU_rcnn.updater.update_bptt import BPTTUpdater
 import config
 from chainer.training import extensions
-from AU_rcnn.iterator.remove_non_frame_iterator import RemoveNonLabelMultiprocessIterator
 from chainer.iterators import MultiprocessIterator, SerialIterator
 from AU_rcnn.extensions.AU_evaluator import AUEvaluator
 import json
@@ -279,6 +278,7 @@ def main():
     snapshot_model_file_name = args.out + os.sep + filter_last_checkpoint_filename(file_list, "model", key_str)
     single_model_file_name = args.out + os.sep + '{0}_fold_{1}_{2}_{3}_model.npz'.format(args.fold, args.split_idx,
                                                                                          args.feature_model, lstm_str)
+
     if os.path.exists(pretrained_optimizer_file_name):
         print("loading optimizer snatshot:{}".format(pretrained_optimizer_file_name))
         chainer.serializers.load_npz(pretrained_optimizer_file_name, optimizer)
@@ -316,9 +316,11 @@ def main():
         trigger=(args.snapshot, 'iteration'))
 
     if not args.snap_individual:
+        snap_model_file_name = '{0}_fold_{1}_{2}_{3}_model.npz'.format(args.fold, args.split_idx,
+                                                                             args.feature_model, lstm_str)
         trainer.extend(
             chainer.training.extensions.snapshot_object(model.faster_rcnn,
-                                                        filename=single_model_file_name),
+                                                        filename=snap_model_file_name),
             trigger=(args.snapshot, 'iteration'))
 
     else:

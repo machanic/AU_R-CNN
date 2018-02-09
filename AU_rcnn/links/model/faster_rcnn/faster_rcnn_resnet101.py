@@ -75,8 +75,7 @@ class FasterRCNNResnet101(FasterRCNN):
             'download/0.0.3/faster_rcnn_vgg16_voc07_2017_06_06.npz'
         },
         'imagenet': {
-            'path': "/root/.chainer/dataset/pfnet/chainer/models/VGG_ILSVRC_16_layers.npz",
-
+            'path': "{}/caffe_model/VGG_ILSVRC_16_layers.npz".format(config.ROOT_PATH)
             # 'url': "http://www.robots.ox.ac.uk/%7Evgg/software/very_deep/caffe/VGG_ILSVRC_16_layers.caffemodel"
         },
         'resnet101': {
