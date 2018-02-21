@@ -17,7 +17,7 @@ import argparse
 from img_toolkit.face_mask_cropper import FaceMaskCropper
 import re
 import multiprocessing as mp
-from graph_learning.handcraft_feature.roi_sift import RoISift
+
 from functools import lru_cache
 import itertools
 
@@ -418,7 +418,7 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
 
             # 这个indent级别都是同一张图片内部
             # print("box number, all_mask:", len(bboxes),len(all_couple_mask_dict))
-            for box_idx in range(len(bboxes)):
+            for box_idx, box in enumerate(bboxes):
                 label = labels[box_idx]  # label maybe single true AU or AU binary tuple
                 if isinstance(label, tuple):
                     label_arr = np.char.mod("%d", label)
@@ -430,7 +430,7 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
 
                 node_id = "{0}_{1}".format(frame, box_idx)
                 node_list.append("{0} {1} feature_idx:{2}".format(node_id, label, len(h_info_array)))
-                h_info_array.append(h_flat)
+                h_info_array.append([h_flat, np.array(box, dtype=np.float32)])
 
             # 同一张画面两两组合，看有没连接线，注意AU=0，就是未出现的AU动作的区域也参与连接
             for box_idx_a, box_idx_b in map(sorted, itertools.combinations(range(len(bboxes)), 2)):
@@ -623,7 +623,7 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
                     h_flat = h[box_idx]                     
                     node_id = "{0}_{1}".format(frame, box_idx)
                     node_list.append("{0} {1} feature_idx:{2} AU_couple:{3} AU:{4}".format(node_id, label, len(h_info_array), AU_couple, AU))
-                    h_info_array.append(h_flat)
+                    h_info_array.append([h_flat, np.array(bboxes[box_idx], dtype=np.float32)])
 
                 # 同一张画面两两组合，看有没连接线，注意AU=0，就是未出现的AU动作的区域也参与连接
                 for box_idx_a, box_idx_b in map(sorted, itertools.combinations(range(len(bboxes)), 2)):
@@ -715,7 +715,6 @@ if __name__ == "__main__":
     parser.add_argument('--use_lstm', action='store_true', help='use LSTM or Linear in head module')
     parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument("--cut_zero", '-cut', action="store_true")
-    parser.add_argument("--sift","-sift",action="store_true")
     parser.add_argument("--roi_label_split",  action="store_true",
                         help="use 'roi label split' strategy to choose only one "
                              "single label to help to refine label in video sequence more reasonable")
@@ -738,31 +737,30 @@ if __name__ == "__main__":
 
     adaptive_AU_database(args.database)
     extract_key = ""
-    if not args.sift:
-        if args.pretrained_model_name == "resnet101":
-            faster_rcnn = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE),
-                                          pretrained_model="resnet101",
-                                          mean_file=args.mean, use_lstm=args.use_lstm, extract_len=args.extract_len)  # 可改为/home/machen/face_expr/result/snapshot_model.npz
-            extract_key = 'avg_pool'
-        elif args.pretrained_model_name == "vgg":
-            faster_rcnn = FasterRCNNVGG16(n_fg_class=len(config.AU_SQUEEZE),
-                                          pretrained_model="imagenet",
-                                          mean_file=args.mean,
-                                          use_lstm=False,
-                                          extract_len=args.extract_len)
-            extract_key = 'h'
-        if os.path.exists(args.model):
-            print("loading pretrained snapshot:{}".format(args.model))
-            chainer.serializers.load_npz(args.model, faster_rcnn)
-        else:
-            print("error, not exists pretrained model file:{}".format(args.model))
-            sys.exit(1)
 
-        if args.device >= 0:
-            faster_rcnn.to_gpu(args.device)
-            chainer.cuda.get_device_from_id(int(args.device)).use()
+    if args.pretrained_model_name == "resnet101":
+        faster_rcnn = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE),
+                                      pretrained_model="resnet101",
+                                      mean_file=args.mean, use_lstm=args.use_lstm, extract_len=args.extract_len)  # 可改为/home/machen/face_expr/result/snapshot_model.npz
+        extract_key = 'avg_pool'
+    elif args.pretrained_model_name == "vgg":
+        faster_rcnn = FasterRCNNVGG16(n_fg_class=len(config.AU_SQUEEZE),
+                                      pretrained_model="imagenet",
+                                      mean_file=args.mean,
+                                      use_lstm=False,
+                                      extract_len=args.extract_len)
+        extract_key = 'h'
+    if os.path.exists(args.model):
+        print("loading pretrained snapshot:{}".format(args.model))
+        chainer.serializers.load_npz(args.model, faster_rcnn)
     else:
-        faster_rcnn = RoISift()
+        print("error, not exists pretrained model file:{}".format(args.model))
+        sys.exit(1)
+
+    if args.device >= 0:
+        faster_rcnn.to_gpu(args.device)
+        chainer.cuda.get_device_from_id(int(args.device)).use()
+
     # print("GPU load done")
     if args.database == "BP4D":
         read_func = read_BP4D_video_label
