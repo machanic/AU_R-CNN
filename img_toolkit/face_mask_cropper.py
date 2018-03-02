@@ -33,8 +33,12 @@ class FaceMaskCropper(object):
                     return result
             except Exception:
                 pass
+
         orig_img = cv2.imread(orig_img_path, cv2.IMREAD_COLOR)
+        if orig_img is None:
+            print("error read image: {}".format(orig_img_path))
         landmark_dict, _, _ = FaceMaskCropper.landmark.landmark(image=orig_img, need_txt_img=False)
+        assert len(landmark_dict) == 67
         new_face, rect = FaceMaskCropper._dlib_face_rect(orig_img, landmark_dict)
         del orig_img
         new_face = cv2.resize(new_face, config.IMG_SIZE)

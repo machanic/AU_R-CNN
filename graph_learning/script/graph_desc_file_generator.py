@@ -19,6 +19,7 @@ import re
 import multiprocessing as mp
 
 from functools import lru_cache
+from operator import itemgetter
 import itertools
 
 def delegate_mask_crop(img_path, channal_first, queue):
@@ -46,7 +47,7 @@ def read_DISFA_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relatio
             is_train = True if video_name in train_subject else False
             if not force_generate:
                 prefix = "train" if is_train else "test"
-                target_file_path = output_dir + os.sep + prefix + os.sep + video_name+"_"+ orientation + ".npy"
+                target_file_path = output_dir + os.sep + prefix + os.sep + video_name+"_"+ orientation + ".npz"
                 if os.path.exists(target_file_path):
                    continue
             resultdict={}
@@ -172,7 +173,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
     if is_need_adaptive_AU_relation:
         adaptive_AU_relation()  # delete AU relation pair occur in same facial region
     au_couple_dict = get_zip_ROI_AU()
-    au_couple_child_dict = get_AU_couple_child(au_couple_dict)
+    au_couple_child_dict = get_AU_couple_child(au_couple_dict)  # AU_couple => list of child AU_couple
     # if need_translate_combine_AU ==> "mask_path_dict":{(2,3,4): /pathtomask} convert to "mask_path_dict":{110: /pathtomask}
      # each is dict : {"img": /path/to/img, "mask_path_dict":{(2,3,4): /pathtomask}, }
     BP4D_base_dir_path = config.DATA_PATH["BP4D"]
@@ -185,7 +186,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
         is_train = True if subject_name in train_subject else False
         if not force_generate:
             prefix = "train" if is_train else "test"
-            target_file_path = output_dir + os.sep + prefix + os.sep + subject_name + "_" + sequence_name + ".npy"
+            target_file_path = output_dir + os.sep + prefix + os.sep + subject_name + "_" + sequence_name + ".npz"
             if os.path.exists(target_file_path):
                 continue
         resultdict = {}
@@ -242,10 +243,11 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                         continue
                     try:
                         cropped_face, AU_mask_dict = FaceMaskCropper.get_cropface_and_mask(img_path, channel_first=True)
+                        # note that above AU_mask_dict, each AU may have mask that contains multiple separate regions
                         resultdict[img_path] = (cropped_face, AU_mask_dict)
                         print("one image :{} done".format(img_path))
                     except IndexError:
-                        print("index error!")
+                        print("img_path:{} cannot obtain 68 landmark".format(img_path))
                         pass
         # for p in procs:
         #     p.join()
@@ -287,7 +289,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                     child_AU_couple_list = au_couple_child_dict[AU_couple]
                     AU_couple = set(AU_couple)
                     for child_AU_couple in child_AU_couple_list:
-                        AU_couple.update(child_AU_couple)  # combine child region's AU
+                        AU_couple.update(child_AU_couple)  # label fetch: combine child region's AU
                     if not is_binary_AU: # in CRF, CRF模式需要将同一个区域的多个AU用逗号分隔，拼接
                         concat_AU = []
                         for AU in AU_couple:
@@ -366,6 +368,7 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
         spatio_edges = []
         faster_rcnn.reset_state()
         h_info_array = []
+        box_geometry_array = []
         for entry_dict in video_info:
             frame = entry_dict["frame"]
             cropped_face = entry_dict["cropped_face"]
@@ -382,8 +385,7 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
                 connect_arr = cv2.connectedComponents(mask, connectivity=8, ltype=cv2.CV_32S)
                 component_num = connect_arr[0]
                 label_matrix = connect_arr[1]
-
-                actual_connect = 0
+                temp_boxes = []
                 for component_label in range(1, component_num):
                     row_col = list(zip(*np.where(label_matrix == component_label)))
                     row_col = np.array(row_col)
@@ -400,9 +402,10 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
 
                     if y_min == y_max and x_min == x_max:
                         continue
-
+                    temp_boxes.append(coordinates)
+                temp_boxes = sorted(temp_boxes, key=itemgetter(3)) # must make sure each frame have same box order
+                for coordinates in temp_boxes:
                     if coordinates not in bboxes:
-                        actual_connect += 1
                         bboxes.append(coordinates)
                         labels.append(region_label)  # AU may contain single_true AU or AU binary tuple (depends on need_adaptive_AU_relation)
                         AU_couple_bbox_dict[coordinates] = AU_couple
@@ -410,7 +413,7 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
             if len(bboxes) != config.BOX_NUM[database_name]:
                 print("boxes num != {0}, real box num= {1}".format(config.BOX_NUM[database_name], len(bboxes)))
                 continue
-            with chainer.no_backprop_mode():
+            with chainer.no_backprop_mode(),chainer.using_config('train', False):
                 h = faster_rcnn.extract(cropped_face, bboxes, layer=extract_key)  # shape = R' x 2048
             assert h.shape[0] == len(bboxes)
             h = chainer.cuda.to_cpu(h)
@@ -430,7 +433,8 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
 
                 node_id = "{0}_{1}".format(frame, box_idx)
                 node_list.append("{0} {1} feature_idx:{2}".format(node_id, label, len(h_info_array)))
-                h_info_array.append([h_flat, np.array(box, dtype=np.float32)])
+                h_info_array.append(h_flat)
+                box_geometry_array.append(box)
 
             # 同一张画面两两组合，看有没连接线，注意AU=0，就是未出现的AU动作的区域也参与连接
             for box_idx_a, box_idx_b in map(sorted, itertools.combinations(range(len(bboxes)), 2)):
@@ -458,9 +462,10 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
         elif subject_id in test_subject:
             output_path = "{0}/test/{1}.txt".format(output_dir, video_info[0]["video_id"])
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        npy_path = output_path[:output_path.rindex(".")] + ".npy"
+        npz_path = output_path[:output_path.rindex(".")] + ".npz"
 
-        np.save(npy_path, h_info_array)
+        np.savez(npz_path, appearance_features=np.asarray(h_info_array,dtype=np.float32),
+                 geometry_features=np.array(box_geometry_array, dtype=np.float32))
         with open(output_path, "w") as file_obj:
             for line in node_list:
                 file_obj.write("{}\n".format(line))
@@ -473,6 +478,7 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
             spatio_edges.clear()
             temporal_edges.clear()
             h_info_array.clear()
+            box_geometry_array.clear()
 
 
 def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_name, force_generate, proc_num, cut:bool, extract_key, train_subject, test_subject):
@@ -535,6 +541,7 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
             temporal_edges = []
             spatio_edges = []
             h_info_array = []
+            box_geometry_array = []
             for entry_dict in video_info:
                 frame = entry_dict["frame"]
                 cropped_face = entry_dict["cropped_face"]
@@ -603,7 +610,7 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
                 if key in extracted_feature_cache:
                     h = extracted_feature_cache[key]
                 else:
-                    with chainer.no_backprop_mode():
+                    with chainer.no_backprop_mode(),chainer.using_config('train', False):
                         h = faster_rcnn.extract(cropped_face, bboxes, layer=extract_key)  # shape = R' x 2048
                         extracted_feature_cache[key] = h
                     assert h.shape[0] == len(bboxes)
@@ -623,7 +630,8 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
                     h_flat = h[box_idx]                     
                     node_id = "{0}_{1}".format(frame, box_idx)
                     node_list.append("{0} {1} feature_idx:{2} AU_couple:{3} AU:{4}".format(node_id, label, len(h_info_array), AU_couple, AU))
-                    h_info_array.append([h_flat, np.array(bboxes[box_idx], dtype=np.float32)])
+                    h_info_array.append(h_flat)
+                    box_geometry_array.append(bboxes[box_idx])
 
                 # 同一张画面两两组合，看有没连接线，注意AU=0，就是未出现的AU动作的区域也参与连接
                 for box_idx_a, box_idx_b in map(sorted, itertools.combinations(range(len(bboxes)), 2)):
@@ -651,16 +659,17 @@ def build_graph_roi_single_label(faster_rcnn, reader_func, output_dir, database_
                                                              video_info[0]["video_id"] )
             if subject_id in train_subject:
                 output_path = train_AU_out_path
-                npy_path = output_dir + os.sep + "train" + os.sep + os.path.basename(output_path)[
-                                                                    :os.path.basename(output_path).rindex(".")] + ".npy"
+                npz_path = output_dir + os.sep + "train" + os.sep + os.path.basename(output_path)[
+                                                                    :os.path.basename(output_path).rindex(".")] + ".npz"
             elif subject_id in test_subject:
                 output_path = test_AU_out_path
-                npy_path = output_dir + os.sep + "test" + os.sep + os.path.basename(output_path)[
-                                                                    :os.path.basename(output_path).rindex(".")] + ".npy"
+                npz_path = output_dir + os.sep + "test" + os.sep + os.path.basename(output_path)[
+                                                                    :os.path.basename(output_path).rindex(".")] + ".npz"
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-            if not os.path.exists(npy_path):
-                np.save(npy_path, h_info_array)
+            if not os.path.exists(npz_path):
+                np.savez(npz_path, appearance_features=h_info_array,
+                         geometry_features=np.array(box_geometry_array,dtype=np.float32))
             with open(output_path, "w") as file_obj:
                 for line in node_list:
                     file_obj.write("{}\n".format(line))
@@ -719,7 +728,7 @@ if __name__ == "__main__":
                         help="use 'roi label split' strategy to choose only one "
                              "single label to help to refine label in video sequence more reasonable")
 
-
+    chainer.config.train = False
     args = parser.parse_args()
     kfold_pattern = re.compile('.*?(\d+)_.*?fold_(\d+).*',re.DOTALL)
     matcher = kfold_pattern.match(args.model)
@@ -749,7 +758,7 @@ if __name__ == "__main__":
                                       mean_file=args.mean,
                                       use_lstm=False,
                                       extract_len=args.extract_len)
-        extract_key = 'h'
+        extract_key = 'fc'
     if os.path.exists(args.model):
         print("loading pretrained snapshot:{}".format(args.model))
         chainer.serializers.load_npz(args.model, faster_rcnn)

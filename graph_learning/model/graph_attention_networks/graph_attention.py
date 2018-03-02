@@ -43,8 +43,8 @@ class GraphAttentionBlock(chainer.Chain):
             # Compute inputs to attention network
             linear_transfer_X = kernel_fc(X)   # (N x F')
             # Compute feature combinations
-            linear_transfer_X = F.tile(linear_transfer_X, (1,N))
-            repeated = F.reshape(linear_transfer_X, (N * N, self.F_))  # after tile: N x (F' x N), then N^2 x F'
+            repeated = F.tile(linear_transfer_X, (1,N))
+            repeated = F.reshape(repeated, (N * N, self.F_))  # after tile: N x (F' x N), then N^2 x F'
             tiled = F.tile(linear_transfer_X, (N, 1)) # (N^2 x F')
             combinations = F.concat([repeated, tiled], axis=1)  # (N^2 x 2F') # this will be all combinations N x N include self to self
             # Attention head

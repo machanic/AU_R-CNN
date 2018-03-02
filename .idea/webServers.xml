@@ -18,8 +18,24 @@
           <option name="port" value="22" />
         </fileTransfer>
       </webServer>
-      <webServer id="946dd290-447f-4df9-b03b-b1a3a7e9914b" name="YiTunnel(4_GPU) (project level)" url="http://192.168.2.114">
-        <fileTransfer host="192.168.2.114" port="22" rootFolder="/home/machen" accessType="SFTP">
+      <webServer id="946dd290-447f-4df9-b03b-b1a3a7e9914b" name="YiTunnel(4_GPU) (project level)" url="http://10.8.1.22">
+        <fileTransfer host="10.8.1.22" port="22" rootFolder="/home/machen" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="be428a2b-571f-4630-b8ed-8c7d3494cb37" name="166.111.80.36" url="http://166.111.80.36">
+        <fileTransfer host="166.111.80.36" port="22" rootFolder="/home/machen" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="4f08ab53-ed0d-43bf-ba6e-83d6119af22d" name="166.111.80.54" url="http://166.111.80.54">
+        <fileTransfer host="166.111.80.54" port="22" rootFolder="/home2/mac" accessType="SFTP">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" />
           </advancedOptions>

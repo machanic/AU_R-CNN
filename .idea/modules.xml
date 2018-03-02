@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/S-RNN++.iml" filepath="$PROJECT_DIR$/.idea/S-RNN++.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../face_expr/.idea/face_expr.iml" filepath="$PROJECT_DIR$/../face_expr/.idea/face_expr.iml" />
     </modules>
   </component>
 </project>

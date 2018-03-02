@@ -4,8 +4,8 @@ sys.path = sys.path[1:]
 sys.path.append("/home/machen/face_expr")
 import chainer
 from graph_learning.dataset.graph_dataset_reader import GlobalDataSet
-from graph_learning.dataset.structural_RNN_dataset import S_RNNPlusDataset
-from graph_learning.extensions.AU_evaluator_respectively import ActionUnitEvaluator # FIXME
+from graph_learning.dataset.graph_dataset import GraphDataset
+from graph_learning.extensions.AU_evaluator_respectively import ActionUnitRoILabelSplitEvaluator # FIXME
 from graph_learning.dataset.crf_pact_structure import CRFPackageStructure
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import os
@@ -104,13 +104,13 @@ def main():
     if args.check:
         check_pretrained_model_match_file(target_dict, args.test)
     with chainer.no_backprop_mode():
-        test_data = S_RNNPlusDataset(directory=args.test, attrib_size=args.hidden_size, global_dataset=dataset,
-                                     need_s_rnn=need_srnn, need_cache_factor_graph=False, target_dict=target_dict)  # if there is one file that use structural_rnn, all the pact_structure need structural_rnn
+        test_data = GraphDataset(directory=args.test, attrib_size=args.hidden_size, global_dataset=dataset,
+                                 need_s_rnn=need_srnn, need_cache_factor_graph=False, target_dict=target_dict)  # if there is one file that use structural_rnn, all the pact_structure need structural_rnn
         test_iter = chainer.iterators.SerialIterator(test_data, 1, shuffle=False, repeat=False)
         gpu = args.gpu if not use_crf else -1
         print('using gpu :{}'.format(gpu))
         chainer.config.train = False
-        au_evaluator = ActionUnitEvaluator(test_iter, target_dict, device=gpu, database=args.database)
+        au_evaluator = ActionUnitRoILabelSplitEvaluator(test_iter, target_dict, device=gpu, database=args.database)
         observation = au_evaluator.evaluate()
         with open(args.target_dir + os.sep + "evaluation_result.json", "w") as file_obj:
             file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))

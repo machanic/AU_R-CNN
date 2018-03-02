@@ -5,7 +5,7 @@ sys.path.append("/home/machen/face_expr")
 import chainer
 from graph_learning.dataset.graph_dataset_reader import GlobalDataSet
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
-from graph_learning.dataset.structural_RNN_dataset import S_RNNPlusDataset
+from graph_learning.dataset.graph_dataset import GraphDataset
 from graph_learning.model.temporal_lstm.temporal_lstm import TemporalLSTM
 from graph_learning.updater.bptt_updater import BPTTUpdater
 import os
@@ -57,8 +57,8 @@ def main():
                          out_size=dataset.label_bin_len,
                          use_bi_lstm=args.bi_lstm, initialW=None)
 
-    train_data = S_RNNPlusDataset(args.train,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True,
-                                  need_cache_factor_graph=args.need_cache_graph)
+    train_data = GraphDataset(args.train, attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True,
+                              need_cache_factor_graph=args.need_cache_graph)
 
     train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True, repeat=True)
 

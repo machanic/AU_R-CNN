@@ -67,19 +67,20 @@ class MappingDict(object):
 
 
 class DataNode(object):
-    def __init__(self,  id:int, label_type:int, label_bin, feature):
+    def __init__(self,  id:int, label_type:int, label_bin, feature, geo_feature):
         self.id = id
         self.label_type = label_type
         self.label_num = len(label_bin)  # label_bin is np.ndarray
         self.label_bin = label_bin
         self.feature = feature
+        self.geo_feature = geo_feature
         self.num_attrib = len(feature)
 
 
     @property
     def label(self):  # note that (0,0,0,0,0...,0) will use label=0, thus we +1 here
         nonzero_idx = np.nonzero(self.label_bin)[0]
-        assert len(nonzero_idx) <= 1
+        # assert len(nonzero_idx) <= 1
         if len(nonzero_idx) > 0:
             return nonzero_idx[0] + 1  #+1 is for the reason 0 also will be one label
         return 0  # all zero became 0
@@ -126,8 +127,9 @@ class DataSample(object):
 
 class GlobalDataSet(object):
 
-    def __init__(self, num_attrib, train_edge="all"):
+    def __init__(self, num_attrib, num_geo_attrib, train_edge="all"):
         self.num_attrib_type = num_attrib
+        self.num_geo_attrib = num_geo_attrib
         self.num_edge_type = 0
         self.num_label = 0
         self.edge_type_dict = MappingDict()
@@ -136,10 +138,7 @@ class GlobalDataSet(object):
         self.train_edge = train_edge
 
 
-
-
-
-    def load_data(self, path, npy_in_parent_dir=True):
+    def load_data(self, path, npy_in_parent_dir=True, paper_use_label_idx=None):
         curt_sample = DataSample()
         curt_sample.file_path = path
         if npy_in_parent_dir:
@@ -148,8 +147,10 @@ class GlobalDataSet(object):
             parent_path = os.path.dirname(path) # just in ./
         base_path = os.path.basename(path)
 
-        npy_path = parent_path + os.sep + base_path[:base_path.rindex(".")] + ".npy"
-        h_info_array = np.load(npy_path)
+        npy_path = parent_path + os.sep + base_path[:base_path.rindex(".")] + ".npz"
+        zip_array = np.load(npy_path)
+        h_info_array = zip_array["appearance_features"]
+        geometry_box_array = zip_array["geometry_features"]
         assert h_info_array.shape[1] == self.num_attrib_type
         # main_label is label set which continuous occurrence >= 5, we pick all each main_label as one sample(by deepcopy),
         # only if current label_set doesn't have main_label, we pick up the rest label (minor occurence)
@@ -182,16 +183,17 @@ class GlobalDataSet(object):
                     node_id = curt_sample.nodeid_line_no_dict.get_id(node_id)   #nodeid convert to line number int，original string nodeid into dict
                     if node_labels.startswith("(") and node_labels.endswith(")"):  #open-crf cannot use bin form label, but can combine as one to use, located in Node constructor
                         label_bin = np.asarray(list(map(int,node_labels[1:-1].split(",") )), dtype=np.int32)
-
+                    if paper_use_label_idx is not None:
+                        label_bin = label_bin[paper_use_label_idx]
                     if tokens[2].startswith("feature"):
                         feature_idx = int(tokens[2][len("feature_idx:"):])
-                        node_features = h_info_array[feature_idx]
-
+                        node_appearance_feature = h_info_array[feature_idx]
+                        node_geometry_box_feature = geometry_box_array[feature_idx]
                     else:
                         print("Data format wrong! Label must start with features:/np_file:")
                         return
                     curt_node = DataNode(id=node_id, label_type=label_type, label_bin=label_bin,
-                                         feature=node_features)  # node_id是指行号了，但这个所谓行号从0开始
+                                         feature=node_appearance_feature, geo_feature=node_geometry_box_feature)  # node_id是指行号了，但这个所谓行号从0开始
 
                     assert len(curt_sample.node_list) == node_id
                     curt_sample.node_list.append(curt_node)

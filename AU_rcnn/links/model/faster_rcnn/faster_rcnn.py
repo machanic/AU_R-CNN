@@ -108,11 +108,11 @@ class FasterRCNN(chainer.Chain):
     def reset_state(self):
         self.head.reset_state()
 
-    def extract(self, image, bboxes, layer='res5'):
+    def extract(self, image, bboxes, layer='res5'): # image shape is C,H,W, bboxes is R,4 where R is box number inside one image
         x = self.prepare(image)
-        x = chainer.Variable(self.xp.asarray([x]))  # add outer dimension
-        bboxes = chainer.Variable(self.xp.asarray([bboxes]))
-        roi_scores, rois, roi_indices = self.__call__(x, bboxes, keep_all_bbox=True, layers=[layer])
+        x = chainer.Variable(self.xp.asarray([x]))  # shape = (1,C,H,W)
+        bboxes = chainer.Variable(self.xp.asarray([bboxes])) # shape = (1, box_num, 4)
+        roi_scores, rois, roi_indices = self.__call__(x, bboxes, layers=[layer])
         feature = self.extract_dict[layer]  # shape = R' x 4096 where R' is number bbox
         self.extract_dict.clear()
         return feature
@@ -123,7 +123,7 @@ class FasterRCNN(chainer.Chain):
             x.append(self.prepare(image))
         x = chainer.Variable(self.xp.asarray(x))
         bboxes = chainer.Variable(self.xp.asarray(bboxes,dtype=self.xp.float32))
-        roi_scores, rois, roi_indices = self.__call__(x, bboxes, keep_all_bbox=True, layers=[layer])
+        roi_scores, rois, roi_indices = self.__call__(x, bboxes, layers=[layer])
         feature = self.extract_dict[layer]  # shape = R' x 4096 where R' is number bbox in all batch idx
         assert feature.shape[0] == bboxes.shape[0] * bboxes.shape[1], "box_shape:{0}, feature:{1}".format(bboxes.shape, feature.shape)
         feature = feature.reshape(bboxes.shape[0],bboxes.shape[1],-1)
@@ -133,7 +133,7 @@ class FasterRCNN(chainer.Chain):
 
     # 预测的时候才可能被调用，train的时候反而不调用，具体可看faster_rcnn_train_chain.py
     # 若两个box的IOU较大，将较大面积的box删掉
-    def __call__(self, x, bboxes, keep_all_bbox=True, layers=["res5"]): # 预测的时候同样要提供来自于landmark的bounding box
+    def __call__(self, x, bboxes, layers=["avg_pool"]): # 预测的时候同样要提供来自于landmark的bounding box
         """Forward Faster R-CNN.
         called by self.predict
 
@@ -143,21 +143,21 @@ class FasterRCNN(chainer.Chain):
         * :math:`R'` is the total number of RoIs produced across batches. \
             Given :math:`R_i` proposed RoIs from the :math:`i` th image, \
             :math:`R' = \\sum _{i=1} ^ N R_i`.
-        * :math:`L` is the number of classes excluding the background.
+        * :math:`L` is the number of classes.
 
         Classes are ordered by the background, the first class, ..., and
         the :math:`L` th class.
 
         Args:
-            x (~chainer.Variable): 4D image variable.
-            bboxes (~chainer.Variable): list of bounding box. each list entry is bbox which is in one image
+            x (~chainer.Variable): 4D image variable (N, C, H, W).
+            bboxes (~chainer.Variable): variable (N, R, 4). shape[1] of bbox is bboxes which is in one image
 
         Returns:
             Variable, Variable, array, array:
             Returns tuple of four values listed below.
 
             * **roi_scores**: Class predictions for the proposed RoIs. \
-                Its shape is :math:`(R', L + 1)`.
+                Its shape is :math:`(R', num_classes)`.
             * **rois**: RoIs proposed by RPN. Its shape is \
                 :math:`(R', 4)`.
             * **roi_indices**: Batch indices of RoIs. Its shape is \
@@ -165,6 +165,7 @@ class FasterRCNN(chainer.Chain):
 
         """
         xp = cuda.get_array_module(x)
+        assert x.shape[0] == bboxes.shape[0]
         _, _, H, W = x.shape
         h = self.extractor(x)
         rois = list()
@@ -177,25 +178,9 @@ class FasterRCNN(chainer.Chain):
             bbox[:,  1::2] = xp.clip(
                 bbox[:,  1::2], 0, W)
 
-            if not keep_all_bbox:
-                ious = bbox_iou(bbox, bbox)
-                xp.fill_diagonal(ious, 0)
-                cal_area = lambda y_min, x_min, y_max, x_max: (y_max - y_min) * (x_max - x_min)
-                bad_box_idx = set()
-                iou_bbox_i_j = set(map(tuple, map(sorted, zip(*xp.nonzero(cuda.to_cpu(ious))))))
-                for i, j in iou_bbox_i_j:
-                    iou = ious[i, j]
-                    if iou < 0.8:  # iou >= 0.8 , delete big box
-                        continue
-                    big_box_idx = np.argmax((cal_area(*bbox[i]), cal_area(*bbox[j])))
-                    big_box_index = np.array([i, j])[big_box_idx]
-                    bad_box_idx.add(big_box_index) # if there is big box contains or intersection with small box, drop big
-                keep_box_idx = np.delete(np.array(range(bbox.shape[0])), np.array(list(bad_box_idx)))
-            else:
-                keep_box_idx = np.arange(bbox.shape[0])
-            rois.extend(bbox[keep_box_idx, :].tolist())
-            roi_indices.extend((n * xp.ones(len(keep_box_idx))).tolist())
-        rois = xp.asarray(rois, dtype=xp.float32)
+            rois.extend(bbox.tolist())
+            roi_indices.extend((n * xp.ones(bbox.shape[0]).tolist()))
+        rois = xp.asarray(rois, dtype=xp.float32)  # shape = R,4
         roi_indices = xp.asarray(roi_indices, dtype=xp.int32)
         roi_scores = self.head(h, rois, roi_indices, layers=layers)  # roi_scores is each roi has vector of scores!
         self.extract_dict.update({layer: self.head.activation[layer].data for layer in layers})
@@ -268,16 +253,10 @@ class FasterRCNN(chainer.Chain):
         """
         xp = cuda.get_array_module(imgs)
 
-        with cuda.get_device_from_array(imgs) as device:
-            if isinstance(bbox, chainer.Variable):
-                bbox = bbox.data
-
-            features = self.extractor(imgs)
-            # Since batch size is one, convert variables to singular form
-            sample_roi_index_lst = xp.concatenate([xp.ones(bbox.shape[1], dtype=xp.int32)*n for n in range(bbox.shape[0])])
-            bbox = bbox.reshape(-1, 4)
-            roi_score = self.head(
-                features, bbox, sample_roi_index_lst)
-            pred_label = self.fetch_labels_from_scores(xp, roi_score.data)
-        return pred_label, roi_score.data
+        with cuda.get_device_from_array(imgs) as device,\
+                chainer.using_config('train', False), \
+                chainer.function.no_backprop_mode():
+            roi_scores, _, _ = self.__call__(imgs, bbox) # shape = R', class_num
+            pred_label = self.fetch_labels_from_scores(xp, roi_scores.data)
+        return pred_label, roi_scores.data
 

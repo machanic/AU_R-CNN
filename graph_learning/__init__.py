@@ -1,1 +1,1 @@
-from graph_learning.dataset.structural_RNN_dataset import S_RNNPlusDataset
+from graph_learning.dataset.graph_dataset import GraphDataset

@@ -5,8 +5,8 @@ sys.path.append("/home/machen/face_expr")
 import chainer
 from graph_learning.dataset.graph_dataset_reader import GlobalDataSet
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
-from graph_learning.dataset.structural_RNN_dataset import S_RNNPlusDataset
-from graph_learning.extensions.AU_evaluator import ActionUnitEvaluator
+from graph_learning.dataset.graph_dataset import GraphDataset
+from graph_learning.extensions.AU_roi_label_split_evaluator import ActionUnitEvaluator
 from graph_learning.extensions.opencrf_evaluator import OpenCRFEvaluator
 from graph_learning.model.structural_rnn.s_rnn_plus import StructuralRNNPlus
 from graph_learning.updater.bptt_updater import BPTTUpdater
@@ -49,6 +49,7 @@ def main():
     parser.add_argument('--hidden_size', type=int, default=1024, help="if you want to use open-crf layer, this hidden_size is node dimension input of open-crf")
     parser.add_argument('--eval_mode', action='store_true', help='whether to evaluate the model')
     parser.add_argument("--num_attrib", type=int, default=2048, help="number of dimension of each node feature")
+    parser.add_argument("--num_geometry_feature", type=int, default=4, help="number of dimension of each node feature")
     parser.add_argument("--proc_num",'-proc', type=int,default=1, help="process number of dataset reader")
     parser.add_argument("--need_cache_graph", "-ng", action="store_true",
                         help="whether to cache factor graph to LRU cache")
@@ -70,7 +71,8 @@ def main():
     assert "_" in trainer_keyword
 
     # for the StructuralRNN constuctor need first frame factor graph_backup
-    dataset = GlobalDataSet(num_attrib=args.num_attrib, train_edge=args.train_edge)
+    dataset = GlobalDataSet(num_attrib=args.num_attrib, num_geo_attrib=args.num_geometry_feature,
+                            train_edge=args.train_edge)
     file_name = list(filter(lambda e: e.endswith(".txt"), os.listdir(args.train)))[0]
     sample = dataset.load_data(args.train + os.sep + file_name)  # we load first sample for construct S-RNN, it must passed to constructor argument
     crf_pact_structure = CRFPackageStructure(sample, dataset, num_attrib=args.hidden_size)  # 只读取其中的一个视频的第一帧，由于node个数相对稳定，因此可以construct RNN
@@ -79,13 +81,10 @@ def main():
                               hidden_size=args.hidden_size, with_crf=args.with_crf, use_bi_lstm=args.bi_lstm)
 
     # note that the following code attrib_size will be used by open_crf for parameter number, thus we cannot pass dataset.num_attrib_type!
-    train_data = S_RNNPlusDataset(args.train,  attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True,
-                                  need_cache_factor_graph=args.need_cache_graph)  # train 传入文件夹
+    train_data = GraphDataset(args.train, attrib_size=args.hidden_size, global_dataset=dataset, need_s_rnn=True,
+                              need_cache_factor_graph=args.need_cache_graph, get_geometry_feature=False)  # train 传入文件夹
 
     train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True, repeat=True)
-
-
-
 
 
     if args.gpu >= 0:
@@ -162,8 +161,8 @@ def main():
     #                name='accu_validation')
     # if args.with_crf:
     if args.valid:
-        valid_data = S_RNNPlusDataset(args.valid, attrib_size=args.hidden_size, global_dataset=dataset,
-                                      need_s_rnn=True,need_cache_factor_graph=args.need_cache_graph)  # attrib_size控制open-crf层的weight长度
+        valid_data = GraphDataset(args.valid, attrib_size=args.hidden_size, global_dataset=dataset,
+                                  need_s_rnn=True, need_cache_factor_graph=args.need_cache_graph)  # attrib_size控制open-crf层的weight长度
         validate_iter = chainer.iterators.SerialIterator(valid_data, 1, shuffle=False, repeat=False)
         crf_evaluator = OpenCRFEvaluator(iterator=validate_iter, target=model, device=args.gpu)
         trainer.extend(crf_evaluator, trigger=val_interval, name="opencrf_val")

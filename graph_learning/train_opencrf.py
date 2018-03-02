@@ -59,11 +59,11 @@ def main():
     config.OPEN_CRF_CONFIG["use_pure_python"] = args.use_pure_python
     # because we modify config.OPEN_CRF_CONFIG thus will influence the open_crf layer
     from graph_learning.dataset.crf_pact_structure import CRFPackageStructure
-    from graph_learning.dataset.structural_RNN_dataset import S_RNNPlusDataset
+    from graph_learning.dataset.graph_dataset import GraphDataset
     from graph_learning.extensions.opencrf_evaluator import OpenCRFEvaluator
     from graph_learning.dataset.graph_dataset_reader import GlobalDataSet
     from graph_learning.updater.bptt_updater import convert
-    from graph_learning.extensions.AU_evaluator import ActionUnitEvaluator
+    from graph_learning.extensions.AU_roi_label_split_evaluator import ActionUnitEvaluator
     if args.use_pure_python:
 
         from graph_learning.model.open_crf.pure_python.open_crf_layer import OpenCRFLayer
@@ -94,8 +94,9 @@ def main():
 
 
 
-    train_data = S_RNNPlusDataset(args.train, attrib_size=dataset.num_attrib_type,
-                                  global_dataset=dataset,need_s_rnn=False,need_cache_factor_graph=args.need_cache_graph)
+    train_data = GraphDataset(args.train, attrib_size=dataset.num_attrib_type,
+                              global_dataset=dataset, need_s_rnn=False, need_cache_factor_graph=args.need_cache_graph,
+                              get_geometry_feature=False)
     if args.proc_num == 1:
         train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True)
     elif args.proc_num > 1:
@@ -159,8 +160,8 @@ def main():
                                                               file_name="{}_val_f1.png".format(trainer_keyword)), trigger=val_interval)
 
     if args.valid:
-        valid_data = S_RNNPlusDataset(args.valid, attrib_size=dataset.num_attrib_type,
-                                      global_dataset=dataset, need_s_rnn=False, need_cache_factor_graph=args.need_cache_graph)
+        valid_data = GraphDataset(args.valid, attrib_size=dataset.num_attrib_type,
+                                  global_dataset=dataset, need_s_rnn=False, need_cache_factor_graph=args.need_cache_graph)
         validate_iter = chainer.iterators.SerialIterator(valid_data, 1, repeat=False, shuffle=False)
         evaluator = OpenCRFEvaluator(
             iterator=validate_iter, target=model,  device=-1)

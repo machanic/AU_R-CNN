@@ -16,14 +16,14 @@ from action_unit_metric.F1_frame import get_F1_frame
 from graph_learning.updater.bptt_updater import convert
 
 
-class ActionUnitEvaluator(Evaluator):
+class ActionUnitRoILabelSplitEvaluator(Evaluator):
 
     trigger = 1, 'epoch'
     default_name = 'S_RNN_validation'
     priority = chainer.training.PRIORITY_WRITER
 
     def __init__(self, iterator, target_dict, device, database):
-        super(ActionUnitEvaluator, self).__init__(iterator, list(target_dict.values())[0], device=device)
+        super(ActionUnitRoILabelSplitEvaluator, self).__init__(iterator, list(target_dict.values())[0], device=device)
         self.database = database
         self.target_dict =target_dict
         self.paper_use_AU = []

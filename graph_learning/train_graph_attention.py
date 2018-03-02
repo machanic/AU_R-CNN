@@ -5,7 +5,7 @@ sys.path.append("/home/machen/face_expr")
 import chainer
 from graph_learning.dataset.graph_dataset_reader import GlobalDataSet
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
-from graph_learning.dataset.structural_RNN_dataset import S_RNNPlusDataset
+from graph_learning.dataset.graph_dataset import GraphDataset
 from graph_learning.model.graph_attention_networks.graph_attention_rnn import GraphAttentionModel
 from graph_learning.updater.bptt_updater import convert,BPTTUpdater
 from chainer.training import StandardUpdater
@@ -58,9 +58,9 @@ def main():
     model = GraphAttentionModel(input_dim=dataset.num_attrib_type, hidden_dim=args.hidden_size, class_number=dataset.label_bin_len,
                                 atten_heads=args.atten_heads, layers_num=args.layer_num, frame_node_num=box_num)
     # note that the following code attrib_size will be used by open_crf for parameter number, thus we cannot pass dataset.num_attrib_type!
-    train_data = S_RNNPlusDataset(args.train,  attrib_size=2048, global_dataset=dataset, need_s_rnn=False,
-                                  need_cache_factor_graph=args.need_cache_graph, need_adjacency_matrix=True,
-                                  npy_in_parent_dir=False, need_factor_graph=False)  # train 传入文件夹
+    train_data = GraphDataset(args.train, attrib_size=2048, global_dataset=dataset, need_s_rnn=False,
+                              need_cache_factor_graph=args.need_cache_graph, need_adjacency_matrix=True,
+                              npy_in_parent_dir=False, need_factor_graph=False)  # train 传入文件夹
     train_iter = chainer.iterators.SerialIterator(train_data, 1, shuffle=True, repeat=True)
     if args.gpu >= 0:
         print("using gpu : {}".format(args.gpu))

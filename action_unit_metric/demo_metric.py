@@ -20,6 +20,7 @@ def demo(mat_file_path):
     mask = label != 0
     label = label[mask]
     decV = decV[mask]
+
     metR = get_ROC(label, decV)
 
     decV[decV>0] =1
@@ -29,6 +30,7 @@ def demo(mat_file_path):
 
     metF = get_F1_frame(label, decV)
     print(f1, metF.f1f)
+
     # Compute f1-norm
     metN = get_F1_norm(label, decV)
 

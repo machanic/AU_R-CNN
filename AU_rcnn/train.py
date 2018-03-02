@@ -127,7 +127,7 @@ def main():
     parser.add_argument('--mean', default=config.ROOT_PATH+"BP4D/idx/mean_no_enhance.npy", help='image mean .npy file')
     parser.add_argument('--feature_model', default="resnet101", help="vgg or resnet101 for train")
     parser.add_argument('--use_lstm', action='store_true', help='use LSTM or Linear in head module')  #LSTM 模式没办法用balance方法增加少类的box
-    parser.add_argument('--extract_len', type=int, default=1000)
+    parser.add_argument('--extract_len', type=int, default=2048)
     parser.add_argument('--optimizer', default='RMSprop', help='optimizer: RMSprop/AdaGrad/Adam/SGD/AdaDelta')
     parser.add_argument('--pretrained_model', default='resnet101', help='imagenet/vggface/resnet101/*.npz')
     parser.add_argument('--use_wechat', action='store_true', help='whether use wechat to control or not')
@@ -190,7 +190,7 @@ def main():
     batch_size = args.batch_size if not args.use_lstm else 1
 
     if args.eval_mode:
-        with chainer.no_backprop_mode():
+        with chainer.no_backprop_mode(), chainer.using_config('train', False):
             test_data = AUDataset(database=args.database, fold=args.fold,
                                           split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
                                           use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
@@ -206,7 +206,8 @@ def main():
             gpu = int(args.gpu) if "," not in args.gpu else int(args.gpu[:args.gpu.index(",")])
             chainer.cuda.get_device_from_id(gpu).use()
             faster_rcnn.to_gpu(gpu)
-            evaluator = AUEvaluator(test_iter, faster_rcnn, lambda batch, device: concat_examples(batch, device, padding=-99), args.database,device=gpu)
+            evaluator = AUEvaluator(test_iter, faster_rcnn, lambda batch, device: concat_examples(batch, device, padding=-99),
+                                    args.database,device=gpu)
             observation = evaluator.evaluate()
             with open(args.out + os.sep + "evaluation_result.json", "w") as file_obj:
                 file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))

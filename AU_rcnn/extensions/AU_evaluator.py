@@ -46,7 +46,7 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
             if bbox.shape[1] != config.BOX_NUM[self.database]:
                 print("error box num {0} != {1}".format(bbox.shape[1], config.BOX_NUM[self.database]))
                 continue
-            preds, _ = target.predict(imgs, bbox)
+            preds, _ = target.predict(imgs, bbox)  # R', class_num
             preds = preds.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B, N, Y
             preds = chainer.cuda.to_cpu(preds)
             labels = chainer.cuda.to_cpu(labels)
@@ -83,10 +83,11 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
                 f1 = f1_score(gt_label, pred_label)
                 report["f1_frame"][AU] = met_F.f1f
                 report["f1_score"][AU] = f1
+                assert f1 == met_F.f1f
                 report["AUC"][AU] = roc.auc
                 report["accuracy"][AU] = met_F.accuracy
                 # report["f1_event"][AU] = np.median(met_E.f1EventCurve)
-                summary.add({"f1_frame_avg": met_F.f1f})
+                summary.add({"f1_frame_avg": f1})
                 summary.add({"AUC_avg": roc.auc})
                 summary.add({"accuracy_avg": met_F.accuracy})
                 # summary.add({"f1_event_avg": np.median(met_E.f1EventCurve)})

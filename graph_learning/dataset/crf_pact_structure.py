@@ -93,7 +93,6 @@ class CRFPackageStructure(object):
         m = self.sample.num_edge
         factor_graph = FactorGraph(n=n, m=m, num_label=self.num_label,func_list=func_list)
 
-
         for i in range(n):  # add node info
             node_id = self.sample.node_list[i].id
             factor_graph.var_node[i].id = node_id

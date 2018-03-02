@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="YiTunnel_remote_2gpu" deleteMissingItems="true" createEmptyFolders="true" exclude=".svn;.cvs;.idea;.DS_Store;.git;.hg;data;*.log;*.pyc;*.model;*.png;*.jpg,*.gz">
+  <component name="PublishConfigData" autoUpload="Always" serverName="166.111.80.36" deleteMissingItems="true" createEmptyFolders="true" exclude=".svn;.cvs;.idea;.DS_Store;.git;.hg;data;*.log;*.pyc;*.model;*.png;*.jpg,*.gz">
     <serverData>
       <paths name="166.111.80.36">
         <serverdata>
           <mappings>
             <mapping deploy="/face_expr" local="$PROJECT_DIR$" web="/" />
           </mappings>
-          <excludedPaths>
-            <excludedPath local="true" path="$PROJECT_DIR$/data" />
-            <excludedPath local="true" path="$PROJECT_DIR$/build" />
-            <excludedPath local="true" path="$PROJECT_DIR$/cython_debug" />
-            <excludedPath local="true" path="$PROJECT_DIR$/../代码备份" />
-            <excludedPath local="true" path="$PROJECT_DIR$/../LSTM-CRF-NER-20171025.tar.gz" />
-          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="166.111.80.54">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/face_expr" local="$PROJECT_DIR$" web="/" />
+          </mappings>
         </serverdata>
       </paths>
       <paths name="166.111.81.67">
@@ -37,18 +37,18 @@
           </mappings>
         </serverdata>
       </paths>
-      <paths name="Copy of project-level server '166.111.80.36'">
+      <paths name="Copy of project-level server '166.111.80.54'">
         <serverdata>
           <mappings>
-            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/face_expr" local="$PROJECT_DIR$" web="/" />
           </mappings>
-          <excludedPaths>
-            <excludedPath local="true" path="$PROJECT_DIR$/data" />
-            <excludedPath local="true" path="$PROJECT_DIR$/build" />
-            <excludedPath local="true" path="$PROJECT_DIR$/cython_debug" />
-            <excludedPath local="true" path="$PROJECT_DIR$/../代码备份" />
-            <excludedPath local="true" path="$PROJECT_DIR$/../LSTM-CRF-NER-20171025.tar.gz" />
-          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="Copy of project-level server 'YiTunnel(4_GPU) (project level)'">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/face_expr" local="$PROJECT_DIR$" web="/" />
+          </mappings>
         </serverdata>
       </paths>
       <paths name="YiTunnel">
@@ -68,14 +68,14 @@
       <paths name="YiTunnel(4_GPU) (project level)">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/face_expr" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
       <paths name="YiTunnel_remote_2gpu">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/face_expr" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

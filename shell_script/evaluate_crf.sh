@@ -12,7 +12,7 @@ for file in `ls $root_dir`;do
 		if [ ! "$train_edge" = "" ];then
 			train_edge=all
 		fi
-		echo "nohup $PYTHON graph_learning/evaluator_main.py --target_dir ${root_dir}/${file} --database $database --gpu $gpu --test ${root_dir}/test --train_edge all > ${root_dir}/eval.log 2>&1"
+		echo "nohup $PYTHON graph_learning/evaluator_roi_label_split.py --target_dir ${root_dir}/${file} --database $database --gpu $gpu --test ${root_dir}/test --train_edge all > ${root_dir}/eval.log 2>&1"
 fi
 done
 #model=/home/machen/face_expr/result/resnet/BP4D_3_fold_1/3_fold_1_resnet101_linear_model_snapshot_350000.npz
