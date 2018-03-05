@@ -6,7 +6,7 @@ import chainer
 from chainer.iterators import MultiprocessIterator, SerialIterator
 
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
-from simple_graph_learning.model.space_time_net.space_time_rnn import SpaceTimeRNN
+from simple_graph_learning.model.space_time_net.space_time_rnn_type_2 import SpaceTimeRNN
 from simple_graph_learning.dataset.simple_feature_dataset import SimpleFeatureDataset
 from simple_graph_learning.model.space_time_net.enum_type import SpatialEdgeMode, RecurrentType
 from simple_graph_learning.iterators.batch_keep_order_iterator import BatchKeepOrderIterator
@@ -46,7 +46,7 @@ def main():
                         help='proc_num for multi-process fetch data')
     parser.add_argument('--gradclip', '-c', type=float, default=5,
                         help='Gradient norm threshold to clip')
-    parser.add_argument('--out', '-o', default='r_srnn_result',
+    parser.add_argument('--out', '-o', default='space_time_result',
                         help='Directory to output the result')
     parser.add_argument('--snapshot', '-snap', type=int, default=1, help='snapshot epochs for save checkpoint')
     parser.add_argument('--train', '-t', default=" /home/machen/dataset/new_graph/BP4D_3_fold_1/train",

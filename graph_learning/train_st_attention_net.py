@@ -46,7 +46,7 @@ def main():
     parser.add_argument('--neighbor_mode', type=NeighborMode, choices=list(NeighborMode), help='1:concat_all,2:attention_fuse,3:random_neighbor,4.no_neighbor')
     parser.add_argument('--spatial_edge_mode', type=SpatialEdgeMode, choices=list(SpatialEdgeMode), help='1:all_edge, 2:configure_edge, 3:no_edge')
     parser.add_argument('--temporal_edge_mode',type=RecurrentType, choices=list(RecurrentType), help='1:rnn, 2:attention_block, 3.point-wise feed forward(no temporal)')
-    parser.add_argument("--use_relation_net", action='store_true', help='whether to use st_relation_net instead of st_attention_net')
+    parser.add_argument("--use_relation_net", action='store_true', help='whether to use st_relation_net instead of space_time_net')
     parser.add_argument("--relation_net_lstm_first", action='store_true',
                         help='whether to use relation_net_lstm_first_forward in st_relation_net')
     parser.add_argument('--use_geometry_features',action='store_true', help='whether to use geometry features')

@@ -88,15 +88,18 @@ class SpaceTimeRNN(chainer.Chain):
             for i in range(self.frame_node_num):
                 if recurrent_block_type == RecurrentType.rnn:
                     self.add_link("Node_{}".format(i),
-                                  TemporalRNN(n_layers, self.mid_size, self.out_size, use_bi_lstm=bi_lstm))
+                                  TemporalRNN(n_layers, self.in_size, self.mid_size, use_bi_lstm=bi_lstm))
                 else:
                     self.add_link("Node_{}".format(i),
-                                  NodeRecurrentModule(n_layers, self.mid_size, self.out_size))
+                                  NodeRecurrentModule(n_layers, self.in_size, self.mid_size))
                 self.top[str(i)] = getattr(self, "Node_{}".format(i))
+
+            fc_in_len = self.mid_size
             if spatial_edge_model != SpatialEdgeMode.no_edge:
-                self.space_lstm = L.NStepBiLSTM(n_layers, self.in_size, self.mid_size//2, dropout=0.1, initialW=initialW)  #FIXME
-            else:
-                self.transfer_dim_fc = L.Linear(self.in_size, self.mid_size, initialW=initialW)
+                self.space_lstm = L.NStepBiLSTM(n_layers, self.in_size, self.mid_size//2, dropout=0.1, initialW=initialW)
+                fc_in_len = self.mid_size * 2
+
+            self.fc = L.Linear(fc_in_len, self.out_size, initialW=initialW)
 
 
 
@@ -125,23 +128,30 @@ class SpaceTimeRNN(chainer.Chain):
         # first frame node_id ==> other frame node_id in same corresponding box
         if self.spatial_edge_mode == SpatialEdgeMode.all_edge:
             input_space = F.reshape(xs, shape=(-1, self.frame_node_num, dim)) # batch x T, F, D
-            input_space = F.separate(input_space, axis=0)
-            _, _, space_out = self.space_lstm(None, None, list(input_space))
-            temporal_in = F.stack(space_out)  # batch * T, F, D
-        else:
-            xs = F.reshape(xs, shape=(-1, self.in_size))
-            temporal_in = self.transfer_dim_fc(xs)
+            # input_space = F.reshape(xs, (batch * T, self.frame_node_num, dim))  # batch, T*F, D
+            input_space = F.separate(input_space, axis=0) # fusing temporal information of batch , each is T*F, D
 
-        temporal_in = F.reshape(temporal_in, (batch, T, self.frame_node_num, self.mid_size))  # B, T, F, D
+            _, _, space_out = self.space_lstm(None, None, list(input_space))
+            space_out = F.stack(space_out)  # batch*T, F, D
+            space_out = F.reshape(space_out, (-1, self.mid_size)) # batch * T * F, D
+
+        temporal_in = xs
         node_out_dict = self.node_recurrent_forward(temporal_in)
         # shape = F, B, T, mid_size
         node_out = F.stack([node_out_ for _, node_out_ in sorted(node_out_dict.items(),
                                                                  key=lambda e: int(e[0]))])
         node_out = F.transpose(node_out, (1,2,0,3))  # shape = (B,T,F,D)
-        assert self.frame_node_num == node_out.shape[2],node_out.shape[2]
-        assert self.out_size == node_out.shape[-1]
-        assert T == node_out.shape[1]
-        return node_out
+
+        node_out = F.reshape(node_out, (-1, self.mid_size))
+        concat_out = node_out
+        if self.spatial_edge_mode == SpatialEdgeMode.all_edge:
+            concat_out = F.concat((node_out, space_out), axis=-1)  # shape= B*T*F, 2D
+        concat_out = self.fc(concat_out)
+        concat_out = F.reshape(concat_out, (batch, T, self.frame_node_num, self.out_size))
+        # assert self.frame_node_num == node_out.shape[2],node_out.shape[2]
+        # assert self.out_size == node_out.shape[-1]
+        # assert T == node_out.shape[1]
+        return concat_out
 
 
     def get_loss_index(self, pred, ts):
@@ -184,8 +194,8 @@ class SpaceTimeRNN(chainer.Chain):
         node_out = F.reshape(node_out, (-1, self.out_size))
         node_labels = self.xp.reshape(labels, (-1, self.out_size))
         pick_index, accuracy_pick_index = self.get_loss_index(node_out, node_labels)
-        loss = F.sigmoid_cross_entropy(node_out[list(pick_index[0]), list(pick_index[1])],
-                                        node_labels[list(pick_index[0]), list(pick_index[1])])
+        loss = F.sigmoid_cross_entropy(node_out,
+                                        node_labels)
         accuracy = F.binary_accuracy(node_out[list(accuracy_pick_index[0]), list(accuracy_pick_index[1])],
                                      node_labels[[list(accuracy_pick_index[0]), list(accuracy_pick_index[1])]])
 

@@ -91,12 +91,12 @@ if __name__ == "__main__":
     my_data_file_list = ["G:/Facial AU detection dataset/BP4D/idx/3_fold/id_trainval_1.txt",
                          "G:/Facial AU detection dataset/BP4D/idx/3_fold/id_test_1.txt"]
     subjectseqname_line_dict = read_my_index_file(my_data_file_list)
-    test_path = "G:/Facial AU detection dataset/BP4D/idx/liwei_3_fold/id_test_1.txt"
-    target_path = "G:/Facial AU detection dataset/BP4D/idx/liwei_3_fold/id_trainval_1.txt"
-    fold_2_subject_name_set = generate_file("G:/Facial AU detection dataset/BP4D/idx/BP4D_ts_fold2.txt", target_path, subjectseqname_line_dict,
-                  need_write=False)
-    fold_3_subject_name_set = generate_file("G:/Facial AU detection dataset/BP4D/idx/BP4D_ts_fold3.txt", target_path, subjectseqname_line_dict,
-                  need_write=False)
+    test_path = "G:/Facial AU detection dataset/BP4D_liwei_3_fold/id_test_1.txt"
+    target_path = "G:/Facial AU detection dataset/BP4D_liwei_3_fold/id_trainval_1.txt"
+    fold_2_subject_name_set = generate_file("G:/Facial AU detection dataset/liwei训练集与测试集数据切分/BP4D_faceim_tr_shp.txt", target_path, subjectseqname_line_dict,
+                  need_write=True)
+    fold_3_subject_name_set = generate_file("G:/Facial AU detection dataset/liwei训练集与测试集数据切分/BP4D_faceim_ts_shp.txt", test_path, subjectseqname_line_dict,
+                  need_write=True)
 
-    check_liwei_and_me("G:/Facial AU detection dataset/BP4D/idx/BP4D_ts_fold3.txt", "G:/Facial AU detection dataset/BP4D/idx/liwei_3_fold/id_test_3.txt")
+    # check_liwei_and_me("G:/Facial AU detection dataset/BP4D/idx/BP4D_ts_fold3.txt", "G:/Facial AU detection dataset/BP4D/idx/liwei_3_fold/id_test_3.txt")
 

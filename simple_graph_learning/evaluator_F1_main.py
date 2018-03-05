@@ -12,7 +12,7 @@ from collections import OrderedDict
 from chainer.dataset import concat_examples
 import json
 
-from simple_graph_learning.model.space_time_net.space_time_rnn import SpaceTimeRNN
+from simple_graph_learning.model.space_time_net.space_time_rnn_type_2 import SpaceTimeRNN
 import re
 import config
 
@@ -100,7 +100,7 @@ def main():
         model.to_gpu(args.gpu)
     with chainer.no_backprop_mode(), chainer.using_config('train', False):
         dataset = SimpleFeatureDataset(directory=args.test, database=mode_dict['database'], each_file_pic_num=200,
-                                       previous_frame=30,
+                                       previous_frame=80,
                                        sample_pic_count=0, paper_report_label_idx=paper_report_label_idx,
                                        train_mode=False)
         test_iter = chainer.iterators.MultiprocessIterator(dataset, 100, shuffle=True, repeat=False,n_processes=5,n_prefetch=2,shared_mem=10000000)

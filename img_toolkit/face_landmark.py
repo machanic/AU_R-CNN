@@ -31,12 +31,15 @@ class FaceLandMark(object, metaclass=Singleton):
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # clahe_image = clahe.apply(gray)
         small_gray_img = cv2.resize(gray, (int(gray.shape[1] * 1/4.0), int(gray.shape[0] * 1/4.0)))
-
-        dets = self.detector(small_gray_img, 0)  # boost speed for small image, detect bounding box of face , slow legacy
-        # only one face,so the dets will always be length = 1
-        small_d = dets[0]
-        # dlib.dlib.rectangle(d.left(),d.top(),d.right(),d.bottom())
-        d = dlib.rectangle(small_d.left() * 4, small_d.top() * 4, small_d.right()* 4, small_d.bottom() * 4)
+        try:
+            dets = self.detector(small_gray_img, 0)  # boost speed for small image, detect bounding box of face , slow legacy
+            # only one face,so the dets will always be length = 1
+            small_d = dets[0]
+            # dlib.dlib.rectangle(d.left(),d.top(),d.right(),d.bottom())
+            d = dlib.rectangle(small_d.left() * 4, small_d.top() * 4, small_d.right()* 4, small_d.bottom() * 4)
+        except IndexError:
+            dets = self.detector(gray, 0)
+            d = dets[0]
         shape = self.predictor(gray, d)
         font = cv2.FONT_HERSHEY_SIMPLEX
         new_image = None
@@ -88,7 +91,7 @@ class FaceLandMark(object, metaclass=Singleton):
 if __name__ == "__main__":
     land = FaceLandMark(
         config.DLIB_LANDMARK_PRETRAIN)
-    face_img_path = "D:/0233.jpg"
+    face_img_path = "/home/machen/dataset//BP4D/BP4D-training//F001/T6/488.jpg"
     trn_img = cv2.imread(face_img_path, cv2.IMREAD_COLOR)
     # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     #

@@ -211,6 +211,9 @@ class PositionwiseFeedForwardLayer(chainer.Chain):
     def forward_nstep_lstm(self, es):
         # e shape = list of (sentence_length, in_channels)
         out_es = []
+        es = F.stack(es)  # B, T, D
+        es = F.transpose(es, axes=(0,2,1)) # B, D, T
+
         for e in es:
             e = F.transpose(e, axes=(1, 0))  # D, T
             e = F.expand_dims(e, axis=0) # 1,D,T

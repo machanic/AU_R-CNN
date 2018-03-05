@@ -127,7 +127,7 @@ def main():
     parser.add_argument('--mean', default=config.ROOT_PATH+"BP4D/idx/mean_no_enhance.npy", help='image mean .npy file')
     parser.add_argument('--feature_model', default="resnet101", help="vgg or resnet101 for train")
     parser.add_argument('--use_lstm', action='store_true', help='use LSTM or Linear in head module')  #LSTM 模式没办法用balance方法增加少类的box
-    parser.add_argument('--extract_len', type=int, default=2048)
+    parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument('--optimizer', default='RMSprop', help='optimizer: RMSprop/AdaGrad/Adam/SGD/AdaDelta')
     parser.add_argument('--pretrained_model', default='resnet101', help='imagenet/vggface/resnet101/*.npz')
     parser.add_argument('--use_wechat', action='store_true', help='whether use wechat to control or not')

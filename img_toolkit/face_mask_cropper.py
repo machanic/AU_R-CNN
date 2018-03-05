@@ -118,6 +118,8 @@ class FaceMaskCropper(object):
                 pass
         if channel_first:
             new_face = np.transpose(new_face, (2, 0, 1))
+        for AU, box_lst in AU_box_dict.items():
+            AU_box_dict[AU] = sorted(box_lst, key=lambda e:int(e[3]))
         return new_face, AU_box_dict
 
 

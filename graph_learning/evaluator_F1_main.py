@@ -54,7 +54,7 @@ def main():
     parser.add_argument("--layers", type=int, default=1, help="layer number of edge/node rnn")
     parser.add_argument("--bi_lstm", action="store_true", help="whether or not to use bi_lstm as edge/node rnn base")
     parser.add_argument("--use_relation_net", action='store_true',
-                        help='whether to use st_relation_net instead of st_attention_net')
+                        help='whether to use st_relation_net instead of space_time_net')
     parser.add_argument("--relation_net_lstm_first", action='store_true',
                         help='whether to use relation_net_lstm_first_forward in st_relation_net')
 

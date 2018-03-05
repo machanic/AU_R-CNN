@@ -31,6 +31,7 @@ from AU_rcnn.utils.bin_label_translate import AUbin_label_translate
 from collections_toolkit.ordered_set import OrderedSet
 
 
+
 class FasterRCNN(chainer.Chain):
 
     """Base class for Faster R-CNN.
@@ -108,12 +109,16 @@ class FasterRCNN(chainer.Chain):
     def reset_state(self):
         self.head.reset_state()
 
-    def extract(self, image, bboxes, layer='res5'): # image shape is C,H,W, bboxes is R,4 where R is box number inside one image
+    def extract(self, image, bbox, layer='res5'): # image shape is C,H,W, bboxes is R,4 where R is box number inside one image
+        _, H, W = image.shape
         x = self.prepare(image)
+        _, o_H, o_W = x.shape
+        bbox = transforms.resize_bbox(bbox, (H, W), (o_H, o_W))
+        assert len(np.where(bbox < 0)[0]) == 0
         x = chainer.Variable(self.xp.asarray([x]))  # shape = (1,C,H,W)
-        bboxes = chainer.Variable(self.xp.asarray([bboxes])) # shape = (1, box_num, 4)
-        roi_scores, rois, roi_indices = self.__call__(x, bboxes, layers=[layer])
-        feature = self.extract_dict[layer]  # shape = R' x 4096 where R' is number bbox
+        bbox = chainer.Variable(self.xp.asarray([bbox])) # shape = (1, box_num, 4)
+        roi_scores, rois, roi_indices = self.__call__(x, bbox, layers=[layer])
+        feature = self.extract_dict[layer]  # shape = R' x 2048 where R' is number bbox
         self.extract_dict.clear()
         return feature
 
@@ -179,7 +184,7 @@ class FasterRCNN(chainer.Chain):
                 bbox[:,  1::2], 0, W)
 
             rois.extend(bbox.tolist())
-            roi_indices.extend((n * xp.ones(bbox.shape[0]).tolist()))
+            roi_indices.extend((n * xp.ones(bbox.shape[0])).tolist())
         rois = xp.asarray(rois, dtype=xp.float32)  # shape = R,4
         roi_indices = xp.asarray(roi_indices, dtype=xp.int32)
         roi_scores = self.head(h, rois, roi_indices, layers=layers)  # roi_scores is each roi has vector of scores!

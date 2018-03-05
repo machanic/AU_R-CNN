@@ -8,6 +8,7 @@ import config
 from dataset_toolkit.compress_utils import get_zip_ROI_AU, get_AU_couple_child
 from img_toolkit.face_mask_cropper import FaceMaskCropper
 
+from collections_toolkit.ordered_default_dict import DefaultOrderedDict
 
 # obtain the cropped face image and bounding box and ground truth label for each box
 class AUDataset(chainer.dataset.DatasetMixin):
@@ -51,7 +52,8 @@ class AUDataset(chainer.dataset.DatasetMixin):
                     self.video_count[video_id] += 1
                     if os.path.exists(img_path):
                         self.result_data.append((img_path, from_img_path, AU_set, current_database_name))
-
+        self.result_data.sort(key=lambda entry: (entry[0].split("/")[-3],entry[0].split("/")[-2],
+                                                 int(entry[0].split("/")[-1][:entry[0].split("/")[-1].rindex(".")])))
         self._num_examples = len(self.result_data)
         print("read id file done, all examples:{}".format(self._num_examples))
 
@@ -60,7 +62,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
 
     def assign_label(self, couple_box_dict, current_AU_couple, bbox, label, AU_couple_lst):
         AU_couple_bin = dict()
-        for au_couple_tuple, _ in sorted(couple_box_dict.items(), key=lambda e: ",".join(e[0])):
+        for au_couple_tuple, _ in couple_box_dict.items():
             # use connectivity components to seperate polygon
             AU_inside_box_set = current_AU_couple[au_couple_tuple]
 
@@ -76,7 +78,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
                 #     np.put(AU_bin, AU_squeeze, -1)  # ignore label
             AU_couple_bin[au_couple_tuple] = AU_bin  # for the child
         # 循环两遍，第二遍拿出child_AU_couple
-        for au_couple_tuple, box_list in sorted(couple_box_dict.items(), key=lambda e: ",".join(e[0])):
+        for au_couple_tuple, box_list in couple_box_dict.items():
             AU_child_bin = np.zeros(shape=len(config.AU_SQUEEZE), dtype=np.int32)
             if au_couple_tuple in self.au_couple_child_dict:
                 for au_couple_child in self.au_couple_child_dict[au_couple_tuple]:
@@ -102,7 +104,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
         :param i:  the index of the example
         :return: tuple of an image and its all bounding box
         '''
-        if i > len(self):
+        if i > len(self.result_data):
             raise IndexError("Index too large")
         img_path, from_img_path, AU_set, database_name = self.result_data[i]
         if not os.path.exists(img_path):
@@ -123,7 +125,8 @@ class AUDataset(chainer.dataset.DatasetMixin):
 
         except IndexError:
             # print("read image error:{}".format(read_img_path))
-            return self.get_example(i-1)  # 不得已为之
+            # return self.get_example(i-1)  # 不得已为之
+            raise
             # raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(read_img_path))
         # print("fetch over")
         non_AU_set = set()
@@ -143,7 +146,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
         all_AU_set.update(known_AU_set)
 
         current_AU_couple = defaultdict(set) # key = AU couple, value = AU 用于合并同一个区域的不同AU
-        couple_box_dict = defaultdict(list) # key= AU couple
+        couple_box_dict = DefaultOrderedDict(list)  # key= AU couple
 
         # mask_path_dict's key AU maybe 3 or -2 or ?5
         for AU in all_AU_set:
@@ -154,7 +157,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
             except KeyError:
                 print(list(self.au_couple_dict.keys()), _AU)
                 raise
-        for AU, box_list in AU_box_dict.items():
+        for AU, box_list in sorted(AU_box_dict.items(), key=lambda e:int(e[0])):
             _AU = AU if AU.isdigit() else AU[1:]
             couple_box_dict[self.au_couple_dict[_AU]] = box_list  # 所以这一步会把脸上有的，没有的AU都加上
         label = []  # one box may have multiple labels. so each entry is 10101110 binary code

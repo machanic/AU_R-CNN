@@ -366,7 +366,6 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
         node_list = []
         temporal_edges = []
         spatio_edges = []
-        faster_rcnn.reset_state()
         h_info_array = []
         box_geometry_array = []
         for entry_dict in video_info:
@@ -414,6 +413,7 @@ def build_graph(faster_rcnn, reader_func, output_dir, database_name, force_gener
                 print("boxes num != {0}, real box num= {1}".format(config.BOX_NUM[database_name], len(bboxes)))
                 continue
             with chainer.no_backprop_mode(),chainer.using_config('train', False):
+                bboxes = np.asarray(bboxes, dtype=np.float32)
                 h = faster_rcnn.extract(cropped_face, bboxes, layer=extract_key)  # shape = R' x 2048
             assert h.shape[0] == len(bboxes)
             h = chainer.cuda.to_cpu(h)
