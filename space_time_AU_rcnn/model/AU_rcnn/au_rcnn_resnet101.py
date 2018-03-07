@@ -1,16 +1,16 @@
 import collections
 import numpy as np
-
+from space_time_AU_rcnn.model.AU_rcnn.roi_tools.roi_align_2d import roi_align_2d
 import chainer
 import chainer.functions as F
 import chainer.links as L
 from chainer.links import ResNet101Layers
 import functools
-from AU_rcnn.links.model.faster_rcnn.faster_rcnn import FasterRCNN
+from space_time_AU_rcnn.model.AU_rcnn.au_rcnn import AU_RCNN
 import config
 from chainer import initializers
 
-class FasterRCNNResnet101(FasterRCNN):
+class AU_RCNN_Resnet101(AU_RCNN):
 
     """Faster R-CNN based on ResNet101.
 
@@ -29,7 +29,7 @@ class FasterRCNNResnet101(FasterRCNN):
         will be randomly initialized.
 
     For descriptions on the interface of this model, please refer to
-    :class:`AU_rcnn.links.model.faster_rcnn.FasterRCNN`.
+    :class:`AU_rcnn.links.model.AU_rcnn.FasterRCNN`.
 
     :obj:`FasterRCNNVGG16` supports finer control on random initializations of
     weights by arguments
@@ -64,7 +64,7 @@ class FasterRCNNResnet101(FasterRCNN):
         loc_initialW (callable): Initializer for the localization head.
         score_initialW (callable): Initializer for the score head.
         proposal_creator_params (dict): Key valued paramters for
-            :obj:`AU_rcnn.links.model.faster_rcnn.ProposalCreator`.
+            :obj:`AU_rcnn.links.model.AU_rcnn.ProposalCreator`.
 
     """
 
@@ -86,41 +86,18 @@ class FasterRCNNResnet101(FasterRCNN):
     feat_stride = 16
 
     def __init__(self,
-                 n_fg_class=None,
                  pretrained_model=None,
                  min_size=512, max_size=512,
-                 fc_initialW=None,
-                 score_initialW=None,
-                 mean_file=None,
-                 use_lstm=True,
-                 extract_len=None,
-                 fix=False
+                 mean_file=None
                  ):
-        self.use_lstm = use_lstm
-        if n_fg_class is None:
-            if pretrained_model not in self._models:
-                raise ValueError(
-                    'The n_fg_class needs to be supplied as an argument')
-            # n_fg_class = self._models[pretrained_model]['n_fg_class'] # 修改成我传入多少是多少,因为n_fg_class要与AU数一样多
-            n_fg_class = len(config.AU_SQUEEZE)
-        if score_initialW is None:
-            score_initialW = chainer.initializers.Normal(0.01)
-        if fc_initialW is None and pretrained_model:
-            fc_initialW = chainer.initializers.constant.Zero()
 
-        extractor = ResnetFeatureExtractor(fix=fix)
-        self.extract_len = extract_len
+        extractor = ResnetFeatureExtractor()
         head = ResRoIHead(
-            n_fg_class,  # 注意:全0表示背景。010101才表示多label，因此无需一个特别的0的神经元节点
             roi_size=14, spatial_scale=1. / self.feat_stride, # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
-            fc_initialW=fc_initialW,
-            score_initialW=score_initialW,
-            use_lstm=use_lstm,
-            extract_len=extract_len
         )
         mean_array = np.load(mean_file)
         print("loading mean_file in: {} done".format(mean_file))
-        super(FasterRCNNResnet101, self).__init__(
+        super(AU_RCNN_Resnet101, self).__init__(
             extractor,
             head,
             mean=mean_array,
@@ -143,9 +120,6 @@ class FasterRCNNResnet101(FasterRCNN):
         self.extractor.res3.copyparams(pretrained_model.res3)
         self.extractor.res4.copyparams(pretrained_model.res4)
         self.head.res5.copyparams(pretrained_model.res5)
-        if self.extract_len is not None and self.extract_len == 1000 and not self.use_lstm:
-            self.head.fc.copyparams(pretrained_model.fc6)
-
 
 
 class BottleNeckA(chainer.Chain):
@@ -167,7 +141,7 @@ class BottleNeckA(chainer.Chain):
 
             self.conv4 = L.Convolution2D(
                 in_size, out_size, 1, stride, 0,
-                initialW=initialW, nobias=True)
+                initialW=initialW, nobias=True)  # note that residule link has stride = 2
             self.bn4 = L.BatchNormalization(out_size)
 
     def __call__(self, x):
@@ -237,38 +211,20 @@ class ResRoIHead(chainer.Chain):
 
     """
 
-    def __init__(self, n_class, roi_size, spatial_scale,
-                 fc_initialW=None, score_initialW=None, use_lstm=False, extract_len=None):
+    def __init__(self, roi_size, spatial_scale):
         # n_class includes the background
         super(ResRoIHead, self).__init__()
-        self.use_lstm = use_lstm
-        if extract_len is None:
-            extract_len = 1000
-        conv_initialW = initializers.HeNormal()
         with self.init_scope():
             self.res5 = Block(3, 1024, 512, 2048)
-            if use_lstm:
-                self.fc = L.LSTM(2048, extract_len)
-            else:
-                self.fc = L.Linear(2048, extract_len, initialW=fc_initialW)
-            self.score = L.Linear(extract_len, n_class, initialW=score_initialW)
         self.functions = collections.OrderedDict([
             ('res5',  [self.res5]),
-            ("avg_pool", [functools.partial(F.average_pooling_2d, ksize=7, stride=1)]),  # because res5 will decrease height and width by factor of 2
-            ("fc",    [self.fc]),
-            ('relu',  [F.relu]),
-            ("score", [self.score]),
+            ("avg_pool", [functools.partial(F.average_pooling_2d, ksize=7, stride=1)]),
         ])
-        self.n_class = n_class
         self.roi_size = roi_size
         self.spatial_scale = spatial_scale  # 这个很关键,一般都是1/16.0
         self.activation = dict()
 
-    def reset_state(self):
-        if self.use_lstm:
-            self.fc.reset_state()
-
-    def __call__(self, x, rois, roi_indices, layers=["res5"]):
+    def __call__(self, x, rois, roi_indices, layers=["avg_pool"]):
         """Forward the chain.
 
         We assume that there are :math:`N` batches.
@@ -294,13 +250,12 @@ class ResRoIHead(chainer.Chain):
             self.spatial_scale)
         h = pool
         for key, funcs in self.functions.items():
-
             for func in funcs:
                 h = func(h)
             if key in target_layers:
                 self.activation[key] = h
                 target_layers.remove(key)
-        return h
+        return F.reshape(h, (-1, h.shape[-1]))
 
 
 class ResnetFeatureExtractor(chainer.Chain):
@@ -312,7 +267,7 @@ class ResnetFeatureExtractor(chainer.Chain):
 
     """
 
-    def __init__(self, fix):
+    def __init__(self):
         super(ResnetFeatureExtractor, self).__init__()
         with self.init_scope():
             self.conv1 = L.Convolution2D(3, 64, 7, 2, 3, initialW=initializers.HeNormal(), nobias=True)
@@ -320,19 +275,11 @@ class ResnetFeatureExtractor(chainer.Chain):
             self.res2 = Block(3, 64, 64, 256, 1)
             self.res3 = Block(4, 256, 128, 512)
             self.res4 = Block(23, 512, 256, 1024)
-        self.fix = fix
 
     def __call__(self, x):
-
-        if self.fix:
-            with chainer.no_backprop_mode():
-                h = self.bn1(self.conv1(x))
-                h = F.max_pooling_2d(F.relu(h), 3, stride=2)
-                h = self.res2(h)
-        else:
-            h = self.bn1(self.conv1(x))
-            h = F.max_pooling_2d(F.relu(h), 3, stride=2)
-            h = self.res2(h)
+        h = self.bn1(self.conv1(x))
+        h = F.max_pooling_2d(F.relu(h), 3, stride=2)
+        h = self.res2(h)
         h = self.res3(h)
         h = self.res4(h)
         return h
@@ -341,7 +288,7 @@ class ResnetFeatureExtractor(chainer.Chain):
 def _roi_pooling_2d_yx(x, indices_and_rois, outh, outw, spatial_scale):
 
     xy_indices_and_rois = indices_and_rois[:, [0, 2, 1, 4, 3]]
-    pool = F.roi_pooling_2d(
+    pool = roi_align_2d(
         x, xy_indices_and_rois, outh, outw, spatial_scale)
     return pool
 

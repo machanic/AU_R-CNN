@@ -9,15 +9,13 @@ from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 from simple_graph_learning.model.space_time_net.space_time_rnn_type_2 import SpaceTimeRNN
 from simple_graph_learning.dataset.simple_feature_dataset import SimpleFeatureDataset
 from simple_graph_learning.model.space_time_net.enum_type import SpatialEdgeMode, RecurrentType
-from simple_graph_learning.iterators.batch_keep_order_iterator import BatchKeepOrderIterator
+from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 from collections import OrderedDict
 import os
 import matplotlib
 matplotlib.use('Agg')
-import config
 import re
 from chainer.dataset import concat_examples
-
 
 def parse_fold_split_idx(train_dir):
     pattern = re.compile(".*/(.*?)_(\d)_fold_(\d)/.*", re.DOTALL)
@@ -87,22 +85,9 @@ def main():
     ======================================
     """.format(args.gpu, args.spatial_edge_mode, args.temporal_edge_mode))
     adaptive_AU_database(database)
-
-    paper_report_label = OrderedDict()
-    if args.use_paper_num_label:
-        for AU_idx,AU in sorted(config.AU_SQUEEZE.items(), key=lambda e:int(e[0])):
-            if database == "BP4D":
-                paper_use_AU = config.paper_use_BP4D
-            elif database =="DISFA":
-                paper_use_AU = config.paper_use_DISFA
-            if AU in paper_use_AU:
-                paper_report_label[AU_idx] = AU
+    paper_report_label, class_num = squeeze_label_num_report(args.database, args.use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
-    if not paper_report_label_idx:
-        paper_report_label_idx = None
-        class_num = len(config.AU_SQUEEZE)
-    else:
-        class_num = len(paper_report_label_idx)
+
     model = SpaceTimeRNN(database, args.layers, args.num_attrib, class_num, None, spatial_edge_model=args.spatial_edge_mode,
                            recurrent_block_type=args.temporal_edge_mode, attn_heads=args.attn_heads,
                            bi_lstm=args.bi_lstm)
