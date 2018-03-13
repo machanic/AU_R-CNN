@@ -49,5 +49,6 @@ if __name__ == "__main__":
     example_dict["k"].append("ee")
     example_dict["g"].append("ee")
     example_dict["a"].append("ee")
+
     for key, val in example_dict.items():
         print(key,val)

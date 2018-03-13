@@ -6,7 +6,7 @@ import chainer.functions as F
 import numpy as np
 from space_time_AU_rcnn.model.roi_space_time_net.attention_base_block import PositionwiseFeedForwardLayer, AttentionBlock
 
-from space_time_AU_rcnn.model.roi_space_time_net.enum_type import  RecurrentType, SpatialEdgeMode
+from space_time_AU_rcnn.constants.enum_type import  RecurrentType, SpatialEdgeMode
 import config
 from collections import OrderedDict
 
@@ -64,7 +64,7 @@ class SpaceTimeRNN(chainer.Chain):
 
     def __init__(self, database, n_layers:int, in_size:int, out_size:int, initialW=None,
                  spatial_edge_model: SpatialEdgeMode = SpatialEdgeMode.all_edge,
-                 recurrent_block_type: RecurrentType = RecurrentType.rnn, au_rcnn_train_chain=None, bi_lstm=False):
+                 recurrent_block_type: RecurrentType = RecurrentType.rnn, bi_lstm=False):
         super(SpaceTimeRNN, self).__init__()
         self.neg_pos_ratio = 3
         self.database = database
@@ -81,7 +81,6 @@ class SpaceTimeRNN(chainer.Chain):
         with self.init_scope():
             if not initialW:
                 initialW = initializers.HeNormal()
-            self.au_rcnn_train_chain = au_rcnn_train_chain
             self.top = dict()
             for i in range(self.frame_node_num):
                 if recurrent_block_type == RecurrentType.rnn:
@@ -103,7 +102,7 @@ class SpaceTimeRNN(chainer.Chain):
         for node_module_id, node_module in self.top.items():
             input_x = xs[:, :, int(node_module_id), :]  # B, T, D
             input_x = F.split_axis(input_x, input_x.shape[0], axis=0, force_tuple=True)
-            input_x = [F.squeeze(x) for x in input_x]  # list of T,D
+            input_x = [F.squeeze(x, axis=0) for x in input_x]  # list of T,D
             node_out_dict[node_module_id] = F.stack(node_module(input_x)) # B, T, out_size
         return node_out_dict
 
@@ -176,49 +175,21 @@ class SpaceTimeRNN(chainer.Chain):
         return pick_index, accuracy_pick_index
 
 
-    def __call__(self, images, bboxes, labels):
-        # images shape = B, T, C, H, W
-        # bboxes shape = B, T, F(9 or 8), 4
+    def __call__(self, roi_feature, labels):
         # labels shape = B, T, F(9 or 8), 12
-        batch, T, channel, height, width = images.shape
-        images = images.reshape(batch*T, channel, height, width)  # B*T, C, H, W
-        bboxes = bboxes.reshape(batch*T, config.BOX_NUM[self.database], 4) # B*T, 9, 4
-        labels = labels.reshape(batch*T, config.BOX_NUM[self.database], -1) # B*T, 9, 12/22
-        roi_feature = self.au_rcnn_train_chain.__call__(images, bboxes)  # shape = B*T, F, D
+        # roi_feature shape =  B, T, F, D, where F is box number in one frame image
+        with chainer.cuda.get_device_from_array(roi_feature.data) as device:
+            node_out = self.forward(roi_feature)  # node_out B,T,F,D
+            node_out = F.reshape(node_out, (-1, self.out_size))
+            node_labels = self.xp.reshape(labels, (-1, self.out_size))
+            pick_index, accuracy_pick_index = self.get_loss_index(node_out, node_labels)
+            loss = F.sigmoid_cross_entropy(node_out[list(pick_index[0]), list(pick_index[1])],
+                                            node_labels[list(pick_index[0]), list(pick_index[1])])
+            accuracy = F.binary_accuracy(node_out[list(accuracy_pick_index[0]), list(accuracy_pick_index[1])],
+                                         node_labels[[list(accuracy_pick_index[0]), list(accuracy_pick_index[1])]])
 
 
-        roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], -1) # shape = B, T, F, D
+        return loss, accuracy
 
-        node_out = self.forward(roi_feature)  # node_out B,T,F,D
-        node_out = F.reshape(node_out, (-1, self.out_size))
-        node_labels = self.xp.reshape(labels, (-1, self.out_size))
-        pick_index, accuracy_pick_index = self.get_loss_index(node_out, node_labels)
-        loss = F.sigmoid_cross_entropy(node_out[list(pick_index[0]), list(pick_index[1])],
-                                        node_labels[list(pick_index[0]), list(pick_index[1])])
-        accuracy = F.binary_accuracy(node_out[list(accuracy_pick_index[0]), list(accuracy_pick_index[1])],
-                                     node_labels[[list(accuracy_pick_index[0]), list(accuracy_pick_index[1])]])
 
-        report_dict = {'loss': loss, "accuracy":accuracy}
-        chainer.reporter.report(report_dict,
-                                self)
-        return loss
-
-    # can only predict one frame based on previous T-1 frame feature
-    def predict(self, images, bboxes): # all shape is (B, T, F, D), but will only predict last frame output
-        if not isinstance(images, chainer.Variable):
-            images = chainer.Variable(images)
-        with chainer.no_backprop_mode(), chainer.using_config('train', False) :
-            batch, T, channel, height, width = images.shape
-            images = images.reshape(batch * T, channel, height, width)  # B*T, C, H, W
-            bboxes = bboxes.reshape(batch * T, config.BOX_NUM[self.database], 4)  # B*T, 9, 4
-            roi_feature = self.au_rcnn_train_chain.__call__(images, bboxes)  # shape = B*T, F, D
-            roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
-
-            node_out = self.forward(roi_feature) # node_out B,T,F,D
-            node_out = chainer.cuda.to_cpu(node_out.data)
-            node_out = node_out[:, -1, :, :] # B, F, D
-            pred = (node_out > 0).astype(np.int32)
-            pred = np.bitwise_or.reduce(pred,axis=1)  # B, D
-
-        return pred  # return batch x out_size, it is last time_step frame of 2-nd axis of input xs prediction
 

@@ -159,13 +159,12 @@ def check_box_and_cropface(orig_img_path, channel_first=False):
     # cropped_face, params = transforms.random_flip(
     #     cropped_face, x_random=True, return_param=True)
     # cropped_face = np.transpose(cropped_face, (1, 2, 0))
-
+    i = 0
     for AU, box_ls in AU_mask_dict.items():
         current_AU_couple = AU_couple[AU]
         if current_AU_couple in already_couple:
             continue
         already_couple.add(current_AU_couple)
-        i = 1
 
 
         for box in box_ls:
@@ -175,20 +174,20 @@ def check_box_and_cropface(orig_img_path, channel_first=False):
                 box, (512,512), x_flip=False)
             x_min,y_min = box[0][1],box[0][0]
             x_max, y_max = box[0][3],box[0][2]
-
+            print(box)
             cp_croped = cropped_face.copy()
             cv2.rectangle(cp_croped, (x_min,y_min), (x_max, y_max),(0,255,0),1)
 
-            cv2.imwrite("D:/tmp/2119/AU_{0}_{1}.png".format(",".join(current_AU_couple), i), cp_croped)
+            cv2.imwrite("/home2/mac/test1/AU_{0}_{1}.png".format(",".join(current_AU_couple), i), cp_croped)
             i+=1
-
+    print(i)
 if __name__ == "__main__":
     adaptive_AU_database("BP4D")
     # trn_img = generate_landmark_image("BP4D","D:/Structural RNN++ paper/latex/figure/girl.jpg", None)
     # cv2.imwrite("D:/Structural RNN++ paper/latex/figure/ROI_face.jpg", trn_img)
     # exit(0)
     # imgs = ["D:/1084.jpg", "D:/007.jpg"]
-    check_box_and_cropface("/home/machen/dataset//BP4D/BP4D-training//M018/T8/187.jpg")
+    check_box_and_cropface("/home2/mac/dataset//BP4D/BP4D-training//M009/T4/0754.jpg")
     # from collections import defaultdict
     #
     # couple_mask_dict = defaultdict(list)

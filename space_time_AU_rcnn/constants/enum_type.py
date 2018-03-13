@@ -31,3 +31,5 @@ class SpatialEdgeMode(Enum):
     no_edge = 'no_edge'
     def __str__(self):
         return self.value
+
+

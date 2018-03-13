@@ -88,12 +88,13 @@ class AU_RCNN_Resnet101(AU_RCNN):
     def __init__(self,
                  pretrained_model=None,
                  min_size=512, max_size=512,
-                 mean_file=None
+                 mean_file=None, n_class=12, classify_mode=False
                  ):
 
         extractor = ResnetFeatureExtractor()
         head = ResRoIHead(
-            roi_size=14, spatial_scale=1. / self.feat_stride, # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
+            roi_size=14, spatial_scale=1. / self.feat_stride,
+            n_class=n_class, classify_mode=classify_mode # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
         )
         mean_array = np.load(mean_file)
         print("loading mean_file in: {} done".format(mean_file))
@@ -211,20 +212,26 @@ class ResRoIHead(chainer.Chain):
 
     """
 
-    def __init__(self, roi_size, spatial_scale):
+    def __init__(self, roi_size, spatial_scale, n_class, classify_mode=False):
         # n_class includes the background
         super(ResRoIHead, self).__init__()
-        with self.init_scope():
-            self.res5 = Block(3, 1024, 512, 2048)
-        self.functions = collections.OrderedDict([
-            ('res5',  [self.res5]),
-            ("avg_pool", [functools.partial(F.average_pooling_2d, ksize=7, stride=1)]),
-        ])
         self.roi_size = roi_size
         self.spatial_scale = spatial_scale  # 这个很关键,一般都是1/16.0
         self.activation = dict()
+        self.classify_mode = classify_mode
+        with self.init_scope():
+            self.res5 = Block(3, 1024, 512, 2048)
+            self.score = L.Linear(2048, n_class)
+            self.functions = collections.OrderedDict([
+                ('res5',  [self.res5]),
+                ("avg_pool", [functools.partial(F.average_pooling_2d, ksize=7, stride=1)]),
+            ])
+            if classify_mode:
+                self.functions["reshape"] = [functools.partial(F.reshape, shape=(-1, 2048))]
+                self.functions["score"] = [self.score]
 
-    def __call__(self, x, rois, roi_indices, layers=["avg_pool"]):
+
+    def __call__(self, x, rois, roi_indices):
         """Forward the chain.
 
         We assume that there are :math:`N` batches.
@@ -241,7 +248,6 @@ class ResRoIHead(chainer.Chain):
                 which bounding boxes correspond to. Its shape is :math:`(R',)`.
 
         """
-        target_layers = set(layers)
         roi_indices = roi_indices.astype(np.float32)
         indices_and_rois = self.xp.concatenate(
             (roi_indices[:, None], rois), axis=1)  # None means np.newaxis, concat along column
@@ -252,10 +258,9 @@ class ResRoIHead(chainer.Chain):
         for key, funcs in self.functions.items():
             for func in funcs:
                 h = func(h)
-            if key in target_layers:
-                self.activation[key] = h
-                target_layers.remove(key)
-        return F.reshape(h, (-1, h.shape[-1]))
+        if not self.classify_mode:
+            h = F.reshape(h, (-1, 2048))
+        return h
 
 
 class ResnetFeatureExtractor(chainer.Chain):
@@ -288,7 +293,7 @@ class ResnetFeatureExtractor(chainer.Chain):
 def _roi_pooling_2d_yx(x, indices_and_rois, outh, outw, spatial_scale):
 
     xy_indices_and_rois = indices_and_rois[:, [0, 2, 1, 4, 3]]
-    pool = roi_align_2d(
+    pool = F.roi_pooling_2d(
         x, xy_indices_and_rois, outh, outw, spatial_scale)
     return pool
 

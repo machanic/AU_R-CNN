@@ -1,5 +1,9 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
+
+import cProfile
+import pstats
+
 try:
     import matplotlib
     matplotlib.use('agg')
@@ -7,7 +11,6 @@ except ImportError:
     pass
 
 import argparse
-import random
 import numpy as np
 import os
 import sys
@@ -16,22 +19,22 @@ import chainer
 from chainer import training
 
 from chainer.datasets import TransformDataset
-from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_TrainChain
+from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor, AU_RCNN_TrainChainLoss
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_vgg import AU_RCNN_VGG16
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_mobilenet_v1 import AU_RCNN_MobilenetV1
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_rnn import SpaceTimeRNN
+from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
-from space_time_AU_rcnn.datasets.AU_sequence_frame_dataset import AUTimeSequenceDataset
-from space_time_AU_rcnn.model.roi_space_time_net.enum_type import SpatialEdgeMode, RecurrentType
+from space_time_AU_rcnn.datasets.AU_video_dataset import AU_video_dataset
+from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
+from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, RecurrentType
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
-from chainer.training import extensions
 from chainer.iterators import MultiprocessIterator, SerialIterator
-from space_time_AU_rcnn.extensions.AU_evaluator import AUEvaluator
-import json
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
+from space_time_AU_rcnn.updater.partial_parallel_updater import PartialParallelUpdater
 
 # new feature support:
 # 1. 支持resnet101/resnet50/VGG的模块切换; 3.支持多GPU切换
@@ -39,7 +42,7 @@ from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 # 6. 支持读取pretrained model从vgg_face或者imagenet的weight 7. 支持优化算法的切换，比如AdaGrad或RMSprop
 # 8. 使用memcached
 
-class Transform(object):
+class Transform4D(object):
 
     def __init__(self, au_rcnn, mirror=True):
         self.au_rcnn = au_rcnn
@@ -49,7 +52,7 @@ class Transform(object):
         img, bbox, label = in_data
         _, _, H, W = img.shape
         img = self.au_rcnn.prepare(img)
-        _,_, o_H, o_W = img.shape
+        _, _, o_H, o_W = img.shape
         bbox = transforms.resize_bbox(bbox, (H, W), (o_H, o_W))
         assert len(np.where(bbox < 0)[0]) == 0
         # horizontally flip and random shift box
@@ -59,6 +62,29 @@ class Transform(object):
             bbox = transforms.flip_bbox(
                 bbox, (o_H, o_W), x_flip=params['x_flip'])
         return img, bbox, label
+
+class Transform3D(object):
+
+    def __init__(self, au_rcnn, mirror=True):
+        self.au_rcnn = au_rcnn
+        self.mirror = mirror
+
+    def __call__(self, in_data):
+        img, bbox, label = in_data
+        _, H, W = img.shape
+        img = self.au_rcnn.prepare(img)
+        _, o_H, o_W = img.shape
+        bbox = transforms.resize_bbox(bbox, (H, W), (o_H, o_W))
+        assert len(np.where(bbox < 0)[0]) == 0
+        # horizontally flip and random shift box
+        if self.mirror:
+            img, params = transforms.random_flip(
+                img, x_random=True, return_param=True)
+            bbox = transforms.flip_bbox(
+                bbox, (o_H, o_W), x_flip=params['x_flip'])
+
+        return img, bbox, label
+
 
 
 def filter_last_checkpoint_filename(file_name_list, file_type, key_str):
@@ -89,12 +115,12 @@ def main():
                         help='Output directory: BP4D/DISFA/BP4D_DISFA')
     parser.add_argument('--iteration', '-i', type=int, default=70000)
     parser.add_argument('--epoch', '-e', type=int, default=20)
-    parser.add_argument('--batch_size', '-bs', type=int, default=2)
+    parser.add_argument('--batch_size', '-bs', type=int, default=1)
     parser.add_argument('--snapshot', '-snap', type=int, default=1000)
     parser.add_argument('--need_validate', action='store_true', help='do or not validate during training')
     parser.add_argument('--mean', default=config.ROOT_PATH+"BP4D/idx/mean_no_enhance.npy", help='image mean .npy file')
     parser.add_argument('--backbone', default="mobilenet_v1", help="vgg/resnet101/mobilenet_v1 for train")
-    parser.add_argument('--optimizer', default='RMSprop', help='optimizer: RMSprop/AdaGrad/Adam/SGD/AdaDelta')
+    parser.add_argument('--optimizer', default='SGD', help='optimizer: RMSprop/AdaGrad/Adam/SGD/AdaDelta')
     parser.add_argument('--pretrained_model', default='mobilenet_v1', help='imagenet/mobilenet_v1/resnet101/*.npz')
     parser.add_argument('--pretrained_model_args', nargs='+', type=float, help='you can pass in "1.0 224" or "0.75 224"')
     parser.add_argument('--spatial_edge_mode', type=SpatialEdgeMode, choices=list(SpatialEdgeMode),
@@ -109,10 +135,12 @@ def main():
     parser.add_argument("--split_idx",'-sp', type=int, default=1)
     parser.add_argument("--use_paper_num_label", action="store_true", help="only to use paper reported number of labels"
                                                                            " to train")
-    parser.add_argument("--previous_frame", type=int, default=50)
-    parser.add_argument("--sample_frame", '-sample', type=int, default=25)
+    parser.add_argument("--sample_frame", '-sample', type=int, default=10)
     parser.add_argument("--snap_individual", action="store_true", help="whether to snapshot each individual epoch/iteration")
+
     parser.add_argument("--proc_num", "-proc", type=int, default=1)
+    parser.add_argument("--fetch_mode", type=int, default=1)
+    parser.add_argument("--au_rcnn_loss", action="store_true", help="whether to train AU R-CNN or not")
     parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
     args = parser.parse_args()
     os.makedirs(args.pid, exist_ok=True)
@@ -123,7 +151,7 @@ def main():
         file_obj.write(pid)
         file_obj.flush()
 
-    print('GPU: {}'.format(",".join(args.gpu)))
+    print('GPU: {}'.format(",".join(list(map(str, args.gpu)))))
 
     adaptive_AU_database(args.database)
     mc_manager = None
@@ -143,31 +171,43 @@ def main():
     elif args.backbone == 'resnet101':
         au_rcnn = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model,
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                        mean_file=args.mean)
+                                        mean_file=args.mean, classify_mode=args.au_rcnn_loss, n_class=class_num)
     elif args.backbone == "mobilenet_v1":
         au_rcnn = AU_RCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
                                       min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                      mean_file=args.mean, classify_mode=False, n_class=class_num
+                                      mean_file=args.mean, classify_mode=args.au_rcnn_loss, n_class=class_num
                                       )
 
-    au_rcnn_train_chain = AU_RCNN_TrainChain(au_rcnn)
-    model = SpaceTimeRNN(args.database, args.layers, in_size=2048, out_size=class_num,
-                         spatial_edge_model=args.spatial_edge_mode, recurrent_block_type=args.temporal_edge_mode,
-                         au_rcnn_train_chain=au_rcnn_train_chain, bi_lstm=args.bi_lstm)
-    batch_size = args.batch_size
+    au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
 
-    train_data = AUTimeSequenceDataset(database=args.database,
+    if args.au_rcnn_loss:
+        au_rcnn_train_loss = AU_RCNN_TrainChainLoss()
+        loss_head_module = au_rcnn_train_loss
+    else:
+        space_time_rnn = SpaceTimeRNN(args.database, args.layers, in_size=2048, out_size=class_num,
+                         spatial_edge_model=args.spatial_edge_mode, recurrent_block_type=args.temporal_edge_mode,
+                        bi_lstm=args.bi_lstm)
+        loss_head_module = space_time_rnn
+    model = Wrapper(au_rcnn_train_chain, loss_head_module, args.database, args.sample_frame)
+    batch_size = args.batch_size
+    img_dataset = AUDataset(database=args.database,
                            fold=args.fold, split_name='trainval',
-                           split_index=args.split_idx, mc_manager=mc_manager, train_all_data=False,
-                           previous_frame=args.previous_frame, sample_frame=args.sample_frame, train_mode=True,
-                           paper_report_label_idx=paper_report_label_idx)
-    train_data = TransformDataset(train_data, Transform(au_rcnn, mirror=True))
+                           split_index=args.split_idx, mc_manager=mc_manager,
+                           train_all_data=False)
+
+    train_video_data = AU_video_dataset(au_image_dataset=img_dataset,
+                            sample_frame=args.sample_frame, train_mode=True,
+                           paper_report_label_idx=paper_report_label_idx, fetch_use_parrallel_iterator=True)
+
+    Transform = Transform3D  # FIXME
+
+    train_video_data = TransformDataset(train_video_data, Transform(au_rcnn, mirror=True))
 
     if args.proc_num == 1:
-        train_iter = SerialIterator(train_data, batch_size, repeat=True, shuffle=True)
+        train_iter = SerialIterator(train_video_data, batch_size * args.sample_frame, repeat=True, shuffle=False)
     else:
-        train_iter = MultiprocessIterator(train_data,  batch_size=batch_size, n_processes=args.proc_num,
-                                      repeat=True, shuffle=True, n_prefetch=10,shared_mem=31457280)
+        train_iter = MultiprocessIterator(train_video_data,  batch_size=batch_size * args.sample_frame, n_processes=args.proc_num,
+                                      repeat=True, shuffle=False, n_prefetch=10,shared_mem=314572800)
 
     if len(args.gpu) > 1:
         for gpu in args.gpu:
@@ -220,9 +260,11 @@ def main():
 
     if len(args.gpu) > 1:
         gpu_dict = {"main": args.gpu[0]} # many gpu will use
+        parallel_models = {"parallel": model.au_rcnn_train_chain}
         for slave_gpu in args.gpu[1:]:
             gpu_dict[slave_gpu] = int(slave_gpu)
-        updater = chainer.training.ParallelUpdater(train_iter, optimizer,
+
+        updater = PartialParallelUpdater(train_iter, optimizer, args.database, models=parallel_models,
                                                    devices=gpu_dict,
                                                    converter=lambda batch, device: concat_examples(batch, device,
                                                                                                    padding=0))
@@ -231,8 +273,15 @@ def main():
         updater = chainer.training.StandardUpdater(train_iter, optimizer, device=args.gpu[0],
                               converter=lambda batch, device: concat_examples(batch, device, padding=0))
 
+
+    @training.make_extension(trigger=(1, "epoch"))
+    def reset_order(trainer):
+        print("reset dataset order after one epoch")
+        trainer.updater._iterators["main"].dataset._dataset.reset()
+
     trainer = training.Trainer(
         updater, (args.epoch, 'epoch'), out=args.out)
+    trainer.extend(reset_order)
     trainer.extend(
         chainer.training.extensions.snapshot_object(optimizer,
                                                     filename=os.path.basename(pretrained_optimizer_file_name)),
@@ -259,8 +308,8 @@ def main():
 
 
     log_interval = 100, 'iteration'
-    print_interval = 100, 'iteration'
-    plot_interval = 100, 'iteration'
+    print_interval = 10, 'iteration'
+    plot_interval = 10, 'iteration'
     if args.optimizer != "Adam" and args.optimizer != "AdaDelta":
         trainer.extend(chainer.training.extensions.ExponentialShift('lr', 0.1),
                        trigger=(10, 'epoch'))
@@ -271,10 +320,10 @@ def main():
                        trigger=log_interval)
     trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,log_name="{0}_fold_{1}.log".format(args.fold,
                                                                                                                  args.split_idx)))
+    # trainer.reporter.add_observer("main_par", model.loss_head_module)
     trainer.extend(chainer.training.extensions.PrintReport(
         ['iteration', 'epoch', 'elapsed_time', 'lr',
          'main/loss','main/accuracy',
-         'validation/main/loss','validation/main/accuracy'
          ]), trigger=print_interval)
     trainer.extend(chainer.training.extensions.ProgressBar(update_interval=100))
 

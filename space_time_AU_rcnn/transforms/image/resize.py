@@ -41,7 +41,37 @@ except ImportError:
         return out
 
 
-def resize(imgs, size, interpolation=PIL.Image.BILINEAR):
+def resize_img(img, size, interpolation=PIL.Image.BILINEAR):
+    """Resize image to match the given shape.
+
+    This method uses :mod:`cv2` or :mod:`PIL` for the backend.
+    If :mod:`cv2` is installed, this legacy uses the implementation in
+    :mod:`cv2`. This implementation is faster than the implementation in
+    :mod:`PIL`. Under Anaconda environment,
+    :mod:`cv2` can be installed by the following command.
+
+    .. code::
+
+        $ conda install -c menpo opencv3=3.2.0
+
+    Args:
+        img (~numpy.ndarray): An array to be transformed.
+            This is in CHW format and the type should be :obj:`numpy.float32`.
+        size (tuple): This is a tuple of length 2. Its elements are
+            ordered as (height, width).
+        interpolation (int): Determines sampling strategy. This is one of
+            :obj:`PIL.Image.NEAREST`, :obj:`PIL.Image.BILINEAR`,
+            :obj:`PIL.Image.BICUBIC`, :obj:`PIL.Image.LANCZOS`.
+            Bilinear interpolation is the default strategy.
+
+    Returns:
+        ~numpy.ndarray: A resize array in CHW format.
+
+    """
+    img = _resize(img, size, interpolation)
+    return img
+
+def resize_imgs(imgs, size, interpolation=PIL.Image.BILINEAR):
     """Resize image to match the given shape.
 
     This method uses :mod:`cv2` or :mod:`PIL` for the backend.

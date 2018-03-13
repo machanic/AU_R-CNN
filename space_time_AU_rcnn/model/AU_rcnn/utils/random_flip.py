@@ -1,6 +1,7 @@
 import random
 
 
+
 def random_flip(img, y_random=False, x_random=False,
                 return_param=False, copy=False):
     """Randomly flip an image in vertical or horizontal direction.
@@ -31,21 +32,41 @@ def random_flip(img, y_random=False, x_random=False,
             horizontal direction or not.
 
     """
-    y_flip, x_flip = False, False
-    if y_random:
-        y_flip = random.choice([True, False])
-    if x_random:
-        x_flip = random.choice([True, False])
+    if img.ndim == 4:
+        y_flip, x_flip = False, False
+        if y_random:
+            y_flip = random.choice([True, False])
+        if x_random:
+            x_flip = random.choice([True, False])
 
-    if y_flip:
-        img = img[:, :, ::-1, :]
-    if x_flip:
-        img = img[:, :, :, ::-1]
+        if y_flip:
+            img = img[:, :, ::-1, :]
+        if x_flip:
+            img = img[:, :, :, ::-1]
 
-    if copy:
-        img = img.copy()
+        if copy:
+            img = img.copy()
 
-    if return_param:
-        return img, {'y_flip': y_flip, 'x_flip': x_flip}
-    else:
-        return img
+        if return_param:
+            return img, {'y_flip': y_flip, 'x_flip': x_flip}
+        else:
+            return img
+    elif img.ndim == 3:
+        y_flip, x_flip = False, False
+        if y_random:
+            y_flip = random.choice([True, False])
+        if x_random:
+            x_flip = random.choice([True, False])
+
+        if y_flip:
+            img = img[:, ::-1, :]
+        if x_flip:
+            img = img[:, :, ::-1]
+
+        if copy:
+            img = img.copy()
+
+        if return_param:
+            return img, {'y_flip': y_flip, 'x_flip': x_flip}
+        else:
+            return img

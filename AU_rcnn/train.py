@@ -1,5 +1,9 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
+import sys
+sys.path.insert(0, '/home1/machen/face_expr')
+from AU_rcnn.links.model.faster_rcnn.faster_rcnn_mobilenet_v1 import FasterRCNN_MobilenetV1
+
 try:
     import matplotlib
     matplotlib.use('agg')
@@ -10,8 +14,7 @@ import argparse
 import random
 import numpy as np
 import os
-import sys
-sys.path.insert(0, '/home/machen/face_expr')
+
 import chainer
 from chainer import training
 
@@ -130,6 +133,8 @@ def main():
     parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument('--optimizer', default='RMSprop', help='optimizer: RMSprop/AdaGrad/Adam/SGD/AdaDelta')
     parser.add_argument('--pretrained_model', default='resnet101', help='imagenet/vggface/resnet101/*.npz')
+    parser.add_argument('--pretrained_model_args', nargs='+', type=float,
+                        help='you can pass in "1.0 224" or "0.75 224"')
     parser.add_argument('--use_wechat', action='store_true', help='whether use wechat to control or not')
     parser.add_argument('--use_memcached', action='store_true', help='whether use memcached to boost speed of fetch crop&mask') #
     parser.add_argument('--memcached_host', default='127.0.0.1')
@@ -185,6 +190,11 @@ def main():
                                       mean_file=args.mean,
                                       use_lstm=args.use_lstm,
                                       extract_len=args.extract_len, fix=args.fix)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
+    elif args.feature_model == "mobilenet_v1":
+        faster_rcnn = FasterRCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
+                                      min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
+                                      mean_file=args.mean,  n_class=len(config.AU_SQUEEZE)
+                                      )
     if args.use_lstm:
         faster_rcnn.reset_state()
     batch_size = args.batch_size if not args.use_lstm else 1

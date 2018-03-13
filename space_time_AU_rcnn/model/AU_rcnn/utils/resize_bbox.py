@@ -21,11 +21,20 @@ def resize_bbox(bbox, in_size, out_size):
         Bounding boxes rescaled according to the given image shapes.
 
     """
-    bbox = bbox.copy()
-    y_scale = float(out_size[0]) / in_size[0]
-    x_scale = float(out_size[1]) / in_size[1]
-    bbox[:,:, 0] = y_scale * bbox[:,:, 0]
-    bbox[:,:, 2] = y_scale * bbox[:,:, 2]
-    bbox[:,:, 1] = x_scale * bbox[:,:, 1]
-    bbox[:,:, 3] = x_scale * bbox[:,:, 3]
+    if bbox.ndim == 3:
+        bbox = bbox.copy()
+        y_scale = float(out_size[0]) / in_size[0]
+        x_scale = float(out_size[1]) / in_size[1]
+        bbox[:,:, 0] = y_scale * bbox[:,:, 0]
+        bbox[:,:, 2] = y_scale * bbox[:,:, 2]
+        bbox[:,:, 1] = x_scale * bbox[:,:, 1]
+        bbox[:,:, 3] = x_scale * bbox[:,:, 3]
+    elif bbox.ndim == 2:
+        bbox = bbox.copy()
+        y_scale = float(out_size[0]) / in_size[0]
+        x_scale = float(out_size[1]) / in_size[1]
+        bbox[:, 0] = y_scale * bbox[:, 0]
+        bbox[:, 2] = y_scale * bbox[:, 2]
+        bbox[:, 1] = x_scale * bbox[:, 1]
+        bbox[:, 3] = x_scale * bbox[:, 3]
     return bbox

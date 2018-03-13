@@ -24,7 +24,7 @@ import numpy as np
 from chainer import cuda
 
 from space_time_AU_rcnn import transforms
-from space_time_AU_rcnn.transforms.image.resize import resize
+from space_time_AU_rcnn.transforms.image.resize import resize_img, resize_imgs
 import config
 import cv2
 
@@ -172,18 +172,30 @@ class AU_RCNN(chainer.Chain):
             A preprocessed image.
 
         """
-        _, _, H, W = img.shape
+        if img.ndim == 4:
+            _, _, H, W = img.shape
 
-        scale = self.min_size / min(H, W)
+            scale = self.min_size / min(H, W)
 
-        if scale * max(H, W) > self.max_size:
-            scale = self.max_size / max(H, W)
+            if scale * max(H, W) > self.max_size:
+                scale = self.max_size / max(H, W)
 
-        img = resize(img, (int(H * scale), int(W * scale)))
-        if self.mean.shape[2] != config.IMG_SIZE[1]:  # C, H, W
-            self.mean = cv2.resize(np.transpose(self.mean, (1,2,0)), config.IMG_SIZE)
-            self.mean = np.transpose(self.mean, (2,0,1))  # C,H,W
-        img = (img - np.expand_dims(self.mean, 0)).astype(np.float32, copy=False)
+            img = resize_imgs(img, (int(H * scale), int(W * scale)))
+            if self.mean.shape[2] != config.IMG_SIZE[0]:  # C, H, W
+                self.mean = cv2.resize(np.transpose(self.mean, (1,2,0)), config.IMG_SIZE)
+                self.mean = np.transpose(self.mean, (2,0,1))  # C,H,W
+            img = (img - np.expand_dims(self.mean, 0)).astype(np.float32, copy=False)
+        elif img.ndim == 3:
+            _, H, W = img.shape
+
+            scale = self.min_size / min(H, W)
+
+            if scale * max(H, W) > self.max_size:
+                scale = self.max_size / max(H, W)
+
+            img = resize_img(img, (int(H * scale), int(W * scale)))
+
+            img = (img - self.mean).astype(np.float32, copy=False)
         return img
 
     def fetch_labels_from_scores(self, xp, raw_score):

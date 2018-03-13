@@ -11,7 +11,7 @@ class FaceMaskCropper(object):
     landmark = FaceLandMark(config.DLIB_LANDMARK_PRETRAIN)
 
     @staticmethod
-    def _dlib_face_rect(image, landmark_dict):
+    def dlib_face_crop(image, landmark_dict):
         h_offset = 50
         w_offset = 20
         sorted_x = sorted([val[0] for val in landmark_dict.values()])
@@ -39,7 +39,7 @@ class FaceMaskCropper(object):
             print("error read image: {}".format(orig_img_path))
         landmark_dict, _, _ = FaceMaskCropper.landmark.landmark(image=orig_img, need_txt_img=False)
         assert len(landmark_dict) == 67
-        new_face, rect = FaceMaskCropper._dlib_face_rect(orig_img, landmark_dict)
+        new_face, rect = FaceMaskCropper.dlib_face_crop(orig_img, landmark_dict)
         del orig_img
         new_face = cv2.resize(new_face, config.IMG_SIZE)
         AU_mask_dict = dict()
@@ -58,13 +58,17 @@ class FaceMaskCropper(object):
 
     @staticmethod
     def get_cropface_and_box(orig_img_path, channel_first=True, mc_manager=None, key_prefix=""):
-        key = key_prefix+orig_img_path
+        key = key_prefix+ "/".join((orig_img_path.split("/")[-3], orig_img_path.split("/")[-2],orig_img_path.split("/")[-1]))
         if mc_manager is not None:
             try:
                 if key in mc_manager:
                     orig_img = cv2.imread(orig_img_path, cv2.IMREAD_COLOR)
                     result = mc_manager.get(key)
-                    crop_rect = result["crop_rect"]
+                    if "crop_rect" in result:
+                        crop_rect = result["crop_rect"]
+                    else:
+                        landmark_dict = result["landmark_dict"]
+                        _, crop_rect = FaceMaskCropper.dlib_face_crop(orig_img, landmark_dict)
                     AU_box_dict = result["AU_box_dict"]
                     new_face = orig_img[crop_rect["top"]:crop_rect["top"] + crop_rect["height"],
                                crop_rect["left"]: crop_rect["left"] + crop_rect["width"], ...]
@@ -76,7 +80,7 @@ class FaceMaskCropper(object):
                 pass
         orig_img = cv2.imread(orig_img_path, cv2.IMREAD_COLOR)
         landmark_dict, _, _ = FaceMaskCropper.landmark.landmark(orig_img, need_txt_img=False)
-        new_face, rect = FaceMaskCropper._dlib_face_rect(orig_img, landmark_dict)
+        new_face, rect = FaceMaskCropper.dlib_face_crop(orig_img, landmark_dict)
         new_face = cv2.resize(new_face, config.IMG_SIZE)
 
         del orig_img
@@ -112,7 +116,7 @@ class FaceMaskCropper(object):
             del mask
         if mc_manager is not None:
             try:
-                save_dict = {"crop_rect":rect, "AU_box_dict":AU_box_dict}
+                save_dict = {"crop_rect":rect, "AU_box_dict":AU_box_dict, "landmark_dict":landmark_dict}
                 mc_manager.set(key, save_dict)
             except Exception:
                 pass

@@ -23,16 +23,30 @@ def flip_bbox(bbox, size, y_flip=False, x_flip=False):
         Bounding boxes flipped according to the given flips.
 
     """
-    H, W = size
-    bbox = bbox.copy()
-    if y_flip:
-        y_max = H - 1 - bbox[:, :, 0]
-        y_min = H - 1 - bbox[:, :, 2]
-        bbox[:,:, 0] = y_min
-        bbox[:,:, 2] = y_max
-    if x_flip:
-        x_max = W - 1 - bbox[:, :, 1]
-        x_min = W - 1 - bbox[:, :, 3]
-        bbox[:,:, 1] = x_min
-        bbox[:,:, 3] = x_max
+    if bbox.ndim == 3:
+        H, W = size
+        bbox = bbox.copy()
+        if y_flip:
+            y_max = H - 1 - bbox[:, :, 0]
+            y_min = H - 1 - bbox[:, :, 2]
+            bbox[:,:, 0] = y_min
+            bbox[:,:, 2] = y_max
+        if x_flip:
+            x_max = W - 1 - bbox[:, :, 1]
+            x_min = W - 1 - bbox[:, :, 3]
+            bbox[:,:, 1] = x_min
+            bbox[:,:, 3] = x_max
+    elif bbox.ndim == 2:
+        H, W = size
+        bbox = bbox.copy()
+        if y_flip:
+            y_max = H - 1 - bbox[:, 0]
+            y_min = H - 1 - bbox[:, 2]
+            bbox[:, 0] = y_min
+            bbox[:, 2] = y_max
+        if x_flip:
+            x_max = W - 1 - bbox[:, 1]
+            x_min = W - 1 - bbox[:, 3]
+            bbox[:, 1] = x_min
+            bbox[:, 3] = x_max
     return bbox

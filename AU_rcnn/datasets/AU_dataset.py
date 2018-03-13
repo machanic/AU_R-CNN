@@ -146,7 +146,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
         all_AU_set.update(known_AU_set)
 
         current_AU_couple = defaultdict(set) # key = AU couple, value = AU 用于合并同一个区域的不同AU
-        couple_box_dict = DefaultOrderedDict(list)  # key= AU couple
+        couple_box_dict = OrderedDict()  # key= AU couple
 
         # mask_path_dict's key AU maybe 3 or -2 or ?5
         for AU in all_AU_set:

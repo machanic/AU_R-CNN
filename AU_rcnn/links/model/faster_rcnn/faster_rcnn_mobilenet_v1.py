@@ -3,15 +3,14 @@ from space_time_AU_rcnn.model.AU_rcnn.roi_tools.roi_align_2d import roi_align_2d
 import chainer
 import chainer.functions as F
 import chainer.links as L
-from chainer.links import ResNet101Layers
-from space_time_AU_rcnn.model.AU_rcnn.au_rcnn import AU_RCNN
+from AU_rcnn.links.model.faster_rcnn import FasterRCNN
 import config
 from chainer import initializers
-from collections import namedtuple, OrderedDict
+from collections import namedtuple
 from chainer.serializers import npz
 
 
-class AU_RCNN_MobilenetV1(AU_RCNN):
+class FasterRCNN_MobilenetV1(FasterRCNN):
 
     """Faster R-CNN based on MobileNet.
 
@@ -69,7 +68,7 @@ class AU_RCNN_MobilenetV1(AU_RCNN):
     def __init__(self,
                  pretrained_model_type=None,
                  min_size=512, max_size=512,
-                 mean_file=None, classify_mode=False, n_class=0
+                 mean_file=None, n_class=0
                  ):
         sizes = [128, 160, 192, 224]
         depth_mults = [0.75, 1.0]
@@ -83,7 +82,7 @@ class AU_RCNN_MobilenetV1(AU_RCNN):
 
         extractor = MobileNet_v1_Base()
         head = MobileNetHead(
-            roi_size=7, spatial_scale=1. / self.feat_stride, n_class=n_class, classify_mode=classify_mode
+            roi_size=7, spatial_scale=1. / self.feat_stride, n_class=n_class, classify_mode=True
         )
         mean_array = np.load(mean_file)
         print("loading mean_file in: {} done".format(mean_file))
@@ -96,7 +95,7 @@ class AU_RCNN_MobilenetV1(AU_RCNN):
             chainer.serializers.load_npz(pretrained_path, extractor)
             print("load pretrained mobilenet v1 file: {}".format(pretrained_path))
 
-        super(AU_RCNN_MobilenetV1, self).__init__(
+        super(FasterRCNN_MobilenetV1, self).__init__(
             extractor,
             head,
             mean=mean_array,
@@ -358,7 +357,7 @@ class MobileNet_v1_Base(chainer.Chain):
 
 def _roi_pooling_2d_yx(x, indices_and_rois, outh, outw, spatial_scale):
     xy_indices_and_rois = indices_and_rois[:, [0, 2, 1, 4, 3]]
-    pool = F.roi_pooling_2d(
+    pool = roi_align_2d(
         x, xy_indices_and_rois, outh, outw, spatial_scale)
     return pool
 

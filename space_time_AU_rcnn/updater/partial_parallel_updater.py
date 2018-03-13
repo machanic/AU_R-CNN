@@ -4,8 +4,10 @@ import six
 import copy
 import config
 import chainer.functions as F
+from chainer import function
 
-class ParallelUpdater(chainer.training.StandardUpdater):
+
+class PartialParallelUpdater(chainer.training.StandardUpdater):
 
     """Implementation of a parallel GPU Updater.
 
@@ -42,7 +44,7 @@ class ParallelUpdater(chainer.training.StandardUpdater):
 
     def __init__(self, iterator, optimizer, database, converter=convert.concat_examples,
                  models=None, devices=None, loss_func=None):  # devices = {"main":0, "gpu_1":1, "gpu_2":2}
-        super(ParallelUpdater, self).__init__(
+        super(PartialParallelUpdater, self).__init__(
             iterator=iterator,
             optimizer=optimizer,
             converter=converter,
@@ -73,12 +75,15 @@ class ParallelUpdater(chainer.training.StandardUpdater):
         models_others = {
             k: v for k, v in self._models.items() if v != model_main.au_rcnn_train_chain
         }
+
+        trainer.reporter.add_observer("main_par", model_main.loss_head_module)
+
         for name, model in models_others.items():
             trainer.reporter.add_observer(name, model)
 
     def split_list(self, alist, wanted_parts=1):
         length = len(alist)
-        return [ alist[i*length // wanted_parts: (i+1)*length // wanted_parts]
+        return [alist[i*length // wanted_parts: (i+1)*length // wanted_parts]
                  for i in range(wanted_parts) ]
 
 
@@ -87,17 +92,18 @@ class ParallelUpdater(chainer.training.StandardUpdater):
         optimizer = self.get_optimizer('main')
         # it is main wrapper class: au_rcnn_train_chain, space_time_rnn
         model_main = optimizer.target
-        space_time_rnn = model_main.space_time_rnn
+        loss_head_module = model_main.loss_head_module
 
         models_others = {k: v for k, v in self._models.items()
                          if v != model_main.au_rcnn_train_chain}
 
         batch = self.get_iterator('main').next()
-        in_arrays = self.converter(batch, self.device)
+        in_arrays = self.converter(batch, -1)
         images, bboxes, labels = in_arrays
         batch_size, T, channel, height, width = images.shape
         images = images.reshape(batch_size * T, channel, height, width)  # B*T, C, H, W
         bboxes = bboxes.reshape(batch_size * T, config.BOX_NUM[self.database], 4)  # B*T, 9, 4
+        labels = chainer.cuda.to_gpu(labels, device=self._devices["main"])
         # labels = labels.reshape(batch_size * T, config.BOX_NUM[self.database], -1)  # B*T, 9, 12/22
 
         # For reducing memory
@@ -110,23 +116,24 @@ class ParallelUpdater(chainer.training.StandardUpdater):
         n = len(self._models)
         in_arrays_list = {}
         sub_index = self.split_list(list(range(batch_size * T)), n)
-        for i, key in enumerate(sorted(self._models.keys())):  # self._models are all au_rcnn_train_chain includes main gpu
-            in_arrays_list[key] = (F.copy(images[sub_index[i]], self._devices[key]),
-                                   F.copy(bboxes[sub_index[i]], self._devices[key]))
+        for i, key in enumerate(sorted(self._models.keys(), key=lambda e:str(e))):  # self._models are all au_rcnn_train_chain includes main gpu
+            in_arrays_list[key] = (F.copy(images[sub_index[i]], self._devices.get(key, self._devices["main"])),
+                                   F.copy(bboxes[sub_index[i]], self._devices.get(key, self._devices["main"])))
 
         # self._models are all au_rcnn_train_chain includes main gpu
         with function.force_backprop_mode():
             roi_feature_multi_gpu = []
-            for model_key, au_rcnn_train_chain in sorted(self._models.items(), key=lambda e:e[0]):
+            for model_key, au_rcnn_train_chain in sorted(self._models.items(), key=lambda e:str(e[0])):
                 images, bboxes = in_arrays_list[model_key]
+                assert int(images.data.device) == au_rcnn_train_chain._device_id
                 roi_feature = au_rcnn_train_chain(images, bboxes)  # shape =(B*T//n, F, D)
                 roi_feature_multi_gpu.append(F.copy(roi_feature, self._devices["main"]))
             roi_feature = F.concat(roi_feature_multi_gpu, axis=0)  # multiple batch combine
-            roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], -1)
-            loss = space_time_rnn(roi_feature)
+            roi_feature = roi_feature.reshape(batch_size, T, config.BOX_NUM[self.database], roi_feature.shape[-1])
+            loss = loss_head_module(roi_feature, labels)
 
         model_main.cleargrads()
-        for model in six.itervalues(models_others):
+        for model in six.itervalues(self._models):
             model.cleargrads()
         loss.backward()
         for model in six.itervalues(models_others):
