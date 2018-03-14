@@ -42,7 +42,7 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
     def reset(self):
         self.offsets.clear()
         T = self.sample_frame
-        jump_frame = random.randint(4, 8)
+        jump_frame = random.randint(4, 7)
         if T > 0:
             for sequence_id, fetch_idx_lst in self.seq_dict.items():
                 for start_offset in range(jump_frame):
@@ -57,7 +57,7 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
                             else:
                                 extended_list.extend(sorted(rest_list))
                         self.offsets.append(extended_list)
-                    # self.offsets.extend([sub_idx_list[i: i+T] for i in range(0, len(sub_idx_list), T)])
+
                 # self.offsets.extend(
                 #     [fetch_idx_lst[i:i + T] for i in range(0, len(fetch_idx_lst), T)])
         else:
@@ -112,11 +112,11 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
             if self.paper_report_label_idx:
                 label = label[self.paper_report_label_idx]
             return np.transpose(cv2.resize(cv2.imread(img_path), config.IMG_SIZE), (2,0,1)), \
-                   np.tile(np.array([0, 0, config.IMG_SIZE[1], config.IMG_SIZE[0]]),
+                   np.tile(np.array([0, 0, config.IMG_SIZE[1]-1, config.IMG_SIZE[0]-1], dtype=np.float32),
                            (config.BOX_NUM[database_name], 1)), \
-                  np.tile(label, (config.BOX_NUM[database_name], 1))
+                   np.tile(label, (config.BOX_NUM[database_name], 1))
 
-        assert bbox.shape[0] == config.BOX_NUM[database_name]
+        assert bbox.shape[0] == config.BOX_NUM[database_name], bbox.shape[0]
         if self.paper_report_label_idx:
             label = label[:, self.paper_report_label_idx]
         return cropped_face, bbox, label

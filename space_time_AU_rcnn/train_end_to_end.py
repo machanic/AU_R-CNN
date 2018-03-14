@@ -14,7 +14,7 @@ import argparse
 import numpy as np
 import os
 import sys
-sys.path.insert(0, '/home/machen/face_expr')
+sys.path.insert(0, '/home1/machen/face_expr')
 import chainer
 from chainer import training
 
@@ -147,9 +147,9 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     pid = str(os.getpid())
     pid_file_path = args.pid + os.sep + "{0}_{1}_fold_{2}.pid".format(args.database, args.fold, args.split_idx)
-    with open(pid_file_path, "w") as file_obj:
-        file_obj.write(pid)
-        file_obj.flush()
+    # with open(pid_file_path, "w") as file_obj:
+    #     file_obj.write(pid)
+    #     file_obj.flush()
 
     print('GPU: {}'.format(",".join(list(map(str, args.gpu)))))
 
@@ -233,16 +233,20 @@ def main():
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
     optimizer_name = args.optimizer
 
-
-    pretrained_optimizer_file_name = '{0}_fold_{1}_{2}_{3}_optimizer.npz'.format(args.fold, args.split_idx,
-                                                                                     args.backbone, optimizer_name)
+    train_type = "rcnn" if args.au_rcnn_loss else "lstm"
+    pretrained_optimizer_file_name = '{0}_fold_{1}_{2}@{3}@{4}@{5}@{6}_optimizer.npz'.format(args.fold, args.split_idx,
+                                                                                     args.backbone, optimizer_name,
+                                                                                         args.spatial_edge_mode,
+                                                                                         args.temporal_edge_mode,
+                                                                                             train_type)
     pretrained_optimizer_file_name = args.out + os.sep + pretrained_optimizer_file_name
     key_str = "{0}_fold_{1}".format(args.fold, args.split_idx)
     file_list = []
     file_list.extend(os.listdir(args.out))
     snapshot_model_file_name = args.out + os.sep + filter_last_checkpoint_filename(file_list, "model", key_str)
-    single_model_file_name = args.out + os.sep + '{0}_fold_{1}_{2}_model.npz'.format(args.fold, args.split_idx,
-                                                                                         args.backbone)
+    single_model_file_name = args.out + os.sep + '{0}_fold_{1}_{2}@{3}@{4}@{5}_model.npz'.format(args.fold, args.split_idx,
+                                                                                         args.backbone, args.spatial_edge_mode,
+                                                                                          args.temporal_edge_mode,train_type)
 
     if os.path.exists(pretrained_optimizer_file_name):
         print("loading optimizer snatshot:{}".format(pretrained_optimizer_file_name))
@@ -288,11 +292,10 @@ def main():
         trigger=(args.snapshot, 'iteration'))
 
     if not args.snap_individual:
-        snap_model_file_name = '{0}_fold_{1}_{2}_model.npz'.format(args.fold, args.split_idx,
-                                                                             args.backbone)
+
         trainer.extend(
             chainer.training.extensions.snapshot_object(model,
-                                                        filename=snap_model_file_name),
+                                                        filename=os.path.basename(single_model_file_name)),
             trigger=(args.snapshot, 'iteration'))
 
     else:
@@ -318,8 +321,10 @@ def main():
     if args.optimizer != "AdaDelta":
         trainer.extend(chainer.training.extensions.observe_lr(),
                        trigger=log_interval)
-    trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,log_name="{0}_fold_{1}.log".format(args.fold,
-                                                                                                                 args.split_idx)))
+    trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,log_name="log_{0}_fold_{1}_{2}@{3}@{4}@{5}.log".format(
+                                                                                        args.fold, args.split_idx,
+                                                                                         args.backbone, args.spatial_edge_mode,
+                                                                                          args.temporal_edge_mode,train_type)))
     # trainer.reporter.add_observer("main_par", model.loss_head_module)
     trainer.extend(chainer.training.extensions.PrintReport(
         ['iteration', 'epoch', 'elapsed_time', 'lr',
@@ -331,14 +336,18 @@ def main():
         trainer.extend(
             chainer.training.extensions.PlotReport(
                 ['main/loss'],
-                file_name='loss_{0}_fold_{1}.png'.format(args.fold, args.split_idx), trigger=plot_interval
+                file_name='loss_{0}_fold_{1}_{2}@{3}@{4}@{5}.png'.format(args.fold, args.split_idx,
+                                                                                         args.backbone, args.spatial_edge_mode,
+                                                                                          args.temporal_edge_mode,train_type), trigger=plot_interval
             ),
             trigger=plot_interval
         )
         trainer.extend(
             chainer.training.extensions.PlotReport(
                 ['main/accuracy'],
-                file_name='accuracy_{0}_fold_{1}.png'.format(args.fold, args.split_idx), trigger=plot_interval
+                file_name='accuracy_{0}_fold_{1}_{2}@{3}@{4}@{5}.png'.format(args.fold, args.split_idx,
+                                                                                         args.backbone, args.spatial_edge_mode,
+                                                                                          args.temporal_edge_mode,train_type), trigger=plot_interval
             ),
             trigger=plot_interval
         )

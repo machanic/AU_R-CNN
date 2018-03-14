@@ -8,7 +8,56 @@ from space_time_AU_rcnn.model.roi_space_time_net.attention_base_block import Pos
 
 from space_time_AU_rcnn.constants.enum_type import  RecurrentType, SpatialEdgeMode
 import config
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+
+
+class LabelDependencyLSTM(chainer.Chain):
+    def __init__(self, insize, outsize, class_num, initialW=None, dropout=0.1, train_mode=True):
+        self.insize =  insize
+        self.outsize = outsize
+        self.train_mode = train_mode
+        self.window_size = 3
+        with self.init_scope():
+            self.label_embed = L.EmbedID(class_num, insize, ignore_label=-1)
+            self.lstm = L.LSTM(insize, outsize)
+
+    def make_label_embedding(self, labels):
+        # labels shape = (N, class_number)
+        # out shape = (all_label contains in N batch(multi-label exists), embed_length)
+        xp = chainer.cuda.cupy.get_array_module(labels.data)
+        nonzero_index_x, nonzero_index_y = xp.nonzero(labels)
+        all_label_id = []
+        label_dict = {} # all_label_id position -> labels batch index
+        for idx, batch_index in enumerate(nonzero_index_x):
+            label_dict[len(all_label_id)] = batch_index  # idx_x is batch index
+            all_label_id.append(nonzero_index_y[idx])
+        all_label_id = xp.array(all_label_id, dtype="i")
+        label_embeded = self.label_embed(all_label_id)
+        second_embeded_dict = defaultdict(list)
+        for idx, embed_vector in enumerate(F.separate(label_embeded, axis=0)):
+            batch_index = label_dict[idx]
+            second_embeded_dict[batch_index].append(embed_vector)
+        final_embeded = []
+        for batch_index, embed_vector_list in sorted(second_embeded_dict.items(), key=lambda e:int(e[0])):
+            embed_vector_list = F.stack(embed_vector_list)
+            final_embeded.append(F.sum(embed_vector_list, axis=0))
+
+        return F.stack(final_embeded)
+
+
+    def __call__(self, xs, labels):  # xs is list of T,D
+        xs = F.stack(xs) # B, T, D
+        xs = F.transpose(xs, (1,0,2)) # T, B, D
+        if self.train_mode:
+            embeded_matrix = self.make_label_embedding(labels)
+            assert embeded_matrix.shape[0] == labels.shape[0]
+
+
+
+
+
+
+
 
 class TemporalRNN(chainer.Chain):
 
