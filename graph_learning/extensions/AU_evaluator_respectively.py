@@ -42,7 +42,7 @@ class ActionUnitRoILabelSplitEvaluator(Evaluator):
         iterator = self._iterators['main']
         _target = self._targets["main"]
         if hasattr(iterator, 'reset'):
-            iterator.reset()
+            iterator.reset_for_train_mode()
             it = iterator
         else:
             it = copy.copy(iterator)

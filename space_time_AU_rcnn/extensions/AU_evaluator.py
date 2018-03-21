@@ -1,97 +1,108 @@
 import copy
-
-import chainer.training.extensions
-import numpy as np
-from chainer import Reporter
-from action_unit_metric.F1_frame import get_F1_frame
-from action_unit_metric.get_ROC import get_ROC
-import config
+import os
 from collections import defaultdict
+
+import chainer
+import numpy as np
 from chainer import DictSummary
+from chainer import Reporter
+from chainer.training.extensions import Evaluator
+from overrides import overrides
 from sklearn.metrics import f1_score
 
+import config
 
-class AUEvaluator(chainer.training.extensions.Evaluator):
-    trigger = 1, "epoch"
-    default_name = "AU_RCNN_validation"
+
+
+class ActionUnitEvaluator(Evaluator):
+
+    trigger = 1, 'epoch'
+    default_name = 'AU_validation'
     priority = chainer.training.PRIORITY_WRITER
 
-    def __init__(self, iterator, target, concat_example_func, database, device):
-        super(AUEvaluator, self).__init__(iterator, target, converter=concat_example_func,device=device)
+    def __init__(self, iterator, model, device, database, paper_report_label, converter, use_feature_map, sample_frame):
+        super(ActionUnitEvaluator, self).__init__(iterator, model, device=device, converter=converter)
+        self.T = sample_frame
+        self.database = database
+        self.use_feature_map = use_feature_map
         self.paper_use_AU = []
+        self.paper_report_label = paper_report_label  # original AU_idx -> original AU
+        paper_report_label_idx = list(paper_report_label.keys())  # original AU_idx
+
+        self.AU_convert = dict()  # new_AU_idx -> AU
+        for new_AU_idx, orig_AU_idx in enumerate(sorted(paper_report_label_idx)):
+            self.AU_convert[new_AU_idx] = paper_report_label[orig_AU_idx]
+
         if database == "BP4D":
             self.paper_use_AU = config.paper_use_BP4D
         elif database == "DISFA":
             self.paper_use_AU = config.paper_use_DISFA
-        elif database == "BP4D_DISFA":
-            self.paper_use_AU = set(config.paper_use_BP4D + config.paper_use_DISFA)
-        self.database = database
 
+
+
+    @overrides
     def evaluate(self):
         iterator = self._iterators['main']
-        target = self._targets['main']
-
-
-        it = copy.copy(iterator)
-
-        all_gt_label = []
-        all_pred_label = []
-
-        for idx, batch in enumerate(it):
-
-            batch = self.converter(batch, device=self.device)
-            imgs, bbox, labels = batch
-
-            if bbox.shape[1] != config.BOX_NUM[self.database]:
-                print("error box num {0} != {1}".format(bbox.shape[1], config.BOX_NUM[self.database]))
-                continue
-            preds, _ = target.predict(imgs, bbox)  # R', class_num
-            preds = preds.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B, N, Y
-            preds = chainer.cuda.to_cpu(preds)
-            labels = chainer.cuda.to_cpu(labels)
-            preds = np.bitwise_or.reduce(preds, axis=1)  # shape = B, Y
-            gt_labels = np.bitwise_or.reduce(labels, axis=1) # shape = B, Y
-
-
-            all_gt_index = set()
-            pos_pred = np.nonzero(preds)
-            pos_gt_labels = np.nonzero(gt_labels)
-            all_gt_index.update(list(zip(*pos_pred)))
-            all_gt_index.update(list(zip(*pos_gt_labels)))
-            if len(all_gt_index) > 0:
-                accuracy = np.sum(preds[list(zip(*all_gt_index))[0], list(zip(*all_gt_index))[1]] == gt_labels[list(zip(*all_gt_index))[0], list(zip(*all_gt_index))[1]])/ len(all_gt_index)
-                print("batch idx:{0} current batch accuracy is :{1}".format(idx, accuracy))
-            all_gt_label.extend(gt_labels)
-            all_pred_label.extend(preds)
-        all_gt_label = np.asarray(all_gt_label)  # shape = (N, len(AU_SQUEEZE))
-        all_pred_label = np.asarray(all_pred_label)  # shape = (N, len(AU_SQUEEZE))
-        AU_gt_label = np.transpose(all_gt_label)  # shape = (len(AU_SQUEEZE), N)
-        AU_pred_label = np.transpose(all_pred_label)  # shape=  (len(AU_SQUEEZE), N)
-        report = defaultdict(dict)
-
+        _target = self._targets["main"]
+        if hasattr(iterator, 'reset'):
+            iterator.reset_for_train_mode()
+            it = iterator
+        else:
+            it = copy.copy(iterator)
         reporter = Reporter()
-        reporter.add_observer("main", target)
+        reporter.add_observer("main", _target)
         summary = DictSummary()
-        for AU_squeeze_idx, pred_label in enumerate(AU_pred_label):
-            AU = config.AU_SQUEEZE[AU_squeeze_idx]
-            if AU in self.paper_use_AU:
-                gt_label = AU_gt_label[AU_squeeze_idx]
-                # met_E = get_F1_event(gt_label, pred_label)
-                met_F = get_F1_frame(gt_label, pred_label)
-                roc =get_ROC(gt_label, pred_label)
-                f1 = f1_score(gt_label, pred_label)
-                report["f1_frame"][AU] = met_F.f1f
-                report["f1_score"][AU] = f1
-                assert f1 == met_F.f1f
-                report["AUC"][AU] = roc.auc
-                report["accuracy"][AU] = met_F.accuracy
-                # report["f1_event"][AU] = np.median(met_E.f1EventCurve)
-                summary.add({"f1_frame_avg": f1})
-                summary.add({"AUC_avg": roc.auc})
-                summary.add({"accuracy_avg": met_F.accuracy})
-                # summary.add({"f1_event_avg": np.median(met_E.f1EventCurve)})
+        model = _target
+        pred_labels_array = []
+        gt_labels_array = []
+        for idx, batch in enumerate(it):
+            print("processing :{}".format(idx))
+            batch = self.converter(batch, self.device)
+            images, bboxes, labels = batch  # images shape = B*T, C, H, W; bboxes shape = B*T, F, 4; labels shape = B*T, F, 12
+            if not isinstance(images, chainer.Variable):
+                images = chainer.Variable(images)
+                bboxes = chainer.Variable(bboxes)
+            images = images.reshape(images.shape[0] // self.T, self.T, images.shape[1], images.shape[2],
+                                    images.shape[3])
+            bboxes = bboxes.reshape(bboxes.shape[0] // self.T, self.T, bboxes.shape[1], bboxes.shape[2])
+            labels = labels.reshape(labels.shape[0] // self.T, self.T, labels.shape[1], labels.shape[2])
+
+            mini_batch, T, channel, height, width = images.shape
+
+            roi_feature = model.au_rcnn_train_chain(images, bboxes)  # shape =  B*T, F, C, H, W or  B*T, F, D
+            if not self.use_feature_map:
+                roi_feature = roi_feature.reshape(mini_batch, T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
+            else:
+                # B*T*F, C, H, W => B, T, F, C, H, W
+                roi_feature = roi_feature.reshape(mini_batch, T, config.BOX_NUM[self.database], roi_feature.shape[-3],
+                                                  roi_feature.shape[-2], roi_feature.shape[-1])
+
+            pred_labels = model.loss_head_module.predict(roi_feature)  # B, T, F, 12
+            pred_labels = np.bitwise_or.reduce(pred_labels, axis=2)  # B, T, class_number
+            pred_labels = pred_labels[:, -1, :] # B, class_number. only need to predict last frame
+            labels = np.bitwise_or.reduce(chainer.cuda.to_cpu(labels), axis=2)  # B, T, class_number
+            labels = labels[:, -1, :] # B, class_number, only need to predict last frame
+            assert labels.shape == pred_labels.shape
+            pred_labels_array.extend(pred_labels)
+            gt_labels_array.extend(labels)
+
+        gt_labels_array = np.stack(gt_labels_array)
+        pred_labels_array = np.stack(pred_labels_array)  # shape = all_N, out_size
+
+        gt_labels = np.transpose(gt_labels_array) # shape = Y x frame
+        pred_labels = np.transpose(pred_labels_array) #shape = Y x frame
+        report_dict = dict()
+        AU_id_convert_dict = self.AU_convert if self.AU_convert else config.AU_SQUEEZE
+        for new_AU_idx, frame_pred in enumerate(pred_labels):
+            if AU_id_convert_dict[new_AU_idx] in self.paper_use_AU:
+                AU = AU_id_convert_dict[new_AU_idx]
+                frame_gt = gt_labels[new_AU_idx]
+                F1 = f1_score(y_true=frame_gt, y_pred=frame_pred)
+                report_dict[AU] = F1
+                summary.add({"f1_frame_avg": F1})
+
         observation = {}
         with reporter.scope(observation):
-            reporter.report(report, target)
-            reporter.report(summary.compute_mean(), target)
+            reporter.report(report_dict, model)
+            reporter.report(summary.compute_mean(), model)
         return observation

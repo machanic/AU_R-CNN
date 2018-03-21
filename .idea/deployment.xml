@@ -55,37 +55,6 @@
           </mappings>
         </serverdata>
       </paths>
-      <paths name="Copy of project-level server '166.111.80.54'">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/face_expr" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="Copy of project-level server 'YiTunnel(4_GPU) (project level)'">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/face_expr" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="Copy of project-level server 'YiTunnel_4gpu(remote)'">
-        <serverdata>
-          <mappings>
-            <mapping deploy="face_expr" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-          <excludedPaths>
-            <excludedPath local="true" path="$PROJECT_DIR$/data" />
-            <excludedPath local="true" path="$PROJECT_DIR$/build" />
-            <excludedPath local="true" path="$PROJECT_DIR$/cython_debug" />
-            <excludedPath local="true" path="$PROJECT_DIR$/result" />
-            <excludedPath local="true" path="$PROJECT_DIR$/factor_graph.cp36-win_amd64.pyd" />
-            <excludedPath local="true" path="$PROJECT_DIR$/open_crf.cp36-win_amd64.pyd" />
-            <excludedPath local="true" path="$PROJECT_DIR$/.vscode" />
-            <excludedPath local="true" path="$PROJECT_DIR$/history" />
-          </excludedPaths>
-        </serverdata>
-      </paths>
       <paths name="YiTunnel_4gpu(local net)">
         <serverdata>
           <mappings>
@@ -115,23 +84,7 @@
             <excludedPath local="true" path="$PROJECT_DIR$/open_crf.cp36-win_amd64.pyd" />
             <excludedPath local="true" path="$PROJECT_DIR$/.vscode" />
             <excludedPath local="true" path="$PROJECT_DIR$/history" />
-          </excludedPaths>
-        </serverdata>
-      </paths>
-      <paths name="YiTunnel_4gpu(remote) (1)">
-        <serverdata>
-          <mappings>
-            <mapping deploy="face_expr" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-          <excludedPaths>
-            <excludedPath local="true" path="$PROJECT_DIR$/data" />
-            <excludedPath local="true" path="$PROJECT_DIR$/build" />
-            <excludedPath local="true" path="$PROJECT_DIR$/cython_debug" />
-            <excludedPath local="true" path="$PROJECT_DIR$/result" />
-            <excludedPath local="true" path="$PROJECT_DIR$/factor_graph.cp36-win_amd64.pyd" />
-            <excludedPath local="true" path="$PROJECT_DIR$/open_crf.cp36-win_amd64.pyd" />
-            <excludedPath local="true" path="$PROJECT_DIR$/.vscode" />
-            <excludedPath local="true" path="$PROJECT_DIR$/history" />
+            <excludedPath local="true" path="$PROJECT_DIR$/.idea" />
           </excludedPaths>
         </serverdata>
       </paths>

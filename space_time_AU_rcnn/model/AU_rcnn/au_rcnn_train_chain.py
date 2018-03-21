@@ -95,7 +95,6 @@ class AU_RCNN_ROI_Extractor(chainer.Chain):
             roi_feature = self.au_rcnn.head(
                 features, sample_roi_lst, sample_roi_index_lst) # return R',2048
             # Losses for outputs of the head.
-            roi_feature = F.reshape(roi_feature, shape=(batch_size, box_num, -1))
 
         return roi_feature
 

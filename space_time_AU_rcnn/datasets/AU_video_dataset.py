@@ -3,9 +3,10 @@ import random
 
 import chainer
 import numpy as np
-
+import os
 import config
 from collections_toolkit.ordered_default_dict import DefaultOrderedDict
+from img_toolkit.face_mask_cropper import FaceMaskCropper
 from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
 
 
@@ -31,7 +32,10 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
             self._order = None
             self.offsets = []
             self.result_data = []
-            self.reset()
+            if self.train_mode:
+                self.reset_for_train_mode()
+            else:
+                self.reset_for_test_mode()
 
 
     def __len__(self):
@@ -39,8 +43,32 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
             return len(self.result_data)
         return len(self.offsets)
 
-    def reset(self):
+
+    def reset_for_test_mode(self):
+        assert self.train_mode is False
         self.offsets.clear()
+        T = self.sample_frame
+        jump_frame = 4
+        for sequence_id, fetch_idx_lst in self.seq_dict.items():
+            for start_offset in range(jump_frame):
+                sub_idx_list = fetch_idx_lst[start_offset::jump_frame]
+                for i in range(0, len(sub_idx_list)):
+                    extended_list = sub_idx_list[i: i + T]  # highly overlap sequence, we only predict last frame of each sequence
+                    self.offsets.append(extended_list)
+
+        for fetch_idx_list in self.offsets:
+            if len(fetch_idx_list) < T:
+                rest_pad_len = T - len(fetch_idx_list)
+                fetch_idx_list = np.pad(fetch_idx_list, (0, rest_pad_len), 'edge')
+            assert len(fetch_idx_list) == T
+            for fetch_id in fetch_idx_list:
+                self.result_data.append(self.AU_image_dataset.result_data[fetch_id])
+
+
+
+    def reset_for_train_mode(self):
+        self.offsets.clear()
+        assert self.train_mode
         T = self.sample_frame
         jump_frame = random.randint(4, 7)
         if T > 0:
@@ -65,6 +93,7 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
                 self.offsets.append(fetch_idx_lst)
 
         self._order = np.random.permutation(len(self.offsets))
+        previous_data_length = len(self.result_data)
         self.result_data.clear()
         for order in self._order:
             fetch_idx_list = self.offsets[order]
@@ -75,6 +104,19 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
             assert len(fetch_idx_list) == T
             for fetch_id in fetch_idx_list:
                 self.result_data.append(self.AU_image_dataset.result_data[fetch_id])
+
+        if previous_data_length != 0:
+            if previous_data_length < len(self.result_data):
+                assert (len(self.result_data) - previous_data_length) % T == 0
+                del self.result_data[previous_data_length - len(self.result_data): ]
+            elif previous_data_length > len(self.result_data):
+                assert len(self.result_data) % T == 0
+                assert (previous_data_length - len(self.result_data)) % T == 0
+                chunks = [self.result_data[i:i + T] for i in range(0, len(self.result_data), T)]
+                while previous_data_length > len(self.result_data):
+                    self.result_data.extend(random.choice(chunks))
+            assert len(self.result_data) == previous_data_length
+
 
     def get_example(self, i):
         if self.fetch_use_parrallel_iterator:
@@ -87,6 +129,7 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
     # we must set shuffle = False in this situation
     def parallel_get_example(self, i):
         img_path, AU_set, database_name = self.result_data[i]
+
         # note that batch now is mix of T and batch_size, we must be reshape later
         try:
             cropped_face, bbox, label = self.AU_image_dataset.get_from_entry(img_path, AU_set, database_name)
@@ -95,13 +138,25 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
                 print("found one error image: {0} box_number:{1}".format(img_path, bbox.shape[0]))
                 bbox = bbox.tolist()
                 label = label.tolist()
+
+                if len(bbox) > config.BOX_NUM[database_name]:
+                    all_del_idx = []
+                    for idx, box in enumerate(bbox):
+                        if FaceMaskCropper.calculate_area(*box) / float(config.IMG_SIZE[0] * config.IMG_SIZE[1]) < 0.01:
+                            all_del_idx.append(idx)
+                    for del_idx in all_del_idx:
+                        del bbox[del_idx]
+                        del label[del_idx]
+
                 while len(bbox) < config.BOX_NUM[database_name]:
-                    index = random.randint(0, len(bbox) - 1)
-                    bbox.append(bbox[index])
-                    label.append(label[index])
+                    index = 0
+                    bbox.insert(0, bbox[index])
+                    label.insert(0, label[index])
                 while len(bbox) > config.BOX_NUM[database_name]:
-                    bbox.pop(0)
-                    label.pop(0)
+                    del bbox[-1]
+                    del label[-1]
+
+
                 bbox = np.stack(bbox)
                 label = np.stack(label)
         except IndexError:
@@ -111,10 +166,10 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
                 np.put(label, config.AU_SQUEEZE.inv[AU], 1)
             if self.paper_report_label_idx:
                 label = label[self.paper_report_label_idx]
-            return np.transpose(cv2.resize(cv2.imread(img_path), config.IMG_SIZE), (2,0,1)), \
-                   np.tile(np.array([0, 0, config.IMG_SIZE[1]-1, config.IMG_SIZE[0]-1], dtype=np.float32),
-                           (config.BOX_NUM[database_name], 1)), \
-                   np.tile(label, (config.BOX_NUM[database_name], 1))
+            whole_image = np.transpose(cv2.resize(cv2.imread(img_path), config.IMG_SIZE), (2,0,1))
+            whole_bbox = np.tile(np.array([1, 1, config.IMG_SIZE[1]-2, config.IMG_SIZE[0]-2], dtype=np.float32), (config.BOX_NUM[database_name], 1))
+            whole_label = np.tile(label, (config.BOX_NUM[database_name], 1))
+            return whole_image, whole_bbox, whole_label
 
         assert bbox.shape[0] == config.BOX_NUM[database_name], bbox.shape[0]
         if self.paper_report_label_idx:

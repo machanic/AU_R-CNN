@@ -89,7 +89,7 @@ class AU_RCNN_VGG16(AU_RCNN):
                  pretrained_model=None,
                  min_size=512, max_size=512,
                  vgg_initialW=None,
-                 mean_file=None,
+                 mean_file=None, use_roi_align=False
                  ):
 
         if vgg_initialW is None and pretrained_model:
@@ -98,7 +98,7 @@ class AU_RCNN_VGG16(AU_RCNN):
         extractor = VGG16FeatureExtractor(initialW=vgg_initialW)
         head = VGG16RoIHead(
             roi_size=7, spatial_scale=1. / self.feat_stride, # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
-            vgg_initialW=vgg_initialW
+            vgg_initialW=vgg_initialW,use_roi_align=use_roi_align
         )
 
         mean_array = np.load(mean_file)
@@ -198,9 +198,10 @@ class VGG16RoIHead(chainer.Chain):
     """
 
     def __init__(self,  roi_size, spatial_scale,
-                 vgg_initialW=None):
+                 vgg_initialW=None,use_roi_align=False):
         # n_class includes the background
         super(VGG16RoIHead, self).__init__()
+        self.use_roi_align = use_roi_align
         with self.init_scope():
             self.fc6 = L.Linear(25088, 4096, initialW=vgg_initialW)
             self.fc7 = L.Linear(4096, 2048, initialW=vgg_initialW)
@@ -236,7 +237,7 @@ class VGG16RoIHead(chainer.Chain):
             (roi_indices[:, None], rois), axis=1)  # None means np.newaxis, concat along column
         pool = _roi_pooling_2d_yx(
             x, indices_and_rois, self.roi_size, self.roi_size,
-            self.spatial_scale)
+            self.spatial_scale, self.use_roi_align)
         h = pool
         for key, funcs in self.functions.items():
             for func in funcs:
@@ -308,9 +309,12 @@ class VGG16FeatureExtractor(chainer.Chain):
         return h
 
 
-def _roi_pooling_2d_yx(x, indices_and_rois, outh, outw, spatial_scale):
+def _roi_pooling_2d_yx(x, indices_and_rois, outh, outw, spatial_scale, use_roi_align):
     xy_indices_and_rois = indices_and_rois[:, [0, 2, 1, 4, 3]]
-    pool = roi_align_2d(x, xy_indices_and_rois, outh, outw, spatial_scale)
+    if use_roi_align:
+        pool = roi_align_2d(x, xy_indices_and_rois, outh, outw, spatial_scale)
+    else:
+        pool = F.roi_pooling_2d(x, xy_indices_and_rois, outh, outw, spatial_scale)
     return pool
 
 

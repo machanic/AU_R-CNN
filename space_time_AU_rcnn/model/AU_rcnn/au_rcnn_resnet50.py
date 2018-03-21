@@ -4,13 +4,13 @@ from space_time_AU_rcnn.model.AU_rcnn.roi_tools.roi_align_2d import roi_align_2d
 import chainer
 import chainer.functions as F
 import chainer.links as L
-from chainer.links import ResNet101Layers
+from chainer.links import ResNet50Layers
 import functools
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn import AU_RCNN
 import config
 from chainer import initializers
 
-class AU_RCNN_Resnet101(AU_RCNN):
+class AU_RCNN_Resnet50(AU_RCNN):
 
     """Faster R-CNN based on ResNet101.
 
@@ -78,8 +78,8 @@ class AU_RCNN_Resnet101(AU_RCNN):
             'path': "{}/caffe_model/VGG_ILSVRC_16_layers.npz".format(config.ROOT_PATH)
             # 'url': "http://www.robots.ox.ac.uk/%7Evgg/software/very_deep/caffe/VGG_ILSVRC_16_layers.caffemodel"
         },
-        'resnet101': {
-            'path': config.ROOT_PATH + '/caffe_model/ResNet-101-model.npz'
+        'resnet50': {
+            'path': config.ROOT_PATH + '/caffe_model/ResNet-50-model.npz'
         }
     }
 
@@ -98,7 +98,7 @@ class AU_RCNN_Resnet101(AU_RCNN):
         )
         mean_array = np.load(mean_file)
         print("loading mean_file in: {} done".format(mean_file))
-        super(AU_RCNN_Resnet101, self).__init__(
+        super(AU_RCNN_Resnet50, self).__init__(
             extractor,
             head,
             mean=mean_array,
@@ -106,15 +106,13 @@ class AU_RCNN_Resnet101(AU_RCNN):
             max_size=max_size
         )
 
-        if pretrained_model == 'resnet101':  # 只会走到这一elif里
-            self._copy_imagenet_pretrained_resnet101(path=self._models['resnet101']['path'])
-            print("load pretrained file: {} done".format(self._models['resnet101']['path']))
-        elif pretrained_model.endswith(".npz"):
-            print("loading :{} to AU R-CNN ResNet-101".format(pretrained_model))
-            chainer.serializers.load_npz(pretrained_model, self)
+        if pretrained_model == 'resnet50':  # 只会走到这一elif里
+            self._copy_imagenet_pretrained_resnet50(path=self._models['resnet50']['path'])
+            print("load pretrained file: {} done".format(self._models['resnet50']['path']))
 
-    def _copy_imagenet_pretrained_resnet101(self, path):
-        pretrained_model = ResNet101Layers(pretrained_model=path)
+
+    def _copy_imagenet_pretrained_resnet50(self, path):
+        pretrained_model = ResNet50Layers(pretrained_model=path)
         self.extractor.conv1.copyparams(pretrained_model.conv1)
         self.extractor.bn1.copyparams(pretrained_model.bn1)
         self.extractor.res2.copyparams(pretrained_model.res2)
@@ -287,7 +285,7 @@ class ResnetFeatureExtractor(chainer.Chain):
             self.bn1 = L.BatchNormalization(64)
             self.res2 = Block(3, 64, 64, 256, 1)
             self.res3 = Block(4, 256, 128, 512)
-            self.res4 = Block(23, 512, 256, 1024)
+            self.res4 = Block(6, 512, 256, 1024)
 
     def __call__(self, x):
         h = self.bn1(self.conv1(x))

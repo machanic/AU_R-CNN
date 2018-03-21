@@ -9,9 +9,11 @@ class NoneModule(chainer.Chain):
         pass
 
 
-class RecurrentType(Enum):
+class TemporalEdgeMode(Enum):
     rnn = 'rnn'
-    attention_block = 'attention_block'
+    ld_rnn = 'ld_rnn'
+    bi_rnn = 'bi_rnn'
+    bi_ld_rnn = 'bi_ld_rnn'
     no_temporal = 'no_temporal'  # only use/or even not use spatial edge; use 1D conv layer to simulate
     def __str__(self):
         return self.value
@@ -27,9 +29,17 @@ class NeighborMode(Enum):
 
 
 class SpatialEdgeMode(Enum):
-    all_edge = 'all_edge'
+    rnn = 'rnn'
+    ld_rnn = 'ld_rnn'
+    bi_rnn = 'bi_rnn'
+    bi_ld_rnn = 'bi_ld_rnn'
     no_edge = 'no_edge'
     def __str__(self):
         return self.value
 
 
+class SpatialSequenceType(Enum):
+    cross_time = 'cross_time'
+    in_frame = "in_frame"
+    def __str__(self):
+        return self.value

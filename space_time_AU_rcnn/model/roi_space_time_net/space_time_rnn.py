@@ -1,62 +1,17 @@
+from collections import OrderedDict
 
 import chainer
-from chainer import initializers
-import chainer.links as L
 import chainer.functions as F
+import chainer.links as L
 import numpy as np
-from space_time_AU_rcnn.model.roi_space_time_net.attention_base_block import PositionwiseFeedForwardLayer, AttentionBlock
+from chainer import initializers
 
-from space_time_AU_rcnn.constants.enum_type import  RecurrentType, SpatialEdgeMode
 import config
-from collections import OrderedDict, defaultdict
-
-
-class LabelDependencyLSTM(chainer.Chain):
-    def __init__(self, insize, outsize, class_num, initialW=None, dropout=0.1, train_mode=True):
-        self.insize =  insize
-        self.outsize = outsize
-        self.train_mode = train_mode
-        self.window_size = 3
-        with self.init_scope():
-            self.label_embed = L.EmbedID(class_num, insize, ignore_label=-1)
-            self.lstm = L.LSTM(insize, outsize)
-
-    def make_label_embedding(self, labels):
-        # labels shape = (N, class_number)
-        # out shape = (all_label contains in N batch(multi-label exists), embed_length)
-        xp = chainer.cuda.cupy.get_array_module(labels.data)
-        nonzero_index_x, nonzero_index_y = xp.nonzero(labels)
-        all_label_id = []
-        label_dict = {} # all_label_id position -> labels batch index
-        for idx, batch_index in enumerate(nonzero_index_x):
-            label_dict[len(all_label_id)] = batch_index  # idx_x is batch index
-            all_label_id.append(nonzero_index_y[idx])
-        all_label_id = xp.array(all_label_id, dtype="i")
-        label_embeded = self.label_embed(all_label_id)
-        second_embeded_dict = defaultdict(list)
-        for idx, embed_vector in enumerate(F.separate(label_embeded, axis=0)):
-            batch_index = label_dict[idx]
-            second_embeded_dict[batch_index].append(embed_vector)
-        final_embeded = []
-        for batch_index, embed_vector_list in sorted(second_embeded_dict.items(), key=lambda e:int(e[0])):
-            embed_vector_list = F.stack(embed_vector_list)
-            final_embeded.append(F.sum(embed_vector_list, axis=0))
-
-        return F.stack(final_embeded)
-
-
-    def __call__(self, xs, labels):  # xs is list of T,D
-        xs = F.stack(xs) # B, T, D
-        xs = F.transpose(xs, (1,0,2)) # T, B, D
-        if self.train_mode:
-            embeded_matrix = self.make_label_embedding(labels)
-            assert embeded_matrix.shape[0] == labels.shape[0]
-
-
-
-
-
-
+from space_time_AU_rcnn.constants.enum_type import TemporalEdgeMode, SpatialEdgeMode, SpatialSequenceType
+from space_time_AU_rcnn.model.roi_space_time_net.attention_base_block import PositionwiseFeedForwardLayer, \
+    PositionFFNType
+from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import BiDirectionLabelDependencyLSTM, \
+    LabelDependencyLSTM
 
 
 class TemporalRNN(chainer.Chain):
@@ -112,52 +67,78 @@ class SpaceTimeRNN(chainer.Chain):
     '''
 
     def __init__(self, database, n_layers:int, in_size:int, out_size:int, initialW=None,
-                 spatial_edge_model: SpatialEdgeMode = SpatialEdgeMode.all_edge,
-                 recurrent_block_type: RecurrentType = RecurrentType.rnn, bi_lstm=False):
+                 spatial_edge_model: SpatialEdgeMode = SpatialEdgeMode.bi_ld_rnn,
+                 temporal_edge_mode: TemporalEdgeMode = TemporalEdgeMode.rnn, train_mode=True, label_win_size=3,
+                 x_win_size=1, label_dropout_ratio=0.4, spatial_sequence_type=SpatialSequenceType.cross_time):
         super(SpaceTimeRNN, self).__init__()
         self.neg_pos_ratio = 3
         self.database = database
         self.spatial_edge_mode = spatial_edge_model
+        self.temporal_edge_mode = temporal_edge_mode
         self.out_size = out_size
         self.in_size = in_size
         self.frame_node_num = config.BOX_NUM[self.database]
-        self.mid_size = 1024
-
-        NodeRecurrentModule = AttentionBlock if recurrent_block_type == RecurrentType.attention_block else TemporalRNN
-        if recurrent_block_type == RecurrentType.no_temporal:
-            NodeRecurrentModule = PositionwiseFeedForwardLayer
+        self.spatial_sequence_type = spatial_sequence_type
 
         with self.init_scope():
             if not initialW:
                 initialW = initializers.HeNormal()
             self.top = dict()
             for i in range(self.frame_node_num):
-                if recurrent_block_type == RecurrentType.rnn:
+                if temporal_edge_mode == TemporalEdgeMode.rnn:
                     self.add_link("Node_{}".format(i),
-                                  TemporalRNN(n_layers, self.mid_size, self.out_size, use_bi_lstm=bi_lstm))
-                else:
+                                  TemporalRNN(n_layers, self.in_size, self.out_size, use_bi_lstm=False))
+                elif temporal_edge_mode == TemporalEdgeMode.ld_rnn:
                     self.add_link("Node_{}".format(i),
-                                  NodeRecurrentModule(n_layers, self.mid_size, self.out_size))
+                                  LabelDependencyLSTM(self.in_size, self.out_size, self.out_size, label_win_size=label_win_size,
+                                                      x_win_size=1,
+                                                      train_mode=train_mode, is_pad=True, dropout_ratio=label_dropout_ratio))
+                elif temporal_edge_mode == TemporalEdgeMode.bi_ld_rnn:
+                    self.add_link("Node_{}".format(i),
+                                  BiDirectionLabelDependencyLSTM(self.in_size, self.out_size, self.out_size, label_win_size=label_win_size,
+                                                                 x_win_size=x_win_size, train_mode=train_mode,is_pad=True,
+                                                                 dropout_ratio=label_dropout_ratio))
+                elif temporal_edge_mode == TemporalEdgeMode.no_temporal:
+                    self.add_link("Node_{}".format(i),
+                                 PositionwiseFeedForwardLayer(n_layers, self.in_size, self.out_size,
+                                                              forward_type=PositionFFNType.nstep_lstm))
                 self.top[str(i)] = getattr(self, "Node_{}".format(i))
-            if spatial_edge_model != SpatialEdgeMode.no_edge:
-                self.space_lstm = L.NStepBiLSTM(n_layers, self.in_size, self.mid_size//2, dropout=0.1, initialW=initialW)
-            else:
-                self.transfer_dim_fc = L.Linear(self.in_size, self.mid_size, initialW=initialW)
+
+
+            if spatial_edge_model == SpatialEdgeMode.rnn:
+                self.space_mid_size = 1024
+                self.space_bi_lstm = L.NStepBiLSTM(n_layers, self.in_size, self.space_mid_size//2,
+                                                   dropout=0.1, initialW=initialW)
+                self.space_output = L.Linear(self.space_mid_size, self.out_size)
+
+            elif spatial_edge_model == SpatialEdgeMode.ld_rnn:
+                self.space_module = LabelDependencyLSTM(self.in_size, self.out_size, self.out_size, label_win_size, x_win_size,
+                                                      train_mode=train_mode, is_pad=True, dropout_ratio=label_dropout_ratio)
+            elif spatial_edge_model == SpatialEdgeMode.bi_ld_rnn:
+                self.space_module = BiDirectionLabelDependencyLSTM(self.in_size, self.out_size, self.out_size, label_win_size, x_win_size,
+                                                                 train_mode, is_pad=True, dropout_ratio=label_dropout_ratio)
+            elif spatial_edge_model == SpatialEdgeMode.no_edge:
+                self.space_module = L.Linear(self.in_size, self.out_size, initialW=initialW)
 
 
 
-    def node_recurrent_forward(self,xs): # xs is shape of (batch, T,F,D)
+    def temporal_node_recurrent_forward(self, xs, labels): # xs is shape of (batch, T,F,D)
         node_out_dict = OrderedDict()
         for node_module_id, node_module in self.top.items():
             input_x = xs[:, :, int(node_module_id), :]  # B, T, D
             input_x = F.split_axis(input_x, input_x.shape[0], axis=0, force_tuple=True)
             input_x = [F.squeeze(x, axis=0) for x in input_x]  # list of T,D
-            node_out_dict[node_module_id] = F.stack(node_module(input_x)) # B, T, out_size
+            if isinstance(node_module, LabelDependencyLSTM) or isinstance(node_module, BiDirectionLabelDependencyLSTM):
+                input_labels = labels[:, :, int(node_module_id), :]  # B, T, D
+                input_labels = F.separate(input_labels, axis=0)
+                node_out_dict[node_module_id] = F.stack(node_module(input_x, input_labels))
+            else:
+                node_out_dict[node_module_id] = F.stack(node_module(input_x)) # B, T, out_size
         return node_out_dict
 
 
 
-    def forward(self, xs):  # xs shape = (batch, T, F, D)
+    def forward(self, xs, labels):  # xs shape = (batch, T, F, D)
         '''
         :param xs: appearance features of all boxes feature across all frames
         :param gs:  geometry features of all polygons. each is 4 coordinates represent box
@@ -165,29 +146,55 @@ class SpaceTimeRNN(chainer.Chain):
         :return:
         '''
         xp = chainer.cuda.get_array_module(xs.data)
-        batch = xs.shape[0]
+        batch_size = xs.shape[0]
         T = xs.shape[1]
+        frame_node = xs.shape[2]
+        assert frame_node == self.frame_node_num
         dim = xs.shape[-1]
+        orig_labels = labels
         # first frame node_id ==> other frame node_id in same corresponding box
-        if self.spatial_edge_mode == SpatialEdgeMode.all_edge:
-            input_space = F.reshape(xs, shape=(-1, self.frame_node_num, dim)) # batch x T, F, D
-            input_space = F.separate(input_space, axis=0)
-            _, _, space_out = self.space_lstm(None, None, list(input_space))
-            temporal_in = F.stack(space_out)  # batch * T, F, D
-        else:
-            xs = F.reshape(xs, shape=(-1, self.in_size))
-            temporal_in = self.transfer_dim_fc(xs)
+        if self.spatial_edge_mode != SpatialEdgeMode.no_edge:
+            if self.spatial_sequence_type == SpatialSequenceType.in_frame:
+                input_space = F.separate(F.reshape(xs, shape=(batch_size * T, self.frame_node_num, dim)), axis=0) # batch x T, F, D
+                labels = F.separate(F.reshape(labels, shape=(batch_size * T, self.frame_node_num, labels.shape[-1])), axis=0) # batch x T, F, D
+            elif self.spatial_sequence_type == SpatialSequenceType.cross_time:
+                input_space = F.separate(F.reshape(xs, shape=(batch_size, T * self.frame_node_num, dim)), axis=0)  # batch ,T x F, D
+                labels = F.separate(F.reshape(labels, shape=(batch_size, T * self.frame_node_num, labels.shape[-1])),
+                                    axis=0)  # batch, T x F, D
 
-        temporal_in = F.reshape(temporal_in, (batch, T, self.frame_node_num, self.mid_size))  # B, T, F, D
-        node_out_dict = self.node_recurrent_forward(temporal_in)
+            if self.spatial_edge_mode == SpatialEdgeMode.rnn:
+                _, _, space_out = self.space_bi_lstm(hx=None, cx=None, xs=list(input_space))
+                space_out = F.stack(space_out) # B, T, D
+                space_out = F.reshape(space_out, (-1, self.space_mid_size))
+                space_out = self.space_output(space_out)
+
+            elif self.spatial_edge_mode == SpatialEdgeMode.ld_rnn or self.spatial_edge_mode == SpatialEdgeMode.bi_ld_rnn:
+                space_out = self.space_module(list(input_space), list(labels))
+            elif self.spatial_edge_mode == SpatialEdgeMode.no_edge:
+                space_out = self.space_module(F.stack(input_space))
+
+            space_out = F.stack(space_out)  # batch * T, F, D
+            space_out = F.reshape(space_out, (batch_size, T, frame_node, self.out_size))
+        else:
+            input_space = F.reshape(xs, shape=(-1, self.in_size))
+            space_out = self.space_module(input_space)
+            space_out = F.reshape(space_out, (batch_size, T, frame_node, self.out_size))
+
+        temporal_out_dict = self.temporal_node_recurrent_forward(xs, orig_labels)
         # shape = F, B, T, mid_size
-        node_out = F.stack([node_out_ for _, node_out_ in sorted(node_out_dict.items(),
+        temporal_out = F.stack([node_out_ for _, node_out_ in sorted(temporal_out_dict.items(),
                                                                  key=lambda e: int(e[0]))])
-        node_out = F.transpose(node_out, (1,2,0,3))  # shape = (B,T,F,D)
-        assert self.frame_node_num == node_out.shape[2],node_out.shape[2]
-        assert self.out_size == node_out.shape[-1]
-        assert T == node_out.shape[1]
-        return node_out
+        temporal_out = F.transpose(temporal_out, (1,2,0,3))  # shape = (B,T,F,D)
+
+        if self.spatial_edge_mode == SpatialEdgeMode.no_edge and self.temporal_edge_mode != TemporalEdgeMode.no_temporal:
+            return temporal_out
+        elif self.temporal_edge_mode == TemporalEdgeMode.no_temporal and self.spatial_edge_mode!= SpatialEdgeMode.no_edge:
+            return space_out
+        elif self.temporal_edge_mode == TemporalEdgeMode.no_temporal and self.spatial_edge_mode == SpatialEdgeMode.no_edge:
+            return temporal_out
+        elif self.temporal_edge_mode != TemporalEdgeMode.no_temporal and self.spatial_edge_mode != SpatialEdgeMode.no_edge:
+            final_out = space_out * temporal_out
+            return final_out
 
 
     def get_loss_index(self, pred, ts):
@@ -228,7 +235,7 @@ class SpaceTimeRNN(chainer.Chain):
         # labels shape = B, T, F(9 or 8), 12
         # roi_feature shape =  B, T, F, D, where F is box number in one frame image
         with chainer.cuda.get_device_from_array(roi_feature.data) as device:
-            node_out = self.forward(roi_feature)  # node_out B,T,F,D
+            node_out = self.forward(roi_feature, labels)  # node_out B,T,F,D
             node_out = F.reshape(node_out, (-1, self.out_size))
             node_labels = self.xp.reshape(labels, (-1, self.out_size))
             pick_index, accuracy_pick_index = self.get_loss_index(node_out, node_labels)

@@ -1,8 +1,11 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
-
-import cProfile
-import pstats
+import sys
+sys.path.insert(0, '/home/machen/face_expr')
+from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import LabelDependencyLayer
+from space_time_AU_rcnn.model.dynamic_AU_rcnn.dynamic_au_rcnn_resnet50 import Dynamic_AU_RCNN_Resnet50
+from space_time_AU_rcnn.model.dynamic_AU_rcnn.dynamic_au_rcnn_train_chain import DynamicAU_RCNN_ROI_Extractor
+from space_time_AU_rcnn.model.roi_space_time_net.space_time_conv_lstm import SpaceTimeConv
 
 try:
     import matplotlib
@@ -13,22 +16,23 @@ except ImportError:
 import argparse
 import numpy as np
 import os
-import sys
-sys.path.insert(0, '/home1/machen/face_expr')
+
 import chainer
 from chainer import training
 
 from chainer.datasets import TransformDataset
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor, AU_RCNN_TrainChainLoss
+from space_time_AU_rcnn.updater.lstm_bptt_updater import BPTTUpdater
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_vgg import AU_RCNN_VGG16
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_mobilenet_v1 import AU_RCNN_MobilenetV1
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_rnn import SpaceTimeRNN
+from space_time_AU_rcnn.model.roi_space_time_net.cubic_attention.space_time_cubic_attention import SpaceTimeCubicAttention
 from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
 from space_time_AU_rcnn.datasets.AU_video_dataset import AU_video_dataset
 from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
-from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, RecurrentType
+from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode, SpatialSequenceType
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
@@ -125,16 +129,25 @@ def main():
     parser.add_argument('--pretrained_model_args', nargs='+', type=float, help='you can pass in "1.0 224" or "0.75 224"')
     parser.add_argument('--spatial_edge_mode', type=SpatialEdgeMode, choices=list(SpatialEdgeMode),
                         help='1:all_edge, 2:configure_edge, 3:no_edge')
-    parser.add_argument('--temporal_edge_mode', type=RecurrentType, choices=list(RecurrentType),
+    parser.add_argument('--spatial_sequence_type', type=SpatialSequenceType, choices=list(SpatialSequenceType),
+                        help='1:all_edge, 2:configure_edge, 3:no_edge')
+    parser.add_argument('--temporal_edge_mode', type=TemporalEdgeMode, choices=list(TemporalEdgeMode),
                         help='1:rnn, 2:attention_block, 3.point-wise feed forward(no temporal)')
     parser.add_argument("--bi_lstm", action="store_true", help="whether to use bi-lstm as Edge/Node RNN")
     parser.add_argument('--use_memcached', action='store_true', help='whether use memcached to boost speed of fetch crop&mask') #
     parser.add_argument('--memcached_host', default='127.0.0.1')
     parser.add_argument("--fold", '-fd', type=int, default=3)
     parser.add_argument("--layers", type=int, default=1)
+    parser.add_argument("--label_win_size", type=int, default=3)
+    parser.add_argument("--x_win_size", type=int, default=1)
+    parser.add_argument("--use_conv_lstm", action="store_true", help="use conv_lstm for spatial and temporal conv_lstm")
+    parser.add_argument("--use_label_dependency", action="store_true", help="use label dependency layer after conv_lstm")
+    parser.add_argument("--dynamic_backbone", action="store_true", help="use dynamic backbone: conv lstm as backbone")
+    parser.add_argument("--ld_rnn_dropout", type=float, default=0.4)
     parser.add_argument("--split_idx",'-sp', type=int, default=1)
     parser.add_argument("--use_paper_num_label", action="store_true", help="only to use paper reported number of labels"
                                                                            " to train")
+    parser.add_argument("--roi_align", action="store_true", help="whether to use roi align or roi pooling layer in CNN")
     parser.add_argument("--sample_frame", '-sample', type=int, default=10)
     parser.add_argument("--snap_individual", action="store_true", help="whether to snapshot each individual epoch/iteration")
 
@@ -151,6 +164,7 @@ def main():
     #     file_obj.write(pid)
     #     file_obj.flush()
 
+
     print('GPU: {}'.format(",".join(list(map(str, args.gpu)))))
 
     adaptive_AU_database(args.database)
@@ -163,32 +177,63 @@ def main():
 
     paper_report_label, class_num = squeeze_label_num_report(args.database, args.use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
+    use_feature_map = args.use_conv_lstm
+    if args.dynamic_backbone:
+        au_rcnn = Dynamic_AU_RCNN_Resnet50(database=args.database,
+                                           pretrained_model=args.pretrained_model,
+                                           min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
+                                           mean_file=args.mean, n_class=class_num, classify_mode=args.au_rcnn_loss,
+                                           use_roi_align=args.roi_align, use_feature_map=use_feature_map)
+        au_rcnn_train_chain = DynamicAU_RCNN_ROI_Extractor(au_rcnn)
 
-    if args.backbone == 'vgg':
+    elif args.backbone == 'vgg':
         au_rcnn = AU_RCNN_VGG16(pretrained_model=args.pretrained_model,
                                     min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                    mean_file=args.mean)
+                                    mean_file=args.mean,use_roi_align=args.roi_align)
+        au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
     elif args.backbone == 'resnet101':
         au_rcnn = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model,
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                        mean_file=args.mean, classify_mode=args.au_rcnn_loss, n_class=class_num)
+                                        mean_file=args.mean, classify_mode=args.au_rcnn_loss, n_class=class_num,
+                                    use_roi_align=args.roi_align, use_feature_map=use_feature_map)
+        au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
     elif args.backbone == "mobilenet_v1":
         au_rcnn = AU_RCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
                                       min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                      mean_file=args.mean, classify_mode=args.au_rcnn_loss, n_class=class_num
+                                      mean_file=args.mean, classify_mode=args.au_rcnn_loss, n_class=class_num,
+                                      use_roi_align=args.roi_align
                                       )
+        au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
 
-    au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
+
+
 
     if args.au_rcnn_loss:
         au_rcnn_train_loss = AU_RCNN_TrainChainLoss()
         loss_head_module = au_rcnn_train_loss
     else:
         space_time_rnn = SpaceTimeRNN(args.database, args.layers, in_size=2048, out_size=class_num,
-                         spatial_edge_model=args.spatial_edge_mode, recurrent_block_type=args.temporal_edge_mode,
-                        bi_lstm=args.bi_lstm)
+                                      spatial_edge_model=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode,
+                                      train_mode=True, label_win_size=args.label_win_size, x_win_size=args.x_win_size,
+                                      label_dropout_ratio=args.ld_rnn_dropout, spatial_sequence_type=args.spatial_sequence_type)
         loss_head_module = space_time_rnn
-    model = Wrapper(au_rcnn_train_chain, loss_head_module, args.database, args.sample_frame)
+    assert not args.au_rcnn_loss == use_feature_map
+    if args.use_conv_lstm:
+        label_dependency_layer = None
+        if args.use_label_dependency:
+            use_space = (args.spatial_edge_mode != SpatialEdgeMode.no_edge)
+            use_temporal = (args.temporal_edge_mode != TemporalEdgeMode.no_temporal)
+            label_dependency_layer = LabelDependencyLayer(args.database, out_size=class_num, train_mode=True,
+                                                          label_win_size=args.label_win_size, x_win_size=args.x_win_size,
+                                                          label_dropout_ratio=args.ld_rnn_dropout, use_space=use_space,
+                                                          use_temporal=use_temporal)
+        space_time_conv_lstm = SpaceTimeConv(label_dependency_layer, args.use_label_dependency, class_num,
+                                             spatial_edge_mode=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode)
+        loss_head_module = space_time_conv_lstm
+
+
+
+    model = Wrapper(au_rcnn_train_chain, loss_head_module, args.database, args.sample_frame, use_feature_map=use_feature_map)
     batch_size = args.batch_size
     img_dataset = AUDataset(database=args.database,
                            fold=args.fold, split_name='trainval',
@@ -233,20 +278,35 @@ def main():
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
     optimizer_name = args.optimizer
 
-    train_type = "rcnn" if args.au_rcnn_loss else "lstm"
-    pretrained_optimizer_file_name = '{0}_fold_{1}_{2}@{3}@{4}@{5}@{6}_optimizer.npz'.format(args.fold, args.split_idx,
-                                                                                     args.backbone, optimizer_name,
-                                                                                         args.spatial_edge_mode,
-                                                                                         args.temporal_edge_mode,
-                                                                                             train_type)
-    pretrained_optimizer_file_name = args.out + os.sep + pretrained_optimizer_file_name
+    train_type = "rcnn" if args.au_rcnn_loss else "convlstm"
+
     key_str = "{0}_fold_{1}".format(args.fold, args.split_idx)
     file_list = []
     file_list.extend(os.listdir(args.out))
     snapshot_model_file_name = args.out + os.sep + filter_last_checkpoint_filename(file_list, "model", key_str)
-    single_model_file_name = args.out + os.sep + '{0}_fold_{1}_{2}@{3}@{4}@{5}_model.npz'.format(args.fold, args.split_idx,
-                                                                                         args.backbone, args.spatial_edge_mode,
-                                                                                          args.temporal_edge_mode,train_type)
+
+    # BP4D_3_fold_1_resnet101@rnn@no_temporal@use_paper_num_label@roi_align@label_dep_layer@convlstm@sampleframe#13_model.npz
+    use_paper_key_str = "use_paper_num_label" if args.use_paper_num_label else "all_avail_label"
+    roi_align_key_str = "roi_align" if args.roi_align else "roi_pooling"
+    label_dependency_layer_key_str ="label_dep_layer" if args.use_label_dependency else "no_label_dep"
+
+    single_model_file_name = args.out + os.sep + \
+                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}@sampleframe#{10}_model.npz'.format(args.database,
+                                                                                args.fold, args.split_idx,
+                                                                                args.backbone, args.spatial_edge_mode,
+                                                                                args.temporal_edge_mode,
+                                                                                use_paper_key_str, roi_align_key_str,
+                                                                                label_dependency_layer_key_str,
+                                                                                train_type, args.sample_frame)
+    pretrained_optimizer_file_name = args.out + os.sep +\
+                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}@sampleframe#{10}_optimizer.npz'.format(args.database,
+                                                                                args.fold, args.split_idx,
+                                                                                args.backbone, args.spatial_edge_mode,
+                                                                                args.temporal_edge_mode,
+                                                                                use_paper_key_str, roi_align_key_str,
+                                                                                label_dependency_layer_key_str,
+                                                                                train_type, args.sample_frame)
+
 
     if os.path.exists(pretrained_optimizer_file_name):
         print("loading optimizer snatshot:{}".format(pretrained_optimizer_file_name))
@@ -262,7 +322,12 @@ def main():
             chainer.serializers.load_npz(single_model_file_name, model)
 
 
-    if len(args.gpu) > 1:
+    if (args.spatial_edge_mode in [SpatialEdgeMode.ld_rnn, SpatialEdgeMode.bi_ld_rnn] or args.temporal_edge_mode in \
+        [TemporalEdgeMode.ld_rnn, TemporalEdgeMode.bi_ld_rnn]) or args.use_conv_lstm:
+        updater = BPTTUpdater(train_iter, optimizer, converter=lambda batch, device: concat_examples(batch, device,
+                              padding=0), device=args.gpu[0])
+
+    elif len(args.gpu) > 1:
         gpu_dict = {"main": args.gpu[0]} # many gpu will use
         parallel_models = {"parallel": model.au_rcnn_train_chain}
         for slave_gpu in args.gpu[1:]:
@@ -281,7 +346,7 @@ def main():
     @training.make_extension(trigger=(1, "epoch"))
     def reset_order(trainer):
         print("reset dataset order after one epoch")
-        trainer.updater._iterators["main"].dataset._dataset.reset()
+        trainer.updater._iterators["main"].dataset._dataset.reset_for_train_mode()
 
     trainer = training.Trainer(
         updater, (args.epoch, 'epoch'), out=args.out)
@@ -299,8 +364,14 @@ def main():
             trigger=(args.snapshot, 'iteration'))
 
     else:
-        snap_model_file_name = '{0}_fold_{1}_{2}_model_snapshot_'.format(args.fold, args.split_idx,
-                                                                                      args.backbone)
+        snap_model_file_name = '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}@sampleframe#{10}_'.format(args.database,
+                                                                        args.fold, args.split_idx,
+                                                                        args.backbone, args.spatial_edge_mode,
+                                                                        args.temporal_edge_mode,
+                                                                        use_paper_key_str, roi_align_key_str,
+                                                                        label_dependency_layer_key_str,
+                                                                        train_type, args.sample_frame)
+
         snap_model_file_name = snap_model_file_name+"{.updater.iteration}.npz"
 
         trainer.extend(

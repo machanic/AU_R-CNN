@@ -23,7 +23,7 @@ import os
 import sys
 sys.path.insert(0, '/home1/machen/face_expr')
 
-from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, RecurrentType
+from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
 
@@ -57,7 +57,7 @@ def main():
     parser.add_argument('--pretrained_model_args', nargs='+', type=float, help='you can pass in "1.0 224" or "0.75 224"')
     parser.add_argument('--spatial_edge_mode', type=SpatialEdgeMode, choices=list(SpatialEdgeMode),
                         help='1:all_edge, 2:configure_edge, 3:no_edge')
-    parser.add_argument('--temporal_edge_mode', type=RecurrentType, choices=list(RecurrentType),
+    parser.add_argument('--temporal_edge_mode', type=TemporalEdgeMode, choices=list(TemporalEdgeMode),
                         help='1:rnn, 2:attention_block, 3.point-wise feed forward(no temporal)')
     parser.add_argument("--bi_lstm", action="store_true", help="whether to use bi-lstm as Edge/Node RNN")
     parser.add_argument('--use_memcached', action='store_true', help='whether use memcached to boost speed of fetch crop&mask') #

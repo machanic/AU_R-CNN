@@ -55,6 +55,9 @@ class FaceMaskCropper(object):
                 pass
         return new_face, AU_mask_dict
 
+    @staticmethod
+    def calculate_area(y_min, x_min, y_max, x_max):
+        return (y_max - y_min) * (x_max - x_min)
 
     @staticmethod
     def get_cropface_and_box(orig_img_path, channel_first=True, mc_manager=None, key_prefix=""):
@@ -110,6 +113,10 @@ class FaceMaskCropper(object):
                 if y_min == y_max and x_min == x_max:  # 尖角处会产生孤立的单个点，会不会有一个mask只有尖角？
                     # print(("single point mask: img:{0} mask:{1}".format(self._images[i], mask_path)))
                     # 然后用concat_example来拼接起来
+                    continue
+
+                if FaceMaskCropper.calculate_area(y_min, x_min, y_max, x_max) / \
+                        float(config.IMG_SIZE[0] * config.IMG_SIZE[1]) < 0.01:
                     continue
                 AU_box_dict[AU].append(coordinates)
             del label_matrix

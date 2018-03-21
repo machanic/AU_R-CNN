@@ -69,7 +69,7 @@ class AU_RCNN_MobilenetV1(AU_RCNN):
     def __init__(self,
                  pretrained_model_type=None,
                  min_size=512, max_size=512,
-                 mean_file=None, classify_mode=False, n_class=0
+                 mean_file=None, classify_mode=False, n_class=0,use_roi_align=False
                  ):
         sizes = [128, 160, 192, 224]
         depth_mults = [0.75, 1.0]
@@ -83,7 +83,8 @@ class AU_RCNN_MobilenetV1(AU_RCNN):
 
         extractor = MobileNet_v1_Base()
         head = MobileNetHead(
-            roi_size=7, spatial_scale=1. / self.feat_stride, n_class=n_class, classify_mode=classify_mode
+            roi_size=7, spatial_scale=1. / self.feat_stride, n_class=n_class, classify_mode=classify_mode,
+            use_roi_align=use_roi_align
         )
         mean_array = np.load(mean_file)
         print("loading mean_file in: {} done".format(mean_file))
@@ -123,10 +124,11 @@ class MobileNetHead(chainer.Chain):
 
     """
 
-    def __init__(self, roi_size=7, spatial_scale=1/16.0, n_class=22, classify_mode=False):
+    def __init__(self, roi_size=7, spatial_scale=1/16.0, n_class=22, classify_mode=False,use_roi_align=False):
         # n_class includes the background
         super(MobileNetHead, self).__init__()
         self.classify_mode = classify_mode
+        self.use_roi_align = use_roi_align
         initialW = initializers.HeNormal()
         self.roi_size = roi_size
         self.spatial_scale = spatial_scale  # 这个很关键,一般都是1/16.0
@@ -157,7 +159,7 @@ class MobileNetHead(chainer.Chain):
             (roi_indices[:, None], rois), axis=1)  # None means np.newaxis, concat along column
         pool = _roi_pooling_2d_yx(
             x, indices_and_rois, self.roi_size, self.roi_size,
-            self.spatial_scale)
+            self.spatial_scale,self.use_roi_align)
         h = pool  # shape = R', 1536, 7, 7
         h = F.reshape(h, shape=(h.shape[0], 75264))
         h = self.convert_feature_dim_fc(h)  # R', 2048
@@ -356,9 +358,12 @@ class MobileNet_v1_Base(chainer.Chain):
 
 
 
-def _roi_pooling_2d_yx(x, indices_and_rois, outh, outw, spatial_scale):
+def _roi_pooling_2d_yx(x, indices_and_rois, outh, outw, spatial_scale, use_roi_align):
     xy_indices_and_rois = indices_and_rois[:, [0, 2, 1, 4, 3]]
-    pool = F.roi_pooling_2d(
+    if use_roi_align:
+        pool = roi_align_2d(x, xy_indices_and_rois, outh, outw, spatial_scale)
+    else:
+        pool = F.roi_pooling_2d(
         x, xy_indices_and_rois, outh, outw, spatial_scale)
     return pool
 

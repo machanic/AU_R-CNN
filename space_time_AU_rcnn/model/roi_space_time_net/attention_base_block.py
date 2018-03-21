@@ -162,7 +162,7 @@ class PositionwiseFeedForwardLayer(chainer.Chain):
         super(PositionwiseFeedForwardLayer, self).__init__()
         self.dropout_ratio = dropout
         self.forward_type = forward_type
-        assert n_layers >= 2
+
         if out_size is None:
             out_size = in_size
         # n_inner_units = in_size * 4  # hidden layer dimension is big than input/output dimension
@@ -210,20 +210,13 @@ class PositionwiseFeedForwardLayer(chainer.Chain):
 
     def forward_nstep_lstm(self, es):
         # e shape = list of (sentence_length, in_channels)
-        out_es = []
         es = F.stack(es)  # B, T, D
         es = F.transpose(es, axes=(0,2,1)) # B, D, T
-
-        for e in es:
-            e = F.transpose(e, axes=(1, 0))  # D, T
-            e = F.expand_dims(e, axis=0) # 1,D,T
-            for conv_layer in self.layer_name:
-                e = self.act(getattr(self, conv_layer)(e))
-            e = F.transpose(e, axes=(0, 2, 1))[0]  # return B, T, D, then [0] = T,D
-            e = F.dropout(e, self.dropout_ratio)
-            out_es.append(e)
-        out_es = F.stack(out_es) # B,T,D
-        return [F.squeeze(e) for e in F.split_axis(self.layer_norm(out_es), out_es.shape[0], axis=0, force_tuple=True)]  # return list of (T,D)
+        for conv_layer in self.layer_name:
+            es = self.act(getattr(self, conv_layer)(es))
+        out_es = F.dropout(es, self.dropout_ratio)
+        out_es = F.transpose(out_es, (0,2,1))
+        return list(F.separate(out_es, axis=0))
 
 class EncoderLayer(chainer.Chain):
     def __init__(self, d_model, d_inner_hid, n_head, d_k, d_v, dropout=0.1):

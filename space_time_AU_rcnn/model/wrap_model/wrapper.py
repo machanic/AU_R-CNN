@@ -2,12 +2,14 @@ import chainer
 import numpy as np
 
 import config
+from space_time_AU_rcnn.model.dynamic_AU_rcnn.dynamic_au_rcnn_train_chain import DynamicAU_RCNN_ROI_Extractor
 
 
 class Wrapper(chainer.Chain):
-    def __init__(self, au_rcnn_train_chain, loss_head_module, database, T):
+    def __init__(self, au_rcnn_train_chain, loss_head_module, database, T, use_feature_map):
         self.database = database
         self.T = T
+        self.use_feature_map = use_feature_map
         super(Wrapper, self).__init__()
         with self.init_scope():
             self.au_rcnn_train_chain = au_rcnn_train_chain
@@ -27,11 +29,16 @@ class Wrapper(chainer.Chain):
         # bboxes shape = B, T, F(9 or 8), 4
         # labels shape = B, T, F(9 or 8), 12
         batch, T, channel, height, width = images.shape
-        images = images.reshape(batch * T, channel, height, width)  # B*T, C, H, W
-        bboxes = bboxes.reshape(batch * T, config.BOX_NUM[self.database], 4)  # B*T, 9, 4
-        roi_feature = self.au_rcnn_train_chain(images, bboxes)  # shape = B*T, F, D
-        roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
-
+        if not isinstance(self.au_rcnn_train_chain, DynamicAU_RCNN_ROI_Extractor):
+            images = images.reshape(batch * T, channel, height, width)  # B*T, C, H, W
+            bboxes = bboxes.reshape(batch * T, config.BOX_NUM[self.database], 4)  # B*T, 9, 4
+        roi_feature = self.au_rcnn_train_chain(images, bboxes)  # shape = B*T, F, D or B*T, F, C, H, W
+        if not self.use_feature_map:
+            roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
+        else:
+            # B*T*F, C, H, W => B, T, F, C, H, W
+            roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], roi_feature.shape[-3],
+                                              roi_feature.shape[-2], roi_feature.shape[-1])
         loss, accuracy = self.loss_head_module(roi_feature, labels)
         report_dict = {'loss': loss, "accuracy": accuracy}
         chainer.reporter.report(report_dict,
