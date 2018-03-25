@@ -3,7 +3,7 @@ import chainer.links as L
 import chainer.functions as F
 
 class ConvSRUCell(chainer.Chain):
-    def __init__(self, input_size, input_dim, hidden_dim, kernel_size):
+    def __init__(self, input_dim, hidden_dim, kernel_size):
         """
           Initialize ConvLSTM cell.
           Parameters
@@ -20,11 +20,14 @@ class ConvSRUCell(chainer.Chain):
               Whether or not to add the bias.
         """
         super(ConvSRUCell, self).__init__()
-        self.height, self.width = input_size
+
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.kernel_size = kernel_size
-        self.padding = kernel_size[0] // 2, kernel_size[1] // 2
+        if isinstance(kernel_size, tuple):
+            self.padding = kernel_size[0] // 2, kernel_size[1] // 2
+        else:
+            self.padding = kernel_size // 2
         with self.init_scope():
             self.conv = L.Convolution2D(in_channels=self.input_dim,
                                         out_channels=3 * self.hidden_dim,
@@ -59,13 +62,13 @@ class ConvSRUCell(chainer.Chain):
         all_c = F.stack(all_c, axis=1)  # B, T, C, H, W
         if self.input_dim != self.hidden_dim:
             x = self.residule_conv(x)
-            x = x.reshape(mini_batch, seq_len, self.hidden_dim, height, width)
+        x = x.reshape(mini_batch, seq_len, self.hidden_dim, height, width)
         all_h = r * F.tanh(all_c) + (1-r) * x  # B, T, C, H, W
         return all_h
 
     # init c
-    def init_hidden(self, batch_size): # B, C, H, W
-        return chainer.Variable(self.xp.zeros((batch_size, self.hidden_dim, self.height, self.width), dtype=self.xp.float32))
+    def init_hidden(self, batch_size, height, width): # B, C, H, W
+        return chainer.Variable(self.xp.zeros((batch_size, self.hidden_dim, height, width), dtype=self.xp.float32))
 
 class ConvSRU(chainer.Chain):
     def __init__(self, input_size, input_dim, hidden_dim, kernel_size, num_layers):
@@ -91,7 +94,7 @@ class ConvSRU(chainer.Chain):
         with self.init_scope():
             for i in range(self.num_layers):
                 cur_input_dim = self.input_dim if i == 0 else self.hidden_dim[i - 1]
-                setattr(self, "cell_{}".format(i), ConvSRUCell(input_size=(self.height, self.width),
+                setattr(self, "cell_{}".format(i), ConvSRUCell(
                                                                input_dim=cur_input_dim, hidden_dim=self.hidden_dim[i],
                                                                kernel_size=self.kernel_size[i]))
                 self.cell_list.append("cell_{}".format(i))
@@ -110,7 +113,8 @@ class ConvSRU(chainer.Chain):
         """
 
         # Implement stateless ConvSRU
-        hidden_state = self._init_hidden(batch_size=input_tensor.shape[0])
+        hidden_state = self._init_hidden(batch_size=input_tensor.shape[0], height=input_tensor.shape[-2],
+                                         width=input_tensor.shape[-1])
         cur_layer_input = input_tensor
         last_layer_output = None
         for layer_idx in range(self.num_layers):
@@ -121,10 +125,10 @@ class ConvSRU(chainer.Chain):
 
         return last_layer_output
 
-    def _init_hidden(self, batch_size):
+    def _init_hidden(self, batch_size, height, width):
         init_states = []
         for i in range(self.num_layers):
-            init_states.append(getattr(self, self.cell_list[i]).init_hidden(batch_size))
+            init_states.append(getattr(self, self.cell_list[i]).init_hidden(batch_size, height, width))
         return init_states
 
 
@@ -250,7 +254,6 @@ class ConvLSTM(chainer.Chain):
         else:
             hidden_state = self._init_hidden(batch_size=input_tensor.shape[0])
         layer_output_list = []
-        last_state_list = []
         seq_len = input_tensor.shape[1]
         cur_layer_input = input_tensor
 
@@ -264,12 +267,10 @@ class ConvLSTM(chainer.Chain):
             layer_output = F.stack(output_inner, axis=1)  # B, T, C, H, W, where T = seq_len
             cur_layer_input = layer_output
             layer_output_list.append(layer_output)
-            last_state_list.append([h, c])
         if not self.return_all_layers:  # only return last layer of (B, T, C, H, W)
             layer_output_list = layer_output_list[-1:]
-            last_state_list = last_state_list[-1:] # get last state
 
-        return layer_output_list, last_state_list
+        return layer_output_list[0]
 
     def _init_hidden(self, batch_size):
         init_states = []

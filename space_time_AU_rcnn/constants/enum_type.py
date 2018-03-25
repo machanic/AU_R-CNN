@@ -3,11 +3,12 @@ from enum import Enum
 import chainer
 
 
-class NoneModule(chainer.Chain):
-    def __init__(self, n_layers, insize, outsize, initialW=None, use_bi_lstm=False):
-        super(NoneModule, self).__init__()
-        pass
-
+class ConvRNNType(Enum):
+    conv_lstm = "conv_lstm"
+    conv_qrnn  = "conv_qrnn"
+    conv_rcnn = "conv_rcnn"
+    def __str__(self):
+        return self.value
 
 class TemporalEdgeMode(Enum):
     rnn = 'rnn'

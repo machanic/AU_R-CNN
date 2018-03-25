@@ -48,18 +48,21 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
         assert self.train_mode is False
         self.offsets.clear()
         T = self.sample_frame
-        jump_frame = 4
+        jump_frame = 5
         for sequence_id, fetch_idx_lst in self.seq_dict.items():
             for start_offset in range(jump_frame):
                 sub_idx_list = fetch_idx_lst[start_offset::jump_frame]
                 for i in range(0, len(sub_idx_list)):
+                    if i ==0:
+                        for j in range(1, T):
+                            self.offsets.append(sub_idx_list[i:i + j])
                     extended_list = sub_idx_list[i: i + T]  # highly overlap sequence, we only predict last frame of each sequence
                     self.offsets.append(extended_list)
 
         for fetch_idx_list in self.offsets:
             if len(fetch_idx_list) < T:
                 rest_pad_len = T - len(fetch_idx_list)
-                fetch_idx_list = np.pad(fetch_idx_list, (0, rest_pad_len), 'edge')
+                fetch_idx_list = np.pad(fetch_idx_list, (0, rest_pad_len), 'edge') # FIXME pad before first element
             assert len(fetch_idx_list) == T
             for fetch_id in fetch_idx_list:
                 self.result_data.append(self.AU_image_dataset.result_data[fetch_id])

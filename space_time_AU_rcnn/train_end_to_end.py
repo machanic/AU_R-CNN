@@ -32,7 +32,7 @@ from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
 from space_time_AU_rcnn.datasets.AU_video_dataset import AU_video_dataset
 from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
-from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode, SpatialSequenceType
+from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode, SpatialSequenceType,ConvRNNType
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
@@ -133,6 +133,8 @@ def main():
                         help='1:all_edge, 2:configure_edge, 3:no_edge')
     parser.add_argument('--temporal_edge_mode', type=TemporalEdgeMode, choices=list(TemporalEdgeMode),
                         help='1:rnn, 2:attention_block, 3.point-wise feed forward(no temporal)')
+    parser.add_argument('--conv_rnn_type', type=ConvRNNType, choices=list(ConvRNNType),
+                        help='conv_lstm or conv_sru')
     parser.add_argument("--bi_lstm", action="store_true", help="whether to use bi-lstm as Edge/Node RNN")
     parser.add_argument('--use_memcached', action='store_true', help='whether use memcached to boost speed of fetch crop&mask') #
     parser.add_argument('--memcached_host', default='127.0.0.1')
@@ -140,7 +142,6 @@ def main():
     parser.add_argument("--layers", type=int, default=1)
     parser.add_argument("--label_win_size", type=int, default=3)
     parser.add_argument("--x_win_size", type=int, default=1)
-    parser.add_argument("--use_conv_lstm", action="store_true", help="use conv_lstm for spatial and temporal conv_lstm")
     parser.add_argument("--use_label_dependency", action="store_true", help="use label dependency layer after conv_lstm")
     parser.add_argument("--dynamic_backbone", action="store_true", help="use dynamic backbone: conv lstm as backbone")
     parser.add_argument("--ld_rnn_dropout", type=float, default=0.4)
@@ -177,12 +178,13 @@ def main():
 
     paper_report_label, class_num = squeeze_label_num_report(args.database, args.use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
-    use_feature_map = args.use_conv_lstm
+    use_feature_map = (args.conv_rnn_type != ConvRNNType.conv_rcnn)
+    use_au_rcnn_loss = (args.conv_rnn_type == ConvRNNType.conv_rcnn)
     if args.dynamic_backbone:
         au_rcnn = Dynamic_AU_RCNN_Resnet50(database=args.database,
                                            pretrained_model=args.pretrained_model,
                                            min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                           mean_file=args.mean, n_class=class_num, classify_mode=args.au_rcnn_loss,
+                                           mean_file=args.mean, n_class=class_num, classify_mode=use_au_rcnn_loss,
                                            use_roi_align=args.roi_align, use_feature_map=use_feature_map)
         au_rcnn_train_chain = DynamicAU_RCNN_ROI_Extractor(au_rcnn)
 
@@ -194,13 +196,13 @@ def main():
     elif args.backbone == 'resnet101':
         au_rcnn = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model,
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                        mean_file=args.mean, classify_mode=args.au_rcnn_loss, n_class=class_num,
+                                        mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
                                     use_roi_align=args.roi_align, use_feature_map=use_feature_map)
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
     elif args.backbone == "mobilenet_v1":
         au_rcnn = AU_RCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
                                       min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                      mean_file=args.mean, classify_mode=args.au_rcnn_loss, n_class=class_num,
+                                      mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
                                       use_roi_align=args.roi_align
                                       )
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
@@ -208,7 +210,7 @@ def main():
 
 
 
-    if args.au_rcnn_loss:
+    if use_au_rcnn_loss:
         au_rcnn_train_loss = AU_RCNN_TrainChainLoss()
         loss_head_module = au_rcnn_train_loss
     else:
@@ -217,8 +219,8 @@ def main():
                                       train_mode=True, label_win_size=args.label_win_size, x_win_size=args.x_win_size,
                                       label_dropout_ratio=args.ld_rnn_dropout, spatial_sequence_type=args.spatial_sequence_type)
         loss_head_module = space_time_rnn
-    assert not args.au_rcnn_loss == use_feature_map
-    if args.use_conv_lstm:
+    assert not use_au_rcnn_loss == use_feature_map
+    if args.conv_rnn_type != ConvRNNType.conv_rcnn:
         label_dependency_layer = None
         if args.use_label_dependency:
             use_space = (args.spatial_edge_mode != SpatialEdgeMode.no_edge)
@@ -228,7 +230,8 @@ def main():
                                                           label_dropout_ratio=args.ld_rnn_dropout, use_space=use_space,
                                                           use_temporal=use_temporal)
         space_time_conv_lstm = SpaceTimeConv(label_dependency_layer, args.use_label_dependency, class_num,
-                                             spatial_edge_mode=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode)
+                                             spatial_edge_mode=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode,
+                                             conv_rnn_type=args.conv_rnn_type)
         loss_head_module = space_time_conv_lstm
 
 
@@ -278,14 +281,15 @@ def main():
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
     optimizer_name = args.optimizer
 
-    train_type = "rcnn" if args.au_rcnn_loss else "convlstm"
+
+
 
     key_str = "{0}_fold_{1}".format(args.fold, args.split_idx)
     file_list = []
     file_list.extend(os.listdir(args.out))
     snapshot_model_file_name = args.out + os.sep + filter_last_checkpoint_filename(file_list, "model", key_str)
 
-    # BP4D_3_fold_1_resnet101@rnn@no_temporal@use_paper_num_label@roi_align@label_dep_layer@convlstm@sampleframe#13_model.npz
+    # BP4D_3_fold_1_resnet101@rnn@no_temporal@use_paper_num_label@roi_align@label_dep_layer@conv_lstm@sampleframe#13_model.npz
     use_paper_key_str = "use_paper_num_label" if args.use_paper_num_label else "all_avail_label"
     roi_align_key_str = "roi_align" if args.roi_align else "roi_pooling"
     label_dependency_layer_key_str ="label_dep_layer" if args.use_label_dependency else "no_label_dep"
@@ -297,7 +301,8 @@ def main():
                                                                                 args.temporal_edge_mode,
                                                                                 use_paper_key_str, roi_align_key_str,
                                                                                 label_dependency_layer_key_str,
-                                                                                train_type, args.sample_frame)
+                                                                                 args.conv_rnn_type,args.sample_frame)
+    print(single_model_file_name)
     pretrained_optimizer_file_name = args.out + os.sep +\
                              '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}@sampleframe#{10}_optimizer.npz'.format(args.database,
                                                                                 args.fold, args.split_idx,
@@ -305,7 +310,8 @@ def main():
                                                                                 args.temporal_edge_mode,
                                                                                 use_paper_key_str, roi_align_key_str,
                                                                                 label_dependency_layer_key_str,
-                                                                                train_type, args.sample_frame)
+                                                                                args.conv_rnn_type, args.sample_frame)
+    print(pretrained_optimizer_file_name)
 
 
     if os.path.exists(pretrained_optimizer_file_name):
@@ -323,7 +329,7 @@ def main():
 
 
     if (args.spatial_edge_mode in [SpatialEdgeMode.ld_rnn, SpatialEdgeMode.bi_ld_rnn] or args.temporal_edge_mode in \
-        [TemporalEdgeMode.ld_rnn, TemporalEdgeMode.bi_ld_rnn]) or args.use_conv_lstm:
+        [TemporalEdgeMode.ld_rnn, TemporalEdgeMode.bi_ld_rnn]) or (args.conv_rnn_type != ConvRNNType.conv_rcnn):
         updater = BPTTUpdater(train_iter, optimizer, converter=lambda batch, device: concat_examples(batch, device,
                               padding=0), device=args.gpu[0])
 
@@ -364,13 +370,13 @@ def main():
             trigger=(args.snapshot, 'iteration'))
 
     else:
-        snap_model_file_name = '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}@sampleframe#{10}_'.format(args.database,
+        snap_model_file_name = '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}sampleframe#{10}_'.format(args.database,
                                                                         args.fold, args.split_idx,
                                                                         args.backbone, args.spatial_edge_mode,
                                                                         args.temporal_edge_mode,
                                                                         use_paper_key_str, roi_align_key_str,
                                                                         label_dependency_layer_key_str,
-                                                                        train_type, args.sample_frame)
+                                                                        args.conv_rnn_type,args.sample_frame)
 
         snap_model_file_name = snap_model_file_name+"{.updater.iteration}.npz"
 
@@ -395,7 +401,7 @@ def main():
     trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,log_name="log_{0}_fold_{1}_{2}@{3}@{4}@{5}.log".format(
                                                                                         args.fold, args.split_idx,
                                                                                          args.backbone, args.spatial_edge_mode,
-                                                                                          args.temporal_edge_mode,train_type)))
+                                                                                          args.temporal_edge_mode, args.conv_rnn_type)))
     # trainer.reporter.add_observer("main_par", model.loss_head_module)
     trainer.extend(chainer.training.extensions.PrintReport(
         ['iteration', 'epoch', 'elapsed_time', 'lr',
@@ -409,7 +415,7 @@ def main():
                 ['main/loss'],
                 file_name='loss_{0}_fold_{1}_{2}@{3}@{4}@{5}.png'.format(args.fold, args.split_idx,
                                                                                          args.backbone, args.spatial_edge_mode,
-                                                                                          args.temporal_edge_mode,train_type), trigger=plot_interval
+                                                                                          args.temporal_edge_mode,args.conv_rnn_type), trigger=plot_interval
             ),
             trigger=plot_interval
         )
@@ -418,7 +424,7 @@ def main():
                 ['main/accuracy'],
                 file_name='accuracy_{0}_fold_{1}_{2}@{3}@{4}@{5}.png'.format(args.fold, args.split_idx,
                                                                                          args.backbone, args.spatial_edge_mode,
-                                                                                          args.temporal_edge_mode,train_type), trigger=plot_interval
+                                                                                          args.temporal_edge_mode,args.conv_rnn_type), trigger=plot_interval
             ),
             trigger=plot_interval
         )

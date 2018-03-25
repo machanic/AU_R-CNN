@@ -10,6 +10,7 @@ import functools
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn import AU_RCNN
 import config
 from chainer import initializers
+from space_time_AU_rcnn.model.roi_space_time_net.conv_lstm_block import ConvSRUCell
 
 class Dynamic_AU_RCNN_Resnet50(AU_RCNN):
 
@@ -114,7 +115,7 @@ class Dynamic_AU_RCNN_Resnet50(AU_RCNN):
         #     print("loading :{} to AU R-CNN ResNet-101".format(pretrained_model))
         #     chainer.serializers.load_npz(pretrained_model, self)
 
-    def _copy_imagenet_pretrained_resnet101(self, path):
+    def _copy_imagenet_pretrained_resnet50(self, path):
         pretrained_model = ResNet50Layers(pretrained_model=path)
         self.extractor.conv1.copyparams(pretrained_model.conv1)
         self.extractor.bn1.copyparams(pretrained_model.bn1)
@@ -123,71 +124,6 @@ class Dynamic_AU_RCNN_Resnet50(AU_RCNN):
         self.extractor.res4.copyparams(pretrained_model.res4)
         self.head.res5.copyparams(pretrained_model.res5)
 
-class BasicConvSRUCell(chainer.Chain):
-
-    def __init__(self, input_dim, hidden_dim, output_dim, kernel_size, stride, pad, nobias, initialW,
-                 initial_bias):
-        """
-          Initialize ConvLSTM cell.
-          Parameters
-          ----------
-          input_size: (int, int)
-              Height and width of input tensor as (height, width).
-          input_dim: int
-              Number of channels of input tensor.
-          hidden_dim: int
-              Number of channels of hidden state.
-          kernel_size: (int, int)
-              Size of the convolutional kernel.
-          nobias: bool
-              Whether or not to add the bias.
-          Return
-          -----------
-          h_next, c_next: LSTM's hidden state
-          output: the input of regular CNN network's next layer
-        """
-        super(BasicConvSRUCell, self).__init__()
-        self.input_dim = input_dim
-        self.hidden_dim = hidden_dim
-        self.output_dim = output_dim
-        self.kernel_size = kernel_size
-        self.stride = stride
-
-        self.split_indices = [i * self.hidden_dim for i in range(1, 5)]
-
-
-        with self.init_scope():
-            self.conv = L.Convolution2D(in_channels=self.input_dim + self.hidden_dim,
-                                        out_channels=4 * self.hidden_dim + self.output_dim,
-                                        ksize=self.kernel_size, pad=pad,stride=stride,
-                                        nobias=nobias,initialW=initialW,initial_bias=initial_bias)
-
-
-    def __call__(self, input_tensor, cur_state):
-        h_cur, c_cur = cur_state
-
-        if self.stride > 1:
-            h_cur = F.resize_images(h_cur, output_shape=(input_tensor.shape[-2], input_tensor.shape[-1]))
-        combined = F.concat([input_tensor, h_cur], axis=1)  # concatenate along channel axis
-        combined_conv = self.conv(combined)
-        cc_i, cc_f, cc_o, cc_g, cnn_output = F.split_axis(combined_conv, self.split_indices, axis=1)
-        assert cc_i.shape[1] == cc_f.shape[1] == cc_o.shape[1] == cc_g.shape[1] == self.hidden_dim
-        assert cnn_output.shape[1] == self.output_dim
-        i = F.sigmoid(cc_i)
-        f = F.sigmoid(cc_f)
-        o = F.sigmoid(cc_o)
-        g = F.tanh(cc_g)
-        c_next = f * c_cur + i * g
-        h_next = o * F.tanh(c_next)
-        return h_next, c_next, cnn_output
-
-    def init_hidden(self, batch_size, height, width):
-        return chainer.Variable(self.xp.zeros((batch_size, self.hidden_dim, height, width),
-                                              dtype=self.xp.float32)), \
-            chainer.Variable(self.xp.zeros((batch_size, self.hidden_dim, height, width),
-                                           dtype=self.xp.float32))
-
-
 class DynamicConvolution2D(chainer.Chain):
     def __init__(self, in_channels, out_channels, hidden_channels, ksize=None, stride=1, pad=0,
                  nobias=False, initialW=None, initial_bias=None):
@@ -195,14 +131,12 @@ class DynamicConvolution2D(chainer.Chain):
         # Make sure that both `kernel_size` and `hidden_dim` are lists having len == num_layers
         self.stride = stride
         with self.init_scope():
-            self.cell = BasicConvSRUCell(
-                                          input_dim=in_channels, hidden_dim=hidden_channels, output_dim=out_channels,
-                                          kernel_size=ksize, stride=stride, pad=pad, nobias=nobias,initialW=initialW,
-                                          initial_bias=initial_bias)
-
-
-
-
+            self.cell = ConvSRUCell( input_dim=in_channels, hidden_dim=hidden_channels,
+                                          kernel_size=ksize)
+            if hidden_channels != out_channels:
+                self.conv = L.Convolution2D(in_channels=hidden_channels, out_channels=out_channels,
+                                                      ksize=ksize, stride=stride,pad=pad,nobias=nobias,
+                                                      initialW=initialW, initial_bias=initial_bias)
     def __call__(self, input_tensor):
         """
             Parameters
@@ -214,20 +148,22 @@ class DynamicConvolution2D(chainer.Chain):
             b, t, c, h, w
         """
 
-        hidden_state = self._init_hidden(batch_size=input_tensor.shape[0], height=input_tensor.shape[-2]//self.stride,
-                                         width=input_tensor.shape[-1]//self.stride)
-        seq_len = input_tensor.shape[1]
-        h, c = hidden_state
-        all_timestep_output = []
-        for t in range(seq_len):
-            h, c, cnn_output = self.cell(input_tensor=input_tensor[:, t, :, :, :], cur_state=[h, c])
-            all_timestep_output.append(cnn_output)
-        layer_output = F.stack(all_timestep_output) # T, B, C, H, W
-        layer_output = F.transpose(layer_output, axes=(1,0,2,3,4)) # B, T, C, H, W
-        return layer_output
+        hidden_state = self._init_hidden(batch_size=input_tensor.shape[0], height=input_tensor.shape[-2],
+                                         width=input_tensor.shape[-1])
+        c = hidden_state
+
+        all_h = self.cell(input_tensor=input_tensor, zero_state=c)  # B, T, C, H, W
+        mini_batch, seq_len, channel, height, width = all_h.shape
+        output = F.reshape(all_h, (mini_batch*seq_len, -1, height, width))
+        if hasattr(self, "conv"):
+            output = self.conv(output)
+        output = F.reshape(output, (mini_batch, seq_len, output.shape[-3], output.shape[-2], output.shape[-1]))
+        return output
 
     def _init_hidden(self, batch_size, height, width):
         return self.cell.init_hidden(batch_size, height, width)
+
+
 
 class DynamicBatchNormalization(L.BatchNormalization):
     def __init__(self, size):
@@ -264,16 +200,16 @@ class BottleNeckA(chainer.Chain):
                     initialW=initialW, nobias=True)  # note that residule link has stride = 2
                 self.bn4 = L.BatchNormalization(out_size)
             else:
-                self.conv1 = DynamicConvolution2D(in_size, ch, ch//4, 1, stride, 0, initialW=initialW,
+                self.conv1 = DynamicConvolution2D(in_size, ch, in_size, 1, stride, 0, initialW=initialW,
                                                   nobias=True)
                 self.bn1 = DynamicBatchNormalization(ch)
-                self.conv2 = DynamicConvolution2D( ch, ch, ch//4, 3, 1, 1, initialW=initialW,
+                self.conv2 = DynamicConvolution2D( ch, ch, ch, 3, 1, 1, initialW=initialW,
                                                   nobias=True)
                 self.bn2 = DynamicBatchNormalization(ch)
-                self.conv3 = DynamicConvolution2D(ch, out_size, out_size//4, 1,1,0,
+                self.conv3 = DynamicConvolution2D(ch, out_size, ch, 1,1,0,
                                                   initialW=initialW,nobias=True)
                 self.bn3 = DynamicBatchNormalization(out_size)
-                self.conv4 = DynamicConvolution2D(in_size, out_size, out_size//4, 1, stride, 0,
+                self.conv4 = DynamicConvolution2D(in_size, out_size, in_size, 1, stride, 0,
                                                   initialW=initialW,
                                                   nobias=True)
                 self.bn4 = DynamicBatchNormalization(out_size)
@@ -310,11 +246,11 @@ class BottleNeckB(chainer.Chain):
                     ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
                 self.bn3 = L.BatchNormalization(in_size)
             else:
-                self.conv1 = DynamicConvolution2D(in_size, ch, ch//4, 1, 1, 0, initialW=initialW, nobias=True)
+                self.conv1 = DynamicConvolution2D(in_size, ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
                 self.bn1 = DynamicBatchNormalization(ch)
-                self.conv2 = DynamicConvolution2D(ch, ch, ch//4, 3,1,1, initialW=initialW, nobias=True)
+                self.conv2 = DynamicConvolution2D(ch, ch, ch, 3,1,1, initialW=initialW, nobias=True)
                 self.bn2 = DynamicBatchNormalization(ch)
-                self.conv3 = DynamicConvolution2D(ch, in_size, in_size//4, 1,1,0, initialW=initialW, nobias=True)
+                self.conv3 = DynamicConvolution2D(ch, in_size, ch, 1,1,0, initialW=initialW, nobias=True)
                 self.bn3 = DynamicBatchNormalization(in_size)
 
 

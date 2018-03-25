@@ -11,7 +11,7 @@ from overrides import overrides
 from sklearn.metrics import f1_score
 
 import config
-
+from space_time_AU_rcnn.model.dynamic_AU_rcnn.dynamic_au_rcnn_train_chain import DynamicAU_RCNN_ROI_Extractor
 
 
 class ActionUnitEvaluator(Evaluator):
@@ -45,7 +45,7 @@ class ActionUnitEvaluator(Evaluator):
         iterator = self._iterators['main']
         _target = self._targets["main"]
         if hasattr(iterator, 'reset'):
-            iterator.reset_for_train_mode()
+            iterator.reset()
             it = iterator
         else:
             it = copy.copy(iterator)
@@ -60,28 +60,31 @@ class ActionUnitEvaluator(Evaluator):
             batch = self.converter(batch, self.device)
             images, bboxes, labels = batch  # images shape = B*T, C, H, W; bboxes shape = B*T, F, 4; labels shape = B*T, F, 12
             if not isinstance(images, chainer.Variable):
-                images = chainer.Variable(images)
-                bboxes = chainer.Variable(bboxes)
-            images = images.reshape(images.shape[0] // self.T, self.T, images.shape[1], images.shape[2],
-                                    images.shape[3])
-            bboxes = bboxes.reshape(bboxes.shape[0] // self.T, self.T, bboxes.shape[1], bboxes.shape[2])
-            labels = labels.reshape(labels.shape[0] // self.T, self.T, labels.shape[1], labels.shape[2])
+                images = chainer.Variable(images.astype('f'))
+                bboxes = chainer.Variable(bboxes.astype('f'))
 
-            mini_batch, T, channel, height, width = images.shape
+            labels = labels.reshape(labels.shape[0] // self.T, self.T, labels.shape[1], labels.shape[2])
+            mini_batch = labels.shape[0]
+            if isinstance(model.au_rcnn_train_chain, DynamicAU_RCNN_ROI_Extractor):
+                images = images.reshape(images.shape[0] // self.T, self.T, images.shape[1], images.shape[2],
+                                        images.shape[3])
+                bboxes = bboxes.reshape(bboxes.shape[0] // self.T, self.T, bboxes.shape[1], bboxes.shape[2])
+
+
 
             roi_feature = model.au_rcnn_train_chain(images, bboxes)  # shape =  B*T, F, C, H, W or  B*T, F, D
             if not self.use_feature_map:
-                roi_feature = roi_feature.reshape(mini_batch, T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
+                roi_feature = roi_feature.reshape(mini_batch, self.T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
             else:
                 # B*T*F, C, H, W => B, T, F, C, H, W
-                roi_feature = roi_feature.reshape(mini_batch, T, config.BOX_NUM[self.database], roi_feature.shape[-3],
+                roi_feature = roi_feature.reshape(mini_batch, self.T, config.BOX_NUM[self.database], roi_feature.shape[-3],
                                                   roi_feature.shape[-2], roi_feature.shape[-1])
 
             pred_labels = model.loss_head_module.predict(roi_feature)  # B, T, F, 12
-            pred_labels = np.bitwise_or.reduce(pred_labels, axis=2)  # B, T, class_number
-            pred_labels = pred_labels[:, -1, :] # B, class_number. only need to predict last frame
-            labels = np.bitwise_or.reduce(chainer.cuda.to_cpu(labels), axis=2)  # B, T, class_number
-            labels = labels[:, -1, :] # B, class_number, only need to predict last frame
+            pred_labels = pred_labels[:, -1, :, :]  # B, F, D
+            pred_labels = np.bitwise_or.reduce(pred_labels, axis=1)  # B, class_number
+            labels = labels[:, -1, :, :]  # B, F, D
+            labels = np.bitwise_or.reduce(chainer.cuda.to_cpu(labels), axis=1)  # B, class_number
             assert labels.shape == pred_labels.shape
             pred_labels_array.extend(pred_labels)
             gt_labels_array.extend(labels)
