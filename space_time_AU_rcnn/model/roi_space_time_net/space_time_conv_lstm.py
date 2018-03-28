@@ -4,9 +4,9 @@ import chainer.links as L
 import numpy as np
 
 from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode,ConvRNNType
-from space_time_AU_rcnn.model.roi_space_time_net.conv_lstm_block import ConvLSTM
+from space_time_AU_rcnn.model.roi_space_time_net.conv_lstm.conv_lstm_block import ConvLSTM
 from space_time_AU_rcnn.model.roi_space_time_net.conv_qrnn.conv_qrnn import ConvQRNN
-
+from space_time_AU_rcnn.model.roi_space_time_net.conv_lstm.bn_conv_lstm_block import BNConvLSTM
 
 class SpaceTimeConv(chainer.Chain):
 
@@ -33,6 +33,10 @@ class SpaceTimeConv(chainer.Chain):
                 elif conv_rnn_type == ConvRNNType.conv_qrnn:
                     self.temporal_conv_lstm = ConvQRNN(in_channels=1024 + 2048, out_channels=256, ksize=(3,3,3),
                                                        pooling="fo", zoneout=0.1, bias=True)
+                elif conv_rnn_type == ConvRNNType.bn_conv_lstm:
+                    self.temporal_conv_lstm = BNConvLSTM(input_size=(14,14), input_dim=1024+ 2048,
+                                                         hidden_dim=256, kernel_size=(3,3), num_layers=2,
+                                                         batch_first=True, bias=True, return_all_layers=False)
             if spatial_edge_mode != SpatialEdgeMode.no_edge:
                 if conv_rnn_type == ConvRNNType.conv_lstm:
                     self.space_conv_lstm = ConvLSTM(input_size=(14, 14),  # NOTE it is roi_size after apply roi_pooling
@@ -45,6 +49,10 @@ class SpaceTimeConv(chainer.Chain):
                 elif conv_rnn_type == ConvRNNType.conv_qrnn:
                     self.space_conv_lstm = ConvQRNN(in_channels=1024 + 2048, out_channels=256, ksize=(3,3,3), pooling='fo',
                                                     zoneout=0.1, bias=True)
+                elif conv_rnn_type == ConvRNNType.bn_conv_lstm:
+                    self.space_conv_lstm = BNConvLSTM(input_size=(14,14), input_dim=1024+ 2048,
+                                                         hidden_dim=256, kernel_size=(3,3), num_layers=2,
+                                                         batch_first=True, bias=True, return_all_layers=False)
 
             self.box_dim = 2048
             if spatial_edge_mode != SpatialEdgeMode.no_edge and temporal_edge_mode != TemporalEdgeMode.no_temporal:

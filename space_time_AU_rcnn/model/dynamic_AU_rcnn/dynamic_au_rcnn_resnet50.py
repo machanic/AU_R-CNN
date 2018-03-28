@@ -10,7 +10,7 @@ import functools
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn import AU_RCNN
 import config
 from chainer import initializers
-from space_time_AU_rcnn.model.roi_space_time_net.conv_lstm_block import ConvSRUCell
+from space_time_AU_rcnn.model.roi_space_time_net.conv_lstm.conv_lstm_block import ConvSRUCell
 
 class Dynamic_AU_RCNN_Resnet50(AU_RCNN):
 

@@ -7,6 +7,7 @@ import chainer.cuda as cuda
 import numpy as np
 import math
 
+
 class Zoneout(Function):
 
     def __init__(self, p):
@@ -91,10 +92,14 @@ class ConvQRNN(chainer.Chain):
         return functions.transpose(pool_result, axes=(0, 2, 1, 3, 4)) # B, T, C, H, W
 
 
+
     def zoneout(self, U):
         if self._using_zoneout and chainer.config.train:
             return 1- zoneout(functions.sigmoid(-U), self._zoneout)
         return functions.sigmoid(U)
+
+
+
 
     def pool(self, WX):
         Z, F, O, I = None, None, None, None
@@ -131,22 +136,24 @@ class ConvQRNN(chainer.Chain):
         H = None
 
         i_all = 1 - F if I is None else I
+        i_mul_z = i_all * Z
 
+        C = []
         for t in range(T):
-            zt = Z[:, :, t, :, :]  # B, C, H, W
+
             ft = F[:, :, t, : ,:]     # B, C, H, W
-            ot = 1 if O is None else O[:, :, t, :, :]
+            # ot = 1 if O is None else O[:, :, t, :, :]
             # it = 1 - ft if I is None else I[:, :, t, :, :]
-            it = i_all[:, :, t, :, :]
+            # it = i_all[:, :, t, :, :]
             if ct is None:
+                zt = Z[:, :, t, :, :]  # B, C, H, W
                 ct = (1 - ft) * zt # 没乘以 xt
             else:
-                ct = ft * ct + it * zt
-            ht = ct if O is None else ot * ct
-            if H is None:
-                H = functions.expand_dims(ht, 2)  # B,C,T,H,W where T = 1
-            else:
-                H = functions.concat((H, functions.expand_dims(ht, 2)), axis=2)
+                ct = ft * ct + i_mul_z[:, :, t, :, :]
+            C.append(ct)
+        C = functions.stack(C, axis=2)
+        O_result = 1 if O is None else O
+        H = C if O is None else O_result * C
         return H  # B, C, T, H, W
 
 

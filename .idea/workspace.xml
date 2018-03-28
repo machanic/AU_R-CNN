@@ -3,18 +3,15 @@
   <component name="ChangeListManager">
     <list id="8f4ed7cd-6dea-4137-bf3c-226bb66d75fb" name="first commit. not done yet" comment="first commit. not done yet" />
     <list default="true" id="a15c7e7e-4963-4d24-9903-41204a5fe181" name="Default" comment="before modify the factor graph to support pickle">
-      <change beforePath="" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/__init__.py" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py" />
-      <change beforePath="" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/utils/cumprod.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/bn_conv_lstm_block.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/seperate_batch_norm_1d.py" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/constants/enum_type.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/constants/enum_type.py" />
-      <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/datasets/AU_video_dataset.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/datasets/AU_video_dataset.py" />
-      <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/evaluator_F1_main.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/evaluator_F1_main.py" />
-      <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/extensions/AU_evaluator.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/extensions/AU_evaluator.py" />
       <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/model/dynamic_AU_rcnn/dynamic_au_rcnn_resnet50.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/dynamic_AU_rcnn/dynamic_au_rcnn_resnet50.py" />
-      <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm_block.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm_block.py" />
+      <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm_block.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/conv_lstm_block.py" />
+      <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py" />
       <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py" />
-      <change beforePath="$PROJECT_DIR$/space_time_AU_rcnn/train_end_to_end.py" afterPath="$PROJECT_DIR$/space_time_AU_rcnn/train_end_to_end.py" />
     </list>
     <list id="1fc129f1-64d2-4319-9d0c-ec5e6e791e20" name="Failed commit: first commit. not done yet" comment="first commit. not done yet" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -37,7 +34,7 @@
     <SUITE FILE_PATH="coverage/face_expr$networkx_graph.coverage" NAME="networkx_graph Coverage Results" MODIFIED="1502203586644" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/structural_rnn/graph" />
     <SUITE FILE_PATH="coverage/face_expr$face_landmark.coverage" NAME="face_landmark Coverage Results" MODIFIED="1508076886675" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/img_toolkit" />
     <SUITE FILE_PATH="coverage/face_expr$test_remote.coverage" NAME="test_remote Coverage Results" MODIFIED="1497410591790" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_suitcase" />
-    <SUITE FILE_PATH="coverage/S_RNN__$train_end_to_end.coverage" NAME="train_end_to_end Coverage Results" MODIFIED="1521895120598" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/space_time_AU_rcnn" />
+    <SUITE FILE_PATH="coverage/S_RNN__$train_end_to_end.coverage" NAME="train_end_to_end Coverage Results" MODIFIED="1522156470218" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/space_time_AU_rcnn" />
     <SUITE FILE_PATH="coverage/face_expr$data_reader.coverage" NAME="data_reader Coverage Results" MODIFIED="1497581771343" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit" />
     <SUITE FILE_PATH="coverage/S_RNN__$check_generate_feature_SVM.coverage" NAME="check_generate_feature_SVM Coverage Results" MODIFIED="1508852266924" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dataset_toolkit/checker" />
     <SUITE FILE_PATH="coverage/face_expr$chainercv.coverage" NAME="chainercv Coverage Results" MODIFIED="1499739358005" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/chainercv/trainer" />
@@ -138,55 +135,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="conv_qrnn.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="368">
-              <caret line="142" column="17" lean-forward="true" selection-start-line="142" selection-start-column="17" selection-end-line="142" selection-end-column="17" />
-              <folding>
-                <element signature="e#0#14#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="cumprod.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/utils/cumprod.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="925">
-              <caret line="37" column="18" lean-forward="false" selection-start-line="37" selection-start-column="18" selection-end-line="37" selection-end-column="18" />
-              <folding>
-                <element signature="e#0#33#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="basic_math.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/functions/math/basic_math.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="5925">
-              <caret line="246" column="0" lean-forward="false" selection-start-line="246" selection-start-column="0" selection-end-line="246" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="split_axis.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/functions/array/split_axis.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2150">
-              <caret line="93" column="0" lean-forward="false" selection-start-line="93" selection-start-column="0" selection-end-line="93" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="space_time_conv_lstm.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1125">
-              <caret line="45" column="119" lean-forward="false" selection-start-line="45" selection-start-column="119" selection-end-line="45" selection-end-column="119" />
+            <state relative-caret-position="1100">
+              <caret line="52" column="50" lean-forward="false" selection-start-line="52" selection-start-column="50" selection-end-line="52" selection-end-column="50" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -194,14 +147,46 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="train_end_to_end.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/train_end_to_end.py">
+      <file leaf-file-name="conv_lstm_block.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/conv_lstm_block.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="7000">
-              <caret line="281" column="18" lean-forward="false" selection-start-line="281" selection-start-column="4" selection-end-line="281" selection-end-column="18" />
+            <state relative-caret-position="225">
+              <caret line="116" column="81" lean-forward="false" selection-start-line="116" selection-start-column="81" selection-end-line="116" selection-end-column="81" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="bn_conv_lstm_block.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/bn_conv_lstm_block.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="875">
+              <caret line="38" column="42" lean-forward="false" selection-start-line="38" selection-start-column="42" selection-end-line="38" selection-end-column="42" />
               <folding>
-                <element signature="e#35#66#0" expanded="true" />
+                <element signature="e#0#14#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="seperate_batch_norm_1d.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/seperate_batch_norm_1d.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1700">
+              <caret line="71" column="28" lean-forward="false" selection-start-line="71" selection-start-column="28" selection-end-line="71" selection-end-column="28" />
+              <folding>
+                <element signature="e#1#15#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="batch_normalization.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/functions/normalization/batch_normalization.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="11175">
+              <caret line="454" column="4" lean-forward="false" selection-start-line="454" selection-start-column="4" selection-end-line="454" selection-end-column="4" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -217,11 +202,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>ld</find>
-      <find>args.label_win_size</find>
-      <find>use_label_dependency</find>
-      <find>use_post_fc_lstm</find>
-      <find>use_la</find>
       <find>model</find>
       <find>use_paper_num_label</find>
       <find>pre</find>
@@ -247,6 +227,11 @@
       <find>MultiprocessIterator</find>
       <find>memcached_host</find>
       <find>sample_frame</find>
+      <find>register_p</find>
+      <find>decay</find>
+      <find>SeparatedBatchNorm1d</find>
+      <find>reset_parameters</find>
+      <find>lr</find>
     </findStrings>
     <replaceStrings>
       <replace>Conv2D</replace>
@@ -322,9 +307,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/space_time_AU_rcnn/script/write_memcached_landmark_info.py" />
-        <option value="$PROJECT_DIR$/AU_rcnn/links/model/faster_rcnn/faster_rcnn_mobilenet_v1.py" />
-        <option value="$PROJECT_DIR$/AU_rcnn/train.py" />
         <option value="$PROJECT_DIR$/train_monitor/process_monitor.py" />
         <option value="$PROJECT_DIR$/collections_toolkit/ordered_default_dict.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/datasets/AU_sequence_frame_dataset.py" />
@@ -363,16 +345,19 @@
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/AU_rcnn/au_rcnn_resnet50.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/label_dependency_rnn.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/dynamic_AU_rcnn/dynamic_au_rcnn_resnet50.py" />
-        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm_block.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/datasets/AU_video_dataset.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/train_end_to_end.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/evaluator_F1_main.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/extensions/AU_evaluator.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_lstm_block.py" />
-        <option value="$PROJECT_DIR$/space_time_AU_rcnn/constants/enum_type.py" />
-        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py" />
-        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py" />
         <option value="$PROJECT_DIR$/space_time_AU_rcnn/utils/cumprod.py" />
+        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py" />
+        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm_block.py" />
+        <option value="$PROJECT_DIR$/space_time_AU_rcnn/constants/enum_type.py" />
+        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py" />
+        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/seperate_batch_norm_1d.py" />
+        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/bn_conv_lstm_block.py" />
+        <option value="$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/conv_lstm_block.py" />
       </list>
     </option>
   </component>
@@ -428,8 +413,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
-      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -472,12 +455,57 @@
               <item name="S-RNN++" type="b2602c69:ProjectViewProjectNode" />
               <item name="S-RNN++" type="462c0819:PsiDirectoryNode" />
               <item name="space_time_AU_rcnn" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="S-RNN++" type="b2602c69:ProjectViewProjectNode" />
+              <item name="S-RNN++" type="462c0819:PsiDirectoryNode" />
+              <item name="space_time_AU_rcnn" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+              <item name="AU_rcnn" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="S-RNN++" type="b2602c69:ProjectViewProjectNode" />
+              <item name="S-RNN++" type="462c0819:PsiDirectoryNode" />
+              <item name="space_time_AU_rcnn" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+              <item name="roi_space_time_net" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="S-RNN++" type="b2602c69:ProjectViewProjectNode" />
+              <item name="S-RNN++" type="462c0819:PsiDirectoryNode" />
+              <item name="space_time_AU_rcnn" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+              <item name="roi_space_time_net" type="462c0819:PsiDirectoryNode" />
+              <item name="conv_lstm" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="S-RNN++" type="b2602c69:ProjectViewProjectNode" />
+              <item name="S-RNN++" type="462c0819:PsiDirectoryNode" />
+              <item name="space_time_AU_rcnn" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+              <item name="roi_space_time_net" type="462c0819:PsiDirectoryNode" />
+              <item name="conv_qrnn" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="S-RNN++" type="b2602c69:ProjectViewProjectNode" />
+              <item name="S-RNN++" type="462c0819:PsiDirectoryNode" />
+              <item name="space_time_AU_rcnn" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+              <item name="wrap_model" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="S-RNN++" type="b2602c69:ProjectViewProjectNode" />
+              <item name="S-RNN++" type="462c0819:PsiDirectoryNode" />
+              <item name="space_time_AU_rcnn" type="462c0819:PsiDirectoryNode" />
               <item name="utils" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scratches" />
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -500,18 +528,18 @@
     </option>
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\roi_space_time_net\conv_lstm" />
+      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\roi_space_time_net\cubic_attention" />
+      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\dynamic_AU_rcnn" />
+      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\roi_space_time_net" />
+      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\constants" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\roi_space_time_net\conv_qrnn" />
       <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\AU_rcnn" />
       <recent name="D:\work\S-RNN++\space_time_AU_rcnn" />
       <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\dynamic_AU_rcnn" />
-      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\script" />
-    </key>
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\roi_space_time_net\cubic_attention" />
-      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\dynamic_AU_rcnn" />
-      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\model\roi_space_time_net" />
-      <recent name="D:\work\S-RNN++\space_time_AU_rcnn\constants" />
       <recent name="D:\work\S-RNN++\space_time_AU_rcnn\script" />
     </key>
   </component>
@@ -936,7 +964,7 @@
       <module name="S-RNN++" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/space_time_AU_rcnn/train_end_to_end.py" />
-      <option name="PARAMETERS" value="-g 3 --lr 0.0001 --conv_rnn_type conv_qrnn --spatial_sequence_type in_frame --database BP4D --epoch 15 --backbone resnet101 --pretrained_model resnet101 --spatial_edge_mode rnn  --temporal_edge_mode no_temporal --ld_rnn_dropout 0.4 --out end_to_end_conv_lstm --use_memcached --fold 3 --split_idx 3 --use_paper_num_label --batch_size 1 --sample_frame 10 --proc_num 4 --conv_rnn_type conv_qrnn" />
+      <option name="PARAMETERS" value="-g 3 --conv_rnn_type bn_conv_lstm --spatial_sequence_type in_frame --database BP4D --epoch 25 --backbone resnet101 --pretrained_model resnet101 --spatial_edge_mode rnn --temporal_edge_mode no_temporal --ld_rnn_dropout 0.4 --out end_to_end_bn_conv --use_memcached --fold 3 --split_idx 1 --use_paper_num_label --batch_size 1 --sample_frame 10 --proc_num 2 --x_win_size 5 --label_win_size 10" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -1405,25 +1433,25 @@
     <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.6875" sideWeight="0.6743562" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3443396" sideWeight="0.2859442" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.36910376" sideWeight="0.7215665" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.11320755" sideWeight="0.28165236" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.22877358" sideWeight="0.4827027" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.40212265" sideWeight="0.6974249" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.11320755" sideWeight="0.71834767" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28301886" sideWeight="0.6664865" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32939914" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.29238197" sideWeight="0.8231132" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3224249" sideWeight="0.8231132" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Docker" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="false" weight="0.33" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Tail" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.0" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="SciView" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3299356" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.26502147" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.317217" sideWeight="0.7001073" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2607296" sideWeight="0.1768868" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.5436321" sideWeight="0.6920601" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2936321" sideWeight="0.7140558" order="13" side_tool="false" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2936321" sideWeight="0.7060086" order="13" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32900944" sideWeight="0.43991417" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -1625,8 +1653,8 @@
           <option name="timeStamp" value="2014" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm_block.py</url>
-          <line>61</line>
+          <url>file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/conv_lstm_block.py</url>
+          <line>4</line>
           <option name="timeStamp" value="2033" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
@@ -1635,14 +1663,14 @@
           <option name="timeStamp" value="2048" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py</url>
-          <line>64</line>
-          <option name="timeStamp" value="2074" />
+          <url>file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py</url>
+          <line>140</line>
+          <option name="timeStamp" value="2076" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py</url>
-          <line>74</line>
-          <option name="timeStamp" value="2075" />
+          <url>file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py</url>
+          <line>153</line>
+          <option name="timeStamp" value="2077" />
         </line-breakpoint>
       </breakpoints>
       <breakpoints-dialog>
@@ -1655,7 +1683,7 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="2076" />
+      <option name="time" value="2081" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -1709,62 +1737,6 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/AU_rcnn/au_rcnn_mobilenet_v1.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="683">
-          <caret line="287" column="101" lean-forward="true" selection-start-line="287" selection-start-column="8" selection-end-line="287" selection-end-column="101" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/links/normalization/batch_normalization.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="294">
-          <caret line="68" column="21" lean-forward="false" selection-start-line="68" selection-start-column="8" selection-end-line="68" selection-end-column="21" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/dynamic_AU_rcnn/dynamic_au_rcnn_train_chain.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="656">
-          <caret line="94" column="0" lean-forward="false" selection-start-line="94" selection-start-column="0" selection-end-line="94" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/updater/lstm_bptt_updater.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="325">
-          <caret line="14" column="0" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/training/trainer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="7100">
-          <caret line="298" column="0" lean-forward="false" selection-start-line="298" selection-start-column="0" selection-end-line="298" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/training/updater.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5425">
-          <caret line="222" column="0" lean-forward="false" selection-start-line="222" selection-start-column="0" selection-end-line="222" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/dynamic_AU_rcnn/dynamic_au_rcnn_resnet50.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="9675">
-          <caret line="399" column="24" lean-forward="false" selection-start-line="399" selection-start-column="24" selection-end-line="399" selection-end-column="24" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-1606965440/contextlib.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="403">
-          <caret line="123" column="0" lean-forward="false" selection-start-line="123" selection-start-column="0" selection-end-line="123" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-1606965440/codecs.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="187">
@@ -1783,20 +1755,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="303">
           <caret line="155" column="0" lean-forward="false" selection-start-line="155" selection-start-column="0" selection-end-line="155" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/AU_rcnn/au_rcnn_resnet101.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="203">
-          <caret line="297" column="0" lean-forward="false" selection-start-line="297" selection-start-column="0" selection-end-line="297" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/AU_rcnn/au_rcnn_train_chain.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="478">
-          <caret line="98" column="0" lean-forward="false" selection-start-line="98" selection-start-column="0" selection-end-line="98" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -1963,33 +1921,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/constants/enum_type.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="125">
-          <caret line="7" column="27" lean-forward="false" selection-start-line="7" selection-start-column="27" selection-end-line="7" selection-end-column="27" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/wrap_model/wrapper.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="925">
-          <caret line="41" column="0" lean-forward="false" selection-start-line="41" selection-start-column="0" selection-end-line="41" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm_block.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5050">
-          <caret line="204" column="8" lean-forward="false" selection-start-line="204" selection-start-column="8" selection-end-line="204" selection-end-column="8" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/function.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="5675">
           <caret line="237" column="0" lean-forward="false" selection-start-line="237" selection-start-column="0" selection-end-line="237" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1997,7 +1932,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="5925">
           <caret line="246" column="0" lean-forward="false" selection-start-line="246" selection-start-column="0" selection-end-line="246" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -2009,33 +1943,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1125">
-          <caret line="45" column="119" lean-forward="false" selection-start-line="45" selection-start-column="119" selection-end-line="45" selection-end-column="119" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/train_end_to_end.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="7000">
-          <caret line="281" column="18" lean-forward="false" selection-start-line="281" selection-start-column="4" selection-end-line="281" selection-end-column="18" />
-          <folding>
-            <element signature="e#35#66#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/graph_learning/model/open_crf/pure_python/open_crf_layer.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="475">
           <caret line="31" column="12" lean-forward="false" selection-start-line="31" selection-start-column="12" selection-end-line="31" selection-end-column="12" />
-          <folding>
-            <element signature="e#0#11#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -2043,7 +1954,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -2051,7 +1961,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="493">
           <caret line="244" column="0" lean-forward="false" selection-start-line="244" selection-start-column="0" selection-end-line="244" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -2059,27 +1968,140 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="493">
           <caret line="119" column="0" lean-forward="false" selection-start-line="119" selection-start-column="0" selection-end-line="119" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/utils/cumprod.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="925">
+        <state relative-caret-position="850">
           <caret line="37" column="18" lean-forward="false" selection-start-line="37" selection-start-column="18" selection-end-line="37" selection-end-column="18" />
-          <folding>
-            <element signature="e#0#33#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_qrnn/conv_qrnn.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="368">
-          <caret line="142" column="17" lean-forward="true" selection-start-line="142" selection-start-column="17" selection-end-line="142" selection-end-column="17" />
+        <state relative-caret-position="2275">
+          <caret line="91" column="0" lean-forward="false" selection-start-line="91" selection-start-column="0" selection-end-line="91" selection-end-column="0" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/wrap_model/wrapper.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="750">
+          <caret line="34" column="16" lean-forward="false" selection-start-line="34" selection-start-column="16" selection-end-line="34" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/attention_base_block.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="125">
+          <caret line="5" column="0" lean-forward="true" selection-start-line="5" selection-start-column="0" selection-end-line="6" selection-end-column="49" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/functions/array/tile.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-382">
+          <caret line="65" column="4" lean-forward="false" selection-start-line="65" selection-start-column="4" selection-end-line="65" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/initializers/constant.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1125">
+          <caret line="48" column="8" lean-forward="false" selection-start-line="48" selection-start-column="8" selection-end-line="48" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/constants/enum_type.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="175">
+          <caret line="9" column="32" lean-forward="false" selection-start-line="9" selection-start-column="20" selection-end-line="9" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/link.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1125">
+          <caret line="55" column="36" lean-forward="false" selection-start-line="55" selection-start-column="26" selection-end-line="55" selection-end-column="36" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/functions/array/get_item.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="323">
+          <caret line="98" column="0" lean-forward="false" selection-start-line="98" selection-start-column="0" selection-end-line="98" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/AU_rcnn/au_rcnn_train_chain.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="825">
+          <caret line="98" column="0" lean-forward="false" selection-start-line="98" selection-start-column="0" selection-end-line="98" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/AU_rcnn/au_rcnn_resnet101.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5478">
+          <caret line="286" column="20" lean-forward="false" selection-start-line="286" selection-start-column="20" selection-end-line="286" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/train_end_to_end.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="218">
+          <caret line="268" column="57" lean-forward="false" selection-start-line="268" selection-start-column="55" selection-end-line="268" selection-end-column="57" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/space_time_conv_lstm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1100">
+          <caret line="52" column="50" lean-forward="false" selection-start-line="52" selection-start-column="50" selection-end-line="52" selection-end-column="50" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/bn_conv_lstm_block.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="875">
+          <caret line="38" column="42" lean-forward="false" selection-start-line="38" selection-start-column="42" selection-end-line="38" selection-end-column="42" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2017.3/system/remote_sources/444814018/-420072412/chainer/functions/normalization/batch_normalization.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="11175">
+          <caret line="454" column="4" lean-forward="false" selection-start-line="454" selection-start-column="4" selection-end-line="454" selection-end-column="4" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/seperate_batch_norm_1d.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1700">
+          <caret line="71" column="28" lean-forward="false" selection-start-line="71" selection-start-column="28" selection-end-line="71" selection-end-column="28" />
+          <folding>
+            <element signature="e#1#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/space_time_AU_rcnn/model/roi_space_time_net/conv_lstm/conv_lstm_block.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="116" column="81" lean-forward="false" selection-start-line="116" selection-start-column="81" selection-end-line="116" selection-end-column="81" />
+          <folding />
         </state>
       </provider>
     </entry>
