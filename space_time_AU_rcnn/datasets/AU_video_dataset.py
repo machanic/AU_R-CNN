@@ -7,18 +7,21 @@ import os
 import config
 from collections_toolkit.ordered_default_dict import DefaultOrderedDict
 from img_toolkit.face_mask_cropper import FaceMaskCropper
+from space_time_AU_rcnn.constants.enum_type import TemporalEdgeMode
 from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
 
 
 class AU_video_dataset(chainer.dataset.DatasetMixin):
 
     def __init__(self, au_image_dataset:AUDataset,
-                  sample_frame=10, train_mode=True, paper_report_label_idx=None, fetch_use_parrallel_iterator=True):
+                  sample_frame=10, train_mode=True, paper_report_label_idx=None, fetch_use_parrallel_iterator=True,
+                ):
         self.AU_image_dataset = au_image_dataset
         self.sample_frame = sample_frame
         self.train_mode = train_mode
         self.paper_report_label_idx = paper_report_label_idx
         self.class_num = len(config.AU_SQUEEZE)
+
         if self.paper_report_label_idx:
             self.class_num = len(self.paper_report_label_idx)
 
@@ -47,19 +50,36 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
     def reset_for_test_mode(self):
         assert self.train_mode is False
         self.offsets.clear()
+        self.result_data.clear()
         T = self.sample_frame
         jump_frame = 5
+        # if temporal_edge_mode == TemporalEdgeMode.no_temporal:
+        #     for sequence_id, fetch_idx_lst in self.seq_dict.items():
+        #         for i in range(0, len(fetch_idx_lst), T):
+        #             self.offsets.append(fetch_idx_lst[i:i+T])
+        #     for fetch_idx_lst in self.offsets:
+        #         if len(fetch_idx_lst) < T:
+        #             rest_pad_len = T - len(fetch_idx_lst)
+        #             fetch_idx_lst = np.pad(fetch_idx_lst, (rest_pad_len, 0), 'edge')
+        #         for fetch_id in fetch_idx_lst:
+        #             self.result_data.append(self.AU_image_dataset.result_data[fetch_id])
+        #     return
+
         for sequence_id, fetch_idx_lst in self.seq_dict.items():
             for start_offset in range(jump_frame):
                 sub_idx_list = fetch_idx_lst[start_offset::jump_frame]
                 for i in range(0, len(sub_idx_list)):
-                    if i ==0:
-                        for j in range(1, T):
-                            self.offsets.append(sub_idx_list[i:i + j])
                     extended_list = sub_idx_list[i: i + T]  # highly overlap sequence, we only predict last frame of each sequence
-                    self.offsets.append(extended_list)
+                    if len(extended_list) == T:
+                        self.offsets.append(extended_list)
 
-        for fetch_idx_list in self.offsets:
+            for j in range(1, T):
+                self.offsets.append(fetch_idx_lst[0:j])
+            for i in range(T, jump_frame * (T-1)):
+                self.offsets.append(fetch_idx_lst[i-T:i])
+        self._order = np.random.permutation(len(self.offsets))
+        for order in self._order:
+            fetch_idx_list = self.offsets[order]
             if len(fetch_idx_list) < T:
                 rest_pad_len = T - len(fetch_idx_list)
                 fetch_idx_list = np.pad(fetch_idx_list, (0, rest_pad_len), 'edge') # FIXME pad before first element

@@ -29,7 +29,7 @@ class SpaceTimeConv(chainer.Chain):
                                                        kernel_size=(3, 3),
                                                        num_layers=2,
                                                        bias=True,
-                                                       batch_first=True)
+                                                       batch_first=True, return_all_layers=False)
                 elif conv_rnn_type == ConvRNNType.conv_qrnn:
                     self.temporal_conv_lstm = ConvQRNN(in_channels=1024 + 2048, out_channels=256, ksize=(3,3,3),
                                                        pooling="fo", zoneout=0.1, bias=True)
@@ -45,7 +45,7 @@ class SpaceTimeConv(chainer.Chain):
                                                     kernel_size=(3,3),
                                                     num_layers=2,
                                                     bias=True,
-                                                    batch_first=True)
+                                                    batch_first=True, return_all_layers=False)
                 elif conv_rnn_type == ConvRNNType.conv_qrnn:
                     self.space_conv_lstm = ConvQRNN(in_channels=1024 + 2048, out_channels=256, ksize=(3,3,3), pooling='fo',
                                                     zoneout=0.1, bias=True)
@@ -84,10 +84,10 @@ class SpaceTimeConv(chainer.Chain):
             # B, T, F, C', H, W
             space_output = F.reshape(space_output, shape=(xs.shape[0], xs.shape[1], xs.shape[2], space_output.shape[2],
                                                           space_output.shape[3], space_output.shape[4]))
-        if self.use_label_dependency:
-            return space_output, temporal_output
+
         if self.temporal_edge_mode!= TemporalEdgeMode.no_temporal and self.spatial_edge_mode!= SpatialEdgeMode.no_edge:
-            fusion_output = F.concat((space_output, temporal_output), axis=3)  # B, T, F, 2C', H, W
+            fusion_output = F.concat((space_output, temporal_output
+                                      ), axis=3)  # B, T, F, 2C', H, W
         elif self.spatial_edge_mode != SpatialEdgeMode.no_edge:
             fusion_output = space_output
         elif self.temporal_edge_mode != TemporalEdgeMode.no_temporal:
@@ -137,15 +137,14 @@ class SpaceTimeConv(chainer.Chain):
             accuracy_pick_index = list(zip(*union_gt))
         return pick_index, accuracy_pick_index
 
-
+    #mode = 1 : train, mode = 0: predict
     def __call__(self, xs, labels):  # xs shape = B,T,F,C,H,W, labels=  (batch, T, F, D)
         assert xs.ndim == 6
         assert labels.ndim == 4
         with chainer.cuda.get_device_from_array(xs.data) as device:
             fc_output = self.forward(xs) # B, T, F, 2048
             if self.use_label_dependency:
-                space_output, temporal_output = fc_output  # B, T, F, C'(256), H, W
-                loss, accuracy = self.label_dependency_layer(space_output, temporal_output, labels)
+                loss, accuracy = self.label_dependency_layer(fc_output, labels)  # B, T, F, 2048
             else:
                 fc_output = F.reshape(fc_output, shape=(-1, self.box_dim))
                 fc_output = self.score_fc(fc_output)  # B * T * F, class_num
@@ -159,12 +158,15 @@ class SpaceTimeConv(chainer.Chain):
             return loss, accuracy
 
     def predict(self, roi_features):  # B, T, F, C, H, W
-        assert (not self.use_label_dependency)
-        fc_output = self.forward(roi_features)  # B, T, F, 2048
-        mini_batch, seq_len, box_num, _ = fc_output.shape
-        fc_output = F.reshape(fc_output, shape=(-1, self.box_dim))
-        fc_output = self.score_fc(fc_output)  # B * T * F, class_num
-        pred = fc_output.reshape(mini_batch, seq_len, box_num, -1) # B, T, F, class_num
-        pred = chainer.cuda.to_cpu(pred.data)  #  B, T, F, class_num
-        pred = (pred > 0).astype(np.int32)
-        return pred  # B, T, F, class_num
+        with chainer.cuda.get_device_from_array(roi_features.data) as device:
+            assert (not self.use_label_dependency)
+            fc_output = self.forward(roi_features)  # B, T, F, 2048
+            mini_batch, seq_len, box_num, _ = fc_output.shape
+            if self.use_label_dependency:
+                return self.label_dependency_layer.predict(fc_output)
+            fc_output = F.reshape(fc_output, shape=(-1, self.box_dim))
+            fc_output = self.score_fc(fc_output)  # B * T * F, class_num
+            pred = fc_output.reshape(mini_batch, seq_len, box_num, -1) # B, T, F, class_num
+            pred = chainer.cuda.to_cpu(pred.data)  #  B, T, F, class_num
+            pred = (pred > 0).astype(np.int32)
+            return pred  # B, T, F, class_num

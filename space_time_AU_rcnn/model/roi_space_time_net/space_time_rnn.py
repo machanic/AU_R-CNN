@@ -10,8 +10,8 @@ import config
 from space_time_AU_rcnn.constants.enum_type import TemporalEdgeMode, SpatialEdgeMode, SpatialSequenceType
 from space_time_AU_rcnn.model.roi_space_time_net.attention_base_block import PositionwiseFeedForwardLayer, \
     PositionFFNType
-from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import BiDirectionLabelDependencyLSTM, \
-    LabelDependencyLSTM
+from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import BiDirectionLabelDependencyRNN, \
+    LabelDependencyRNN
 
 
 class TemporalRNN(chainer.Chain):
@@ -90,14 +90,14 @@ class SpaceTimeRNN(chainer.Chain):
                                   TemporalRNN(n_layers, self.in_size, self.out_size, use_bi_lstm=False))
                 elif temporal_edge_mode == TemporalEdgeMode.ld_rnn:
                     self.add_link("Node_{}".format(i),
-                                  LabelDependencyLSTM(self.in_size, self.out_size, self.out_size, label_win_size=label_win_size,
-                                                      x_win_size=1,
-                                                      train_mode=train_mode, is_pad=True, dropout_ratio=label_dropout_ratio))
+                                  LabelDependencyRNN(self.in_size, self.out_size, self.out_size, label_win_size=label_win_size,
+                                                     x_win_size=1,
+                                                     train_mode=train_mode, is_pad=True, dropout_ratio=label_dropout_ratio))
                 elif temporal_edge_mode == TemporalEdgeMode.bi_ld_rnn:
                     self.add_link("Node_{}".format(i),
-                                  BiDirectionLabelDependencyLSTM(self.in_size, self.out_size, self.out_size, label_win_size=label_win_size,
-                                                                 x_win_size=x_win_size, train_mode=train_mode,is_pad=True,
-                                                                 dropout_ratio=label_dropout_ratio))
+                                  BiDirectionLabelDependencyRNN(self.in_size, self.out_size, self.out_size, label_win_size=label_win_size,
+                                                                x_win_size=x_win_size, train_mode=train_mode, is_pad=True,
+                                                                dropout_ratio=label_dropout_ratio))
                 elif temporal_edge_mode == TemporalEdgeMode.no_temporal:
                     self.add_link("Node_{}".format(i),
                                  PositionwiseFeedForwardLayer(n_layers, self.in_size, self.out_size,
@@ -112,11 +112,11 @@ class SpaceTimeRNN(chainer.Chain):
                 self.space_output = L.Linear(self.space_mid_size, self.out_size)
 
             elif spatial_edge_model == SpatialEdgeMode.ld_rnn:
-                self.space_module = LabelDependencyLSTM(self.in_size, self.out_size, self.out_size, label_win_size, x_win_size,
-                                                      train_mode=train_mode, is_pad=True, dropout_ratio=label_dropout_ratio)
+                self.space_module = LabelDependencyRNN(self.in_size, self.out_size, self.out_size, label_win_size, x_win_size,
+                                                       train_mode=train_mode, is_pad=True, dropout_ratio=label_dropout_ratio)
             elif spatial_edge_model == SpatialEdgeMode.bi_ld_rnn:
-                self.space_module = BiDirectionLabelDependencyLSTM(self.in_size, self.out_size, self.out_size, label_win_size, x_win_size,
-                                                                 train_mode, is_pad=True, dropout_ratio=label_dropout_ratio)
+                self.space_module = BiDirectionLabelDependencyRNN(self.in_size, self.out_size, self.out_size, label_win_size, x_win_size,
+                                                                  train_mode, is_pad=True, dropout_ratio=label_dropout_ratio)
             elif spatial_edge_model == SpatialEdgeMode.no_edge:
                 self.space_module = L.Linear(self.in_size, self.out_size, initialW=initialW)
 
@@ -128,7 +128,7 @@ class SpaceTimeRNN(chainer.Chain):
             input_x = xs[:, :, int(node_module_id), :]  # B, T, D
             input_x = F.split_axis(input_x, input_x.shape[0], axis=0, force_tuple=True)
             input_x = [F.squeeze(x, axis=0) for x in input_x]  # list of T,D
-            if isinstance(node_module, LabelDependencyLSTM) or isinstance(node_module, BiDirectionLabelDependencyLSTM):
+            if isinstance(node_module, LabelDependencyRNN) or isinstance(node_module, BiDirectionLabelDependencyRNN):
                 input_labels = labels[:, :, int(node_module_id), :]  # B, T, D
                 input_labels = F.separate(input_labels, axis=0)
                 node_out_dict[node_module_id] = F.stack(node_module(input_x, input_labels))

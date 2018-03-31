@@ -2,9 +2,8 @@
 from __future__ import division
 import sys
 sys.path.insert(0, '/home/machen/face_expr')
-from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import LabelDependencyLayer
-from space_time_AU_rcnn.model.dynamic_AU_rcnn.dynamic_au_rcnn_resnet50 import Dynamic_AU_RCNN_Resnet50
-from space_time_AU_rcnn.model.dynamic_AU_rcnn.dynamic_au_rcnn_train_chain import DynamicAU_RCNN_ROI_Extractor
+
+from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import LabelDependencyRNNLayer
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_conv_lstm import SpaceTimeConv
 
 try:
@@ -141,6 +140,7 @@ def main():
     parser.add_argument("--fold", '-fd', type=int, default=3)
     parser.add_argument("--layers", type=int, default=1)
     parser.add_argument("--label_win_size", type=int, default=3)
+    parser.add_argument("--fix", action="store_true", help="fix parameter of conv2 update when finetune")
     parser.add_argument("--x_win_size", type=int, default=1)
     parser.add_argument("--use_label_dependency", action="store_true", help="use label dependency layer after conv_lstm")
     parser.add_argument("--dynamic_backbone", action="store_true", help="use dynamic backbone: conv lstm as backbone")
@@ -180,15 +180,8 @@ def main():
     paper_report_label_idx = list(paper_report_label.keys())
     use_feature_map = (args.conv_rnn_type != ConvRNNType.conv_rcnn)
     use_au_rcnn_loss = (args.conv_rnn_type == ConvRNNType.conv_rcnn)
-    if args.dynamic_backbone:
-        au_rcnn = Dynamic_AU_RCNN_Resnet50(database=args.database,
-                                           pretrained_model=args.pretrained_model,
-                                           min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                           mean_file=args.mean, n_class=class_num, classify_mode=use_au_rcnn_loss,
-                                           use_roi_align=args.roi_align, use_feature_map=use_feature_map)
-        au_rcnn_train_chain = DynamicAU_RCNN_ROI_Extractor(au_rcnn)
 
-    elif args.backbone == 'vgg':
+    if args.backbone == 'vgg':
         au_rcnn = AU_RCNN_VGG16(pretrained_model=args.pretrained_model,
                                     min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
                                     mean_file=args.mean,use_roi_align=args.roi_align)
@@ -199,6 +192,8 @@ def main():
                                         mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
                                     use_roi_align=args.roi_align, use_feature_map=use_feature_map)
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
+
+
     elif args.backbone == "mobilenet_v1":
         au_rcnn = AU_RCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
                                       min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
@@ -223,12 +218,8 @@ def main():
     if args.conv_rnn_type != ConvRNNType.conv_rcnn:
         label_dependency_layer = None
         if args.use_label_dependency:
-            use_space = (args.spatial_edge_mode != SpatialEdgeMode.no_edge)
-            use_temporal = (args.temporal_edge_mode != TemporalEdgeMode.no_temporal)
-            label_dependency_layer = LabelDependencyLayer(args.database, out_size=class_num, train_mode=True,
-                                                          label_win_size=args.label_win_size, x_win_size=args.x_win_size,
-                                                          label_dropout_ratio=args.ld_rnn_dropout, use_space=use_space,
-                                                          use_temporal=use_temporal)
+            label_dependency_layer = LabelDependencyRNNLayer(args.database, in_size=2048, class_num=class_num,
+                                                          train_mode=True, label_win_size=args.label_win_size)
         space_time_conv_lstm = SpaceTimeConv(label_dependency_layer, args.use_label_dependency, class_num,
                                              spatial_edge_mode=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode,
                                              conv_rnn_type=args.conv_rnn_type)
@@ -247,7 +238,7 @@ def main():
                             sample_frame=args.sample_frame, train_mode=True,
                            paper_report_label_idx=paper_report_label_idx, fetch_use_parrallel_iterator=True)
 
-    Transform = Transform3D  # FIXME
+    Transform = Transform3D
 
     train_video_data = TransformDataset(train_video_data, Transform(au_rcnn, mirror=True))
 
@@ -280,7 +271,37 @@ def main():
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
     optimizer_name = args.optimizer
+    if args.fix:
+        au_rcnn = model.au_rcnn_train_chain.au_rcnn
+        au_rcnn.extractor.conv1.W.update_rule.enabled = False
+        au_rcnn.extractor.bn1.gamma.update_rule.enabled = False
+        au_rcnn.extractor.bn1.beta.update_rule.enabled = False
+        res2_names = ["a", "b1", "b2"]
+        for res2_name in res2_names:
+            if res2_name == "a":
 
+                getattr(au_rcnn.extractor.res2, res2_name).conv1.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn1.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn1.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv2.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv3.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv4.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn2.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn2.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn3.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn3.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn4.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn4.beta.update_rule.enabled = False
+            elif res2_name.startswith("b"):
+                getattr(au_rcnn.extractor.res2, res2_name).conv1.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn1.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn1.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv2.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv3.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn2.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn2.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn3.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn3.beta.update_rule.enabled = False
 
 
 
@@ -301,7 +322,7 @@ def main():
                                                                                 args.temporal_edge_mode,
                                                                                 use_paper_key_str, roi_align_key_str,
                                                                                 label_dependency_layer_key_str,
-                                                                                 args.conv_rnn_type,args.sample_frame)
+                                                                                 args.conv_rnn_type,args.sample_frame )#, args.label_win_size)
     print(single_model_file_name)
     pretrained_optimizer_file_name = args.out + os.sep +\
                              '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}@sampleframe#{10}_optimizer.npz'.format(args.database,
@@ -310,7 +331,7 @@ def main():
                                                                                 args.temporal_edge_mode,
                                                                                 use_paper_key_str, roi_align_key_str,
                                                                                 label_dependency_layer_key_str,
-                                                                                args.conv_rnn_type, args.sample_frame)
+                                                                                args.conv_rnn_type, args.sample_frame)# args.label_win_size)
     print(pretrained_optimizer_file_name)
 
 
@@ -370,13 +391,14 @@ def main():
             trigger=(args.snapshot, 'iteration'))
 
     else:
-        snap_model_file_name = '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}sampleframe#{10}_'.format(args.database,
+        snap_model_file_name = '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}sampleframe#{10}@win#{11}_'.format(args.database,
                                                                         args.fold, args.split_idx,
                                                                         args.backbone, args.spatial_edge_mode,
                                                                         args.temporal_edge_mode,
                                                                         use_paper_key_str, roi_align_key_str,
                                                                         label_dependency_layer_key_str,
-                                                                        args.conv_rnn_type,args.sample_frame)
+                                                                        args.conv_rnn_type,args.sample_frame,
+                                                                        args.label_win_size)
 
         snap_model_file_name = snap_model_file_name+"{.updater.iteration}.npz"
 

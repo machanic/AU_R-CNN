@@ -16,7 +16,7 @@ class Wrapper(chainer.Chain):
             self.loss_head_module = loss_head_module
 
 
-    def __call__(self, images, bboxes, labels):
+    def get_roi_feature(self, images, bboxes, labels):
         if images.ndim == 4:
             assert images.shape[0] % self.T == 0
             # images shape = B, C, H, W; where B = T x original_batch_size
@@ -39,28 +39,31 @@ class Wrapper(chainer.Chain):
             # B*T*F, C, H, W => B, T, F, C, H, W
             roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], roi_feature.shape[-3],
                                               roi_feature.shape[-2], roi_feature.shape[-1])
+        return roi_feature, images, bboxes, labels
+
+    def __call__(self, images, bboxes, labels):
+        roi_feature, images, bboxes, labels = self.get_roi_feature(images, bboxes, labels)
         loss, accuracy = self.loss_head_module(roi_feature, labels)
         report_dict = {'loss': loss, "accuracy": accuracy}
         chainer.reporter.report(report_dict,
                                 self)
-
         return loss
 
-    # can only predict one frame based on previous T-1 frame feature
-    def predict(self, images, bboxes):  # all shape is (B, T, F, D), but will only predict last frame output
-        if not isinstance(images, chainer.Variable):
-            images = chainer.Variable(images)
-        with chainer.no_backprop_mode(), chainer.using_config('train', False):
-            batch, T, channel, height, width = images.shape
-            images = images.reshape(batch * T, channel, height, width)  # B*T, C, H, W
-            bboxes = bboxes.reshape(batch * T, config.BOX_NUM[self.database], 4)  # B*T, 9, 4
-            roi_feature = self.au_rcnn_train_chain.__call__(images, bboxes)  # shape = B*T, F, D
-            roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
-
-            node_out = self.loss_head_module.forward(roi_feature)  # node_out B,T,F,D
-            node_out = chainer.cuda.to_cpu(node_out.data)
-            node_out = node_out[:, -1, :, :]  # B, F, D
-            pred = (node_out > 0).astype(np.int32)
-            pred = np.bitwise_or.reduce(pred, axis=1)  # B, D
-
-        return pred  # return batch x out_size, it is last time_step frame of 2-nd axis of input xs prediction
+    # # can only predict one frame based on previous T-1 frame feature
+    # def predict(self, images, bboxes):  # all shape is (B, T, F, D), but will only predict last frame output
+    #     if not isinstance(images, chainer.Variable):
+    #         images = chainer.Variable(images)
+    #     with chainer.no_backprop_mode(), chainer.using_config('train', False):
+    #         batch, T, channel, height, width = images.shape
+    #         images = images.reshape(batch * T, channel, height, width)  # B*T, C, H, W
+    #         bboxes = bboxes.reshape(batch * T, config.BOX_NUM[self.database], 4)  # B*T, 9, 4
+    #         roi_feature = self.au_rcnn_train_chain.__call__(images, bboxes)  # shape = B*T, F, D
+    #         roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
+    #
+    #         node_out = self.loss_head_module.forward(roi_feature)  # node_out B,T,F,D
+    #         node_out = chainer.cuda.to_cpu(node_out.data)
+    #         node_out = node_out[:, -1, :, :]  # B, F, D
+    #         pred = (node_out > 0).astype(np.int32)
+    #         pred = np.bitwise_or.reduce(pred, axis=1)  # B, D
+    #
+    #     return pred  # return batch x out_size, it is last time_step frame of 2-nd axis of input xs prediction

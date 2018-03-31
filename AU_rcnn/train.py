@@ -200,7 +200,7 @@ def main():
     batch_size = args.batch_size if not args.use_lstm else 1
 
     if args.eval_mode:
-        with chainer.no_backprop_mode(), chainer.using_config('train', False):
+        with chainer.no_backprop_mode():
             test_data = AUDataset(database=args.database, fold=args.fold,
                                           split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
                                           use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)

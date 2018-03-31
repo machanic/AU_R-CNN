@@ -9,6 +9,7 @@ import functools
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn import AU_RCNN
 import config
 from chainer import initializers
+from AU_rcnn.links.model.faster_rcnn.faster_rcnn_resnet101 import FasterRCNNResnet101
 
 class AU_RCNN_Resnet101(AU_RCNN):
 
@@ -90,7 +91,8 @@ class AU_RCNN_Resnet101(AU_RCNN):
                  min_size=512, max_size=512,
                  mean_file=None, n_class=12, classify_mode=False,use_roi_align=False,use_feature_map=False
                  ):
-
+        self.n_class = n_class
+        self.mean_file = mean_file
         extractor = ResnetFeatureExtractor()
         head = ResRoIHead(
             roi_size=14, spatial_scale=1. / self.feat_stride,
@@ -109,9 +111,12 @@ class AU_RCNN_Resnet101(AU_RCNN):
         if pretrained_model == 'resnet101':  # 只会走到这一elif里
             self._copy_imagenet_pretrained_resnet101(path=self._models['resnet101']['path'])
             print("load pretrained file: {} done".format(self._models['resnet101']['path']))
-        elif pretrained_model.endswith(".npz"):
+        elif pretrained_model.endswith(".npz") and "BP4D_DISFA" in pretrained_model:
             print("loading :{} to AU R-CNN ResNet-101".format(pretrained_model))
+            self._copy_imagenet_pretrained_faster(path=pretrained_model)
+        elif pretrained_model.endswith(".npz"):
             chainer.serializers.load_npz(pretrained_model, self)
+
 
     def _copy_imagenet_pretrained_resnet101(self, path):
         pretrained_model = ResNet101Layers(pretrained_model=path)
@@ -122,6 +127,16 @@ class AU_RCNN_Resnet101(AU_RCNN):
         self.extractor.res4.copyparams(pretrained_model.res4)
         self.head.res5.copyparams(pretrained_model.res5)
 
+
+    def _copy_imagenet_pretrained_faster(self, path):
+        pretrained_model = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE), pretrained_model=path, extract_len=1000,
+                                               fix=True, mean_file=self.mean_file, use_lstm=False)
+        self.extractor.conv1.copyparams(pretrained_model.extractor.conv1)
+        self.extractor.bn1.copyparams(pretrained_model.extractor.bn1)
+        self.extractor.res2.copyparams(pretrained_model.extractor.res2)
+        self.extractor.res3.copyparams(pretrained_model.extractor.res3)
+        self.extractor.res4.copyparams(pretrained_model.extractor.res4)
+        self.head.res5.copyparams(pretrained_model.head.res5)
 
 class BottleNeckA(chainer.Chain):
 
@@ -290,6 +305,7 @@ class ResnetFeatureExtractor(chainer.Chain):
             self.res4 = Block(23, 512, 256, 1024)
 
     def __call__(self, x):
+
         h = self.bn1(self.conv1(x))
         h = F.max_pooling_2d(F.relu(h), 3, stride=2)
         h = self.res2(h)

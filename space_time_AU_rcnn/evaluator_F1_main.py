@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-
+from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 
 sys.path = sys.path[1:]
 sys.path.append("/home/machen/face_expr")
@@ -24,12 +24,12 @@ from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Ext
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import os
 from collections import OrderedDict
-from chainer.dataset import concat_examples
 import json
 from space_time_AU_rcnn.datasets.AU_video_dataset import AU_video_dataset
 import re
 import config
 import numpy as np
+from space_time_AU_rcnn.extensions.special_converter import concat_examples_not_labels
 
 class Transform3D(object):
 
@@ -88,7 +88,6 @@ def extract_mode(model_file_name):
     return return_dict
 
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', '-g', type=int, default=0,
@@ -98,8 +97,10 @@ def main():
     parser.add_argument("--memcached_host", default="127.0.0.1")
     parser.add_argument('--mean', default=config.ROOT_PATH + "BP4D/idx/mean_no_enhance.npy",
                         help='image mean .npy file')
+    parser.add_argument('--proc_num', type=int, default=3, help="multiprocess fetch data process number")
     args = parser.parse_args()
-
+    if not args.model.endswith("model.npz"):
+        return
     mode_dict = extract_mode(args.model)
     database = mode_dict["database"]
     fold = mode_dict["fold"]
@@ -114,15 +115,7 @@ def main():
     conv_rnn_type = mode_dict["conv_rnn_type"]
     use_conv_lstm = (conv_rnn_type!=ConvRNNType.conv_rcnn)
     adaptive_AU_database(database)
-    paper_report_label = OrderedDict()
-    if use_paper_num_label:
-        for AU_idx, AU in sorted(config.AU_SQUEEZE.items(), key=lambda e: int(e[0])):
-            if database == "BP4D":
-                paper_use_AU = config.paper_use_BP4D
-            elif database == "DISFA":
-                paper_use_AU = config.paper_use_DISFA
-            if AU in paper_use_AU:
-                paper_report_label[AU_idx] = AU
+    paper_report_label, class_num = squeeze_label_num_report(database, use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
     if not paper_report_label_idx:
         paper_report_label_idx = None
@@ -134,11 +127,12 @@ def main():
     for key, value in mode_dict.items():
         model_print_dict[key] = str(value)
     print("""
+        {0}
         ======================================
         INFO:
-        {}
+        {1}
         ======================================
-        """.format(json.dumps(model_print_dict, sort_keys=True, indent=8)))
+        """.format(args.model,json.dumps(model_print_dict, sort_keys=True, indent=8)))
     if backbone == 'resnet101':
         au_rcnn = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model,
                                     min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
@@ -182,21 +176,26 @@ def main():
                             fold=fold, split_name='test',
                             split_index=split_idx, mc_manager=mc_manager,
                             train_all_data=False)
+
     video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=False,
                     paper_report_label_idx=paper_report_label_idx,fetch_use_parrallel_iterator=True)
 
     video_dataset = TransformDataset(video_dataset, Transform3D(au_rcnn, mirror=False))
 
-    test_iter = SerialIterator(video_dataset, batch_size=sample_frame,
+    # test_iter = SerialIterator(video_dataset, batch_size=sample_frame,
+    #                                   repeat=False, shuffle=False, )
 
-                                      repeat=False, shuffle=False, )
+    test_iter = MultiprocessIterator(video_dataset, batch_size=sample_frame,
+                                      n_processes=args.proc_num,
+                                      repeat=False, shuffle=False, n_prefetch=10, shared_mem=314572800)
 
 
-    with chainer.no_backprop_mode(), chainer.using_config('train', False):
+
+    with chainer.no_backprop_mode():# FIXME chainer.using_config('train', False)
 
         au_evaluator = ActionUnitEvaluator(test_iter, model, args.gpu, database=database,
                                            paper_report_label=paper_report_label,
-                                           converter=lambda batch, device: concat_examples(batch, device, padding=0),
+                                           converter=lambda batch, device: concat_examples_not_labels(batch, device, padding=0),
                                            use_feature_map=use_conv_lstm, sample_frame=sample_frame)
         observation = au_evaluator.evaluate()
         print(observation)
