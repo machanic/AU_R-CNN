@@ -8,6 +8,7 @@ from space_time_AU_rcnn.model.roi_space_time_net.conv_lstm.conv_lstm_block impor
 from space_time_AU_rcnn.model.roi_space_time_net.conv_qrnn.conv_qrnn import ConvQRNN
 from space_time_AU_rcnn.model.roi_space_time_net.conv_lstm.bn_conv_lstm_block import BNConvLSTM
 
+
 class SpaceTimeConv(chainer.Chain):
 
     def __init__(self, label_dependency_layer, use_label_dependency, class_num, spatial_edge_mode: SpatialEdgeMode,
@@ -55,11 +56,13 @@ class SpaceTimeConv(chainer.Chain):
                                                          batch_first=True, bias=True, return_all_layers=False)
 
             self.box_dim = 2048
-            if spatial_edge_mode != SpatialEdgeMode.no_edge and temporal_edge_mode != TemporalEdgeMode.no_temporal:
-                self.fc = L.Linear(14 * 14 * 256 * 2, self.box_dim)
-            else:
-                self.fc = L.Linear(14 * 14 * 256, self.box_dim)
+            # default used as space rnn
+            self.fc = L.Linear(14 * 14 * 256, self.box_dim)
             self.score_fc = L.Linear(self.box_dim, class_num)
+            constant_init = chainer.initializers.Constant(fill_value=self.xp.array([0.4, 0.6]), dtype=self.xp.float32)
+            self.weight_avg_param = chainer.Parameter(initializer=constant_init,
+                                                      shape=(2,), name='weighted_sum')
+
 
 
     def forward(self, xs):
@@ -86,8 +89,11 @@ class SpaceTimeConv(chainer.Chain):
                                                           space_output.shape[3], space_output.shape[4]))
 
         if self.temporal_edge_mode!= TemporalEdgeMode.no_temporal and self.spatial_edge_mode!= SpatialEdgeMode.no_edge:
-            fusion_output = F.concat((space_output, temporal_output
-                                      ), axis=3)  # B, T, F, 2C', H, W
+            assert space_output.shape == temporal_output.shape
+            fusion_output = F.average(F.stack([space_output, temporal_output]), axis=0,
+                                      weights=self.weight_avg_param)
+                                     # weights=self.xp.array([0.4, 0.6], dtype=self.xp.float32)) FIXME
+
         elif self.spatial_edge_mode != SpatialEdgeMode.no_edge:
             fusion_output = space_output
         elif self.temporal_edge_mode != TemporalEdgeMode.no_temporal:

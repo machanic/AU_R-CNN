@@ -111,7 +111,7 @@ class AU_RCNN_Resnet101(AU_RCNN):
         if pretrained_model == 'resnet101':  # 只会走到这一elif里
             self._copy_imagenet_pretrained_resnet101(path=self._models['resnet101']['path'])
             print("load pretrained file: {} done".format(self._models['resnet101']['path']))
-        elif pretrained_model.endswith(".npz") and "BP4D_DISFA" in pretrained_model:
+        elif pretrained_model.endswith(".npz") and "snapshot" in pretrained_model:
             print("loading :{} to AU R-CNN ResNet-101".format(pretrained_model))
             self._copy_imagenet_pretrained_faster(path=pretrained_model)
         elif pretrained_model.endswith(".npz"):
