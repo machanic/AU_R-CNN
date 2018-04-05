@@ -60,8 +60,9 @@ class SpaceTimeConv(chainer.Chain):
             self.fc = L.Linear(14 * 14 * 256, self.box_dim)
             self.score_fc = L.Linear(self.box_dim, class_num)
             constant_init = chainer.initializers.Constant(fill_value=self.xp.array([0.4, 0.6]), dtype=self.xp.float32)
-            self.weight_avg_param = chainer.Parameter(initializer=constant_init,
-                                                      shape=(2,), name='weighted_sum')
+            if temporal_edge_mode != TemporalEdgeMode.no_temporal and spatial_edge_mode != SpatialEdgeMode.no_edge:
+                self.weight_avg_param = chainer.Parameter(initializer=constant_init,
+                                                     shape=(2,), name='weighted_sum')
 
 
 

@@ -1,7 +1,7 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
 import sys
-sys.path.insert(0, '/home/machen/face_expr')
+sys.path.insert(0, '/home/shaozhou/face_expr')
 
 from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import LabelDependencyRNNLayer
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_conv_lstm import SpaceTimeConv
@@ -271,37 +271,7 @@ def main():
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
     optimizer_name = args.optimizer
-    if args.fix:
-        au_rcnn = model.au_rcnn_train_chain.au_rcnn
-        au_rcnn.extractor.conv1.W.update_rule.enabled = False
-        au_rcnn.extractor.bn1.gamma.update_rule.enabled = False
-        au_rcnn.extractor.bn1.beta.update_rule.enabled = False
-        res2_names = ["a", "b1", "b2"]
-        for res2_name in res2_names:
-            if res2_name == "a":
 
-                getattr(au_rcnn.extractor.res2, res2_name).conv1.W.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn1.gamma.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn1.beta.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).conv2.W.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).conv3.W.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).conv4.W.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn2.gamma.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn2.beta.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn3.gamma.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn3.beta.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn4.gamma.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn4.beta.update_rule.enabled = False
-            elif res2_name.startswith("b"):
-                getattr(au_rcnn.extractor.res2, res2_name).conv1.W.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn1.gamma.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn1.beta.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).conv2.W.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).conv3.W.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn2.gamma.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn2.beta.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn3.gamma.update_rule.enabled = False
-                getattr(au_rcnn.extractor.res2, res2_name).bn3.beta.update_rule.enabled = False
 
 
 
@@ -347,6 +317,38 @@ def main():
         if os.path.exists(single_model_file_name):
             print("loading pretrained snapshot:{}".format(single_model_file_name))
             chainer.serializers.load_npz(single_model_file_name, model)
+
+    if args.fix:
+        au_rcnn = model.au_rcnn_train_chain.au_rcnn
+        au_rcnn.extractor.conv1.W.update_rule.enabled = False
+        au_rcnn.extractor.bn1.gamma.update_rule.enabled = False
+        au_rcnn.extractor.bn1.beta.update_rule.enabled = False
+        res2_names = ["a", "b1", "b2"]
+        for res2_name in res2_names:
+            if res2_name == "a":
+
+                getattr(au_rcnn.extractor.res2, res2_name).conv1.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn1.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn1.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv2.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv3.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv4.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn2.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn2.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn3.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn3.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn4.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn4.beta.update_rule.enabled = False
+            elif res2_name.startswith("b"):
+                getattr(au_rcnn.extractor.res2, res2_name).conv1.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn1.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn1.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv2.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).conv3.W.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn2.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn2.beta.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn3.gamma.update_rule.enabled = False
+                getattr(au_rcnn.extractor.res2, res2_name).bn3.beta.update_rule.enabled = False
 
 
     if (args.spatial_edge_mode in [SpatialEdgeMode.ld_rnn, SpatialEdgeMode.bi_ld_rnn] or args.temporal_edge_mode in \
