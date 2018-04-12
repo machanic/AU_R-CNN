@@ -147,13 +147,13 @@ def main():
 
     if use_conv_lstm:
         label_dependency_layer = None
-        if use_label_dep_rnn_layer:
-            use_space = (spatial_edge_mode != SpatialEdgeMode.no_edge)
-            use_temporal = (temporal_edge_mode != TemporalEdgeMode.no_temporal)
-            label_dependency_layer = LabelDependencyLayer(database, out_size=class_num, train_mode=False,
-                                                          label_win_size=2, x_win_size=1,
-                                                          label_dropout_ratio=0.0, use_space=use_space,
-                                                          use_temporal=use_temporal)
+        # if use_label_dep_rnn_layer:
+        #     use_space = (spatial_edge_mode != SpatialEdgeMode.no_edge)
+        #     use_temporal = (temporal_edge_mode != TemporalEdgeMode.no_temporal)
+        #     label_dependency_layer = LabelDependencyLayer(database, out_size=class_num, train_mode=False,
+        #                                                   label_win_size=2, x_win_size=1,
+        #                                                   label_dropout_ratio=0.0, use_space=use_space,
+        #                                                   use_temporal=use_temporal)
         space_time_conv_lstm = SpaceTimeConv(label_dependency_layer, use_label_dep_rnn_layer, class_num,
                                              spatial_edge_mode=spatial_edge_mode, temporal_edge_mode=temporal_edge_mode,
                                              conv_rnn_type=conv_rnn_type)
@@ -173,21 +173,21 @@ def main():
 
     mc_manager = PyLibmcManager(args.memcached_host)
     img_dataset = AUDataset(database=database,
-                            fold=fold, split_name='test',
+                            fold=fold, split_name='trainval',
                             split_index=split_idx, mc_manager=mc_manager,
                             train_all_data=False)
 
-    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=False,
+    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=True,
                     paper_report_label_idx=paper_report_label_idx,fetch_use_parrallel_iterator=True)
 
     video_dataset = TransformDataset(video_dataset, Transform3D(au_rcnn, mirror=False))
 
-    # test_iter = SerialIterator(video_dataset, batch_size=sample_frame,
-    #                                   repeat=False, shuffle=False, )
+    test_iter = SerialIterator(video_dataset, batch_size=sample_frame,
+                                      repeat=False, shuffle=False, )
 
-    test_iter = MultiprocessIterator(video_dataset, batch_size=sample_frame,
-                                      n_processes=args.proc_num,
-                                      repeat=False, shuffle=False, n_prefetch=10, shared_mem=314572800)
+    # test_iter = MultiprocessIterator(video_dataset, batch_size=sample_frame,
+    #                                   n_processes=args.proc_num,
+    #                                   repeat=False, shuffle=False, n_prefetch=10, shared_mem=314572800)
 
 
 
