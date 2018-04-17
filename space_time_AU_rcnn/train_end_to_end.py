@@ -1,7 +1,7 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
 import sys
-sys.path.insert(0, '/home/shaozhou/face_expr')
+sys.path.insert(0, '/home/machen/face_expr')
 
 from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import LabelDependencyRNNLayer
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_conv_lstm import SpaceTimeConv
@@ -27,6 +27,8 @@ from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_vgg import AU_RCNN_VGG16
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_mobilenet_v1 import AU_RCNN_MobilenetV1
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_rnn import SpaceTimeRNN
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_fc_lstm import SpaceTimeLSTM
+from space_time_AU_rcnn.model.roi_space_time_net.space_time_seperate_conv_lstm import SpaceTimeSepConv
+
 from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
 from space_time_AU_rcnn.datasets.AU_video_dataset import AU_video_dataset
@@ -191,7 +193,7 @@ def main():
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
                                         mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
                                     use_roi_align=args.roi_align, use_feature_map=use_feature_map,
-                                    use_feature_map_res5=(args.conv_rnn_type==ConvRNNType.fc_lstm))
+                                    use_feature_map_res5=(args.conv_rnn_type==ConvRNNType.fc_lstm or args.conv_rnn_type == ConvRNNType.sep_conv_lstm))
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
 
 
@@ -216,15 +218,21 @@ def main():
                                       label_dropout_ratio=args.ld_rnn_dropout, spatial_sequence_type=args.spatial_sequence_type)
         loss_head_module = space_time_rnn
     assert not use_au_rcnn_loss == use_feature_map
+
     if args.conv_rnn_type == ConvRNNType.conv_lstm:
         label_dependency_layer = None
         if args.use_label_dependency:
             label_dependency_layer = LabelDependencyRNNLayer(args.database, in_size=2048, class_num=class_num,
                                                           train_mode=True, label_win_size=args.label_win_size)
         space_time_conv_lstm = SpaceTimeConv(label_dependency_layer, args.use_label_dependency, class_num,
-                                             spatial_edge_mode=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode,
-                                             conv_rnn_type=args.conv_rnn_type)
+                                                spatial_edge_mode=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode,
+                                                conv_rnn_type=args.conv_rnn_type)
         loss_head_module = space_time_conv_lstm
+    elif args.conv_rnn_type == ConvRNNType.sep_conv_lstm:
+        space_time_sep_conv_lstm = SpaceTimeSepConv(database=args.database, class_num=class_num, spatial_edge_mode=args.spatial_edge_mode,
+                                                    temporal_edge_mode=args.temporal_edge_mode)
+        loss_head_module = space_time_sep_conv_lstm
+
     elif args.conv_rnn_type == ConvRNNType.fc_lstm:
         space_time_fc_lstm = SpaceTimeLSTM(class_num,
                                              spatial_edge_mode=args.spatial_edge_mode,

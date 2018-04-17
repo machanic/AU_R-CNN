@@ -24,9 +24,9 @@ class TemporalRNN(chainer.Chain):
         self.insize=  insize
         with self.init_scope():
             if use_bi_lstm:
-                self.lstm = L.NStepBiLSTM(self.n_layer, 1024, 256,initialW=initialW, dropout=0.1) #dropout = 0.0
+                self.lstm = L.NStepBiLSTM(self.n_layer, 1024, 256, dropout=0.1) #dropout = 0.0
             else:
-                self.lstm = L.NStepLSTM(self.n_layer, 1024, 512, initialW=initialW,dropout=0.1)
+                self.lstm = L.NStepLSTM(self.n_layer, 1024, 512,  dropout=0.1)
             self.fc1 = L.Linear(insize, 1024, initialW=initialW)
             self.fc2 = L.Linear(1024, 1024, initialW=initialW)
             self.fc3 = L.Linear(512, outsize, initialW=initialW)
