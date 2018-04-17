@@ -125,8 +125,8 @@ class AUDataset(chainer.dataset.DatasetMixin):
 
         except IndexError:
             # print("read image error:{}".format(read_img_path))
-            # return self.get_example(i-1)  # 不得已为之
-            raise
+            return self.get_example(i-1)  # 不得已为之
+
             # raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(read_img_path))
         # print("fetch over")
         non_AU_set = set()

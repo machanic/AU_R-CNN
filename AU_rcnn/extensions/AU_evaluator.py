@@ -42,7 +42,8 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
 
             batch = self.converter(batch, device=self.device)
             imgs, bbox, labels = batch
-
+            imgs = chainer.Variable(imgs)
+            bbox = chainer.Variable(bbox)
             if bbox.shape[1] != config.BOX_NUM[self.database]:
                 print("error box num {0} != {1}".format(bbox.shape[1], config.BOX_NUM[self.database]))
                 continue

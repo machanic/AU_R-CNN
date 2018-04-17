@@ -89,14 +89,15 @@ class AU_RCNN_Resnet101(AU_RCNN):
     def __init__(self,
                  pretrained_model=None,
                  min_size=512, max_size=512,
-                 mean_file=None, n_class=12, classify_mode=False,use_roi_align=False,use_feature_map=False
+                 mean_file=None, n_class=12, classify_mode=False,use_roi_align=False,use_feature_map=False, use_feature_map_res5=False
                  ):
         self.n_class = n_class
         self.mean_file = mean_file
         extractor = ResnetFeatureExtractor()
         head = ResRoIHead(
             roi_size=14, spatial_scale=1. / self.feat_stride,
-            n_class=n_class, classify_mode=classify_mode, use_roi_align=use_roi_align, use_feature_map=use_feature_map # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
+            n_class=n_class, classify_mode=classify_mode, use_roi_align=use_roi_align, use_feature_map=use_feature_map,
+            use_feature_map_res5=use_feature_map_res5 # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
         )
         mean_array = np.load(mean_file)
         print("loading mean_file in: {} done".format(mean_file))
@@ -226,7 +227,8 @@ class ResRoIHead(chainer.Chain):
 
     """
 
-    def __init__(self, roi_size, spatial_scale, n_class, classify_mode=False, use_roi_align=False, use_feature_map=False):
+    def __init__(self, roi_size, spatial_scale, n_class, classify_mode=False, use_roi_align=False, use_feature_map=False,
+                 use_feature_map_res5=False):
         # n_class includes the background
         super(ResRoIHead, self).__init__()
         self.use_roi_align = use_roi_align
@@ -235,6 +237,7 @@ class ResRoIHead(chainer.Chain):
         self.activation = dict()
         self.classify_mode = classify_mode
         self.use_feature_map = use_feature_map
+        self.use_feature_map_res5 = use_feature_map_res5
         with self.init_scope():
             self.res5 = Block(3, 1024, 512, 2048)
             self.score = L.Linear(2048, n_class)
@@ -275,7 +278,9 @@ class ResRoIHead(chainer.Chain):
         for key, funcs in self.functions.items():
             for func in funcs:
                 h = func(h)
-        if self.use_feature_map:
+        if self.use_feature_map_res5:
+            return h
+        elif self.use_feature_map:
             scale_16 = pool
             scale_32 = h
             mix_output = F.concat((F.resize_images(scale_32, output_shape=scale_16.shape[2:4]), scale_16), axis=1)

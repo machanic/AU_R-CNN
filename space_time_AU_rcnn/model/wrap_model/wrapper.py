@@ -39,10 +39,10 @@ class Wrapper(chainer.Chain):
             # B*T*F, C, H, W => B, T, F, C, H, W
             roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], roi_feature.shape[-3],
                                               roi_feature.shape[-2], roi_feature.shape[-1])
-        return roi_feature, images, bboxes, labels
+        return roi_feature, labels
 
     def __call__(self, images, bboxes, labels):
-        roi_feature, images, bboxes, labels = self.get_roi_feature(images, bboxes, labels)
+        roi_feature, labels = self.get_roi_feature(images, bboxes, labels)
         loss, accuracy = self.loss_head_module(roi_feature, labels)
         report_dict = {'loss': loss, "accuracy": accuracy}
         chainer.reporter.report(report_dict,

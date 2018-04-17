@@ -26,7 +26,7 @@ from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_vgg import AU_RCNN_VGG16
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_mobilenet_v1 import AU_RCNN_MobilenetV1
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_rnn import SpaceTimeRNN
-from space_time_AU_rcnn.model.roi_space_time_net.cubic_attention.space_time_cubic_attention import SpaceTimeCubicAttention
+from space_time_AU_rcnn.model.roi_space_time_net.space_time_fc_lstm import SpaceTimeLSTM
 from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
 from space_time_AU_rcnn.datasets.AU_video_dataset import AU_video_dataset
@@ -190,7 +190,8 @@ def main():
         au_rcnn = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model,
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
                                         mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
-                                    use_roi_align=args.roi_align, use_feature_map=use_feature_map)
+                                    use_roi_align=args.roi_align, use_feature_map=use_feature_map,
+                                    use_feature_map_res5=(args.conv_rnn_type==ConvRNNType.fc_lstm))
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
 
 
@@ -215,7 +216,7 @@ def main():
                                       label_dropout_ratio=args.ld_rnn_dropout, spatial_sequence_type=args.spatial_sequence_type)
         loss_head_module = space_time_rnn
     assert not use_au_rcnn_loss == use_feature_map
-    if args.conv_rnn_type != ConvRNNType.conv_rcnn:
+    if args.conv_rnn_type == ConvRNNType.conv_lstm:
         label_dependency_layer = None
         if args.use_label_dependency:
             label_dependency_layer = LabelDependencyRNNLayer(args.database, in_size=2048, class_num=class_num,
@@ -224,6 +225,11 @@ def main():
                                              spatial_edge_mode=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode,
                                              conv_rnn_type=args.conv_rnn_type)
         loss_head_module = space_time_conv_lstm
+    elif args.conv_rnn_type == ConvRNNType.fc_lstm:
+        space_time_fc_lstm = SpaceTimeLSTM(class_num,
+                                             spatial_edge_mode=args.spatial_edge_mode,
+                                             temporal_edge_mode=args.temporal_edge_mode)
+        loss_head_module = space_time_fc_lstm
 
 
 

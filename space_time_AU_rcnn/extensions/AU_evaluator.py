@@ -64,11 +64,11 @@ class ActionUnitEvaluator(Evaluator):
                 images = chainer.Variable(images.astype('f'))
                 bboxes = chainer.Variable(bboxes.astype('f'))
 
-            roi_feature, images, bboxes, labels = model.get_roi_feature(images, bboxes, labels)
+            roi_feature, labels = model.get_roi_feature(images, bboxes, labels)
             pred_labels = model.loss_head_module.predict(roi_feature)  # B, T, F, 12
-            pred_labels = pred_labels[:, -1, :, :]  # B, F, D
+            pred_labels = pred_labels[:, self.T-1, :, :]  # B, F, D
             pred_labels = np.bitwise_or.reduce(pred_labels, axis=1)  # B, class_number
-            labels = labels[:, -1, :, :]  # B, F, D
+            labels = labels[:, self.T-1, :, :]  # B, F, D
             labels = np.bitwise_or.reduce(labels, axis=1)  # B, class_number
             assert labels.shape == pred_labels.shape
             pred_labels_array.extend(pred_labels)

@@ -8,6 +8,7 @@ class ConvRNNType(Enum):
     conv_qrnn  = "conv_qrnn"
     conv_rcnn = "conv_rcnn"
     bn_conv_lstm = "bn_conv_lstm"
+    fc_lstm = "fc_lstm"
     def __str__(self):
         return self.value
 
