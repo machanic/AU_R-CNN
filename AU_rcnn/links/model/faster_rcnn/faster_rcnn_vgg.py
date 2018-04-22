@@ -130,7 +130,7 @@ class FasterRCNNVGG16(FasterRCNN):
         if pretrained_model in self._models and 'url' in self._models[pretrained_model]:
             path = download_model(self._models[pretrained_model]['url'])
             chainer.serializers.load_npz(path, self)
-        elif pretrained_model == 'imagenet':  # 只会走到这一elif里
+        elif pretrained_model == 'vgg':  # 只会走到这一elif里
             print("loading:{} imagenet pretrained model".format(self._models['imagenet']['path']))
 
             model_path = self._models['imagenet']['path']

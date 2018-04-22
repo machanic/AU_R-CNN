@@ -151,6 +151,7 @@ def main():
     parser.add_argument("--use_paper_num_label", action="store_true", help="only to use paper reported number of labels"
                                                                            " to train")
     parser.add_argument("--roi_align", action="store_true", help="whether to use roi align or roi pooling layer in CNN")
+    parser.add_argument("--debug", action="store_true", help="debug mode for 1/50 dataset")
     parser.add_argument("--sample_frame", '-sample', type=int, default=10)
     parser.add_argument("--snap_individual", action="store_true", help="whether to snapshot each individual epoch/iteration")
 
@@ -249,7 +250,7 @@ def main():
                            train_all_data=False)
 
     train_video_data = AU_video_dataset(au_image_dataset=img_dataset,
-                            sample_frame=args.sample_frame, train_mode=True,
+                            sample_frame=args.sample_frame, train_mode=True, debug_mode=args.debug,
                            paper_report_label_idx=paper_report_label_idx, fetch_use_parrallel_iterator=True)
 
     Transform = Transform3D
@@ -389,7 +390,10 @@ def main():
     @training.make_extension(trigger=(1, "epoch"))
     def reset_order(trainer):
         print("reset dataset order after one epoch")
-        trainer.updater._iterators["main"].dataset._dataset.reset_for_train_mode()
+        if args.debug:
+            trainer.updater._iterators["main"].dataset._dataset.reset_for_debug_mode()
+        else:
+            trainer.updater._iterators["main"].dataset._dataset.reset_for_train_mode()
 
     trainer = training.Trainer(
         updater, (args.epoch, 'epoch'), out=args.out)

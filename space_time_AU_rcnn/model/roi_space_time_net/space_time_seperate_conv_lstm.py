@@ -142,11 +142,9 @@ class SpaceTimeSepConv(chainer.Chain):
 
     def predict(self, roi_features):  # B, T, F, C, H, W
         with chainer.cuda.get_device_from_array(roi_features.data) as device:
-            assert (not self.use_label_dependency)
             fc_output = self.forward(roi_features)  # B, T, F, 2048
             mini_batch, seq_len, box_num, _ = fc_output.shape
-            if self.use_label_dependency:
-                return self.label_dependency_layer.predict(fc_output)
+
             fc_output = F.reshape(fc_output, shape=(-1, self.box_dim))
             fc_output = self.score_fc(fc_output)  # B * T * F, class_num
             pred = fc_output.reshape(mini_batch, seq_len, box_num, -1) # B, T, F, class_num

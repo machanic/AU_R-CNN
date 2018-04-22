@@ -3,7 +3,7 @@ import sys
 
 
 sys.path = sys.path[1:]
-sys.path.append("/home/shaozhou/face_expr")
+sys.path.append("/home1/machen/face_expr")
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 
 from chainer.iterators import MultiprocessIterator, SerialIterator
@@ -14,6 +14,7 @@ from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
 from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import LabelDependencyLayer
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_conv_lstm import SpaceTimeConv
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_fc_lstm import SpaceTimeLSTM
+from space_time_AU_rcnn.model.roi_space_time_net.space_time_seperate_conv_lstm import SpaceTimeSepConv
 from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
 from chainer.datasets import TransformDataset
@@ -140,7 +141,8 @@ def main():
                                     min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
                                     mean_file=args.mean, classify_mode=(not use_conv_lstm), n_class=class_num,
                                     use_roi_align=use_roi_align, use_feature_map=use_conv_lstm,
-                                    use_feature_map_res5=(conv_rnn_type == ConvRNNType.fc_lstm))
+                                    use_feature_map_res5=(
+                                    conv_rnn_type == ConvRNNType.fc_lstm or conv_rnn_type == ConvRNNType.sep_conv_lstm))
     elif backbone == 'resnet50':
         au_rcnn = AU_RCNN_Resnet50(pretrained_model=args.pretrained_model,min_size=config.IMG_SIZE[0],
                                    max_size=config.IMG_SIZE[1], mean_file=args.mean,classify_mode=(not use_conv_lstm),
@@ -167,7 +169,9 @@ def main():
     elif conv_rnn_type == ConvRNNType.conv_rcnn:
         au_rcnn_train_loss = AU_RCNN_TrainChainLoss()
         loss_head_module = au_rcnn_train_loss
-
+    elif conv_rnn_type == ConvRNNType.sep_conv_lstm:
+        space_time_sep_conv_lstm = SpaceTimeSepConv(database, class_num, spatial_edge_mode=spatial_edge_mode, temporal_edge_mode=temporal_edge_mode)
+        loss_head_module = space_time_sep_conv_lstm
 
     model = Wrapper(au_rcnn_train_chain, loss_head_module, database, sample_frame,
                         use_feature_map=use_conv_lstm)
@@ -183,21 +187,21 @@ def main():
                             split_index=split_idx, mc_manager=mc_manager,
                             train_all_data=False)
 
-    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=True,  #FIXME
+    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=False,  #FIXME
                     paper_report_label_idx=paper_report_label_idx,fetch_use_parrallel_iterator=True)
 
     video_dataset = TransformDataset(video_dataset, Transform3D(au_rcnn, mirror=False))
 
-    test_iter = SerialIterator(video_dataset, batch_size=sample_frame,
-                                     repeat=False, shuffle=False, )
+    # test_iter = SerialIterator(video_dataset, batch_size=sample_frame,
+    #                                  repeat=False, shuffle=False, )
 
-    # test_iter = MultiprocessIterator(video_dataset, batch_size=sample_frame,
-    #                                    n_processes=args.proc_num,
-    #                                    repeat=False, shuffle=False, n_prefetch=10, shared_mem=314572800)
+    test_iter = MultiprocessIterator(video_dataset, batch_size=sample_frame,
+                                       n_processes=args.proc_num,
+                                       repeat=False, shuffle=False, n_prefetch=10, shared_mem=314572800)
 
 
 
-    with chainer.no_backprop_mode():
+    with chainer.no_backprop_mode(), chainer.using_config('train', False):
 
         au_evaluator = ActionUnitEvaluator(test_iter, model, args.gpu, database=database,
                                            paper_report_label=paper_report_label,

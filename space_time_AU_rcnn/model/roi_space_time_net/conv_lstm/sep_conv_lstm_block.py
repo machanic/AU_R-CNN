@@ -38,29 +38,39 @@ class ConvLSTMCell(chainer.Chain):
     def __call__(self, input_tensor, cur_state):  # input_tensor and cur_state is B,F,C,H,W
         h_cur, c_cur = cur_state   # B, F, C, H, W
         mini_batch, frame_box_num, channel, height, width = input_tensor.shape
-        combined = F.concat([input_tensor, h_cur], axis=2)  # concatenate along channel axis
+        combined = F.concat([input_tensor, h_cur], axis=2)  # concatenate along channel axis. B, F, C+hidden_dim, H, W
         assert frame_box_num == self.group_num
-        combined = F.reshape(combined, shape=(mini_batch, frame_box_num * combined.shape[2], height, width))
-        conv_output = self.conv(combined)
+        combined = F.reshape(combined, shape=(mini_batch, frame_box_num * combined.shape[2], height, width))  # B, F * (C+hidden_dim), H, W
+        conv_output = self.conv(combined)  # B, F * 4 * hidden_dim, H, W
 
-        all_combined = list(F.split_axis(conv_output, self.group_num, axis=1, force_tuple=True))  # list(F) of B, C, H, W
-        h_next_list = []
-        c_next_list = []
-        for f_idx, combined_conv in enumerate(all_combined):
-            assert combined_conv.shape[1] % self.hidden_dim == 0
-            assert combined_conv.shape[1]//self.hidden_dim == 4
-            cc_i, cc_f, cc_o, cc_g = F.split_axis(combined_conv, combined_conv.shape[1]//self.hidden_dim, axis=1)
-            i = F.sigmoid(cc_i)
-            f = F.sigmoid(cc_f)
-            o = F.sigmoid(cc_o)
-            g = F.tanh(cc_g)
-            c_next = f * c_cur[:, f_idx, :, :, : ] + i * g
-            h_next = o * F.tanh(c_next)
-            h_next_list.append(h_next)
-            c_next_list.append(c_next)
-        h_next_list = F.stack(h_next_list, axis=1)  # B, F, C, H, W
-        c_next_list = F.stack(c_next_list, axis=1)  # B, F, C, H, W
-        return h_next_list, c_next_list
+        conv_output = F.reshape(conv_output, shape=(mini_batch, self.group_num, 4, self.hidden_dim,
+                                                    self.height, self.width))  # B, F, 4, hidden_dim, H, W
+        cc_i, cc_f, cc_o, cc_g = F.separate(conv_output, axis=2)   # B, F, hidden_dim, H, W
+        i = F.sigmoid(cc_i)
+        f = F.sigmoid(cc_f)
+        o = F.sigmoid(cc_o)
+        g = F.tanh(cc_g)
+        c_next = f * c_cur + i * g
+        h_next = o * F.tanh(c_next)
+        return h_next, c_next
+        # all_combined = list(F.split_axis(conv_output, self.group_num, axis=1, force_tuple=True))  # list(F) of B, C, H, W
+        # h_next_list = []
+        # c_next_list = []
+        # for f_idx, combined_conv in enumerate(all_combined):
+        #     assert combined_conv.shape[1] % self.hidden_dim == 0
+        #     assert combined_conv.shape[1]//self.hidden_dim == 4
+        #     cc_i, cc_f, cc_o, cc_g = F.split_axis(combined_conv, combined_conv.shape[1]//self.hidden_dim, axis=1)
+        #     i = F.sigmoid(cc_i)
+        #     f = F.sigmoid(cc_f)
+        #     o = F.sigmoid(cc_o)
+        #     g = F.tanh(cc_g)
+        #     c_next = f * c_cur[:, f_idx, :, :, : ] + i * g
+        #     h_next = o * F.tanh(c_next)
+        #     h_next_list.append(h_next)
+        #     c_next_list.append(c_next)
+        # h_next_list = F.stack(h_next_list, axis=1)  # B, F, C, H, W
+        # c_next_list = F.stack(c_next_list, axis=1)  # B, F, C, H, W
+        # return h_next_list, c_next_list
 
     def init_hidden(self, batch_size):
         return chainer.Variable(self.xp.zeros((batch_size, self.group_num, self.hidden_dim, self.height, self.width),

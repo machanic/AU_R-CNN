@@ -9,12 +9,12 @@ from collections_toolkit.ordered_default_dict import DefaultOrderedDict
 from img_toolkit.face_mask_cropper import FaceMaskCropper
 from space_time_AU_rcnn.constants.enum_type import TemporalEdgeMode
 from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
-
+import random
 
 class AU_video_dataset(chainer.dataset.DatasetMixin):
 
     def __init__(self, au_image_dataset:AUDataset,
-                  sample_frame=10, train_mode=True, paper_report_label_idx=None, fetch_use_parrallel_iterator=True,
+                  sample_frame=10, train_mode=True, debug_mode=False, paper_report_label_idx=None, fetch_use_parrallel_iterator=True,
                 ):
         self.AU_image_dataset = au_image_dataset
         self.sample_frame = sample_frame
@@ -35,16 +35,20 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
             self._order = None
             self.offsets = []
             self.result_data = []
-            if self.train_mode:
+            if self.train_mode and (not debug_mode):
                 self.reset_for_train_mode()
+            elif debug_mode:
+                self.reset_for_debug_mode()
             else:
                 self.reset_for_test_mode()
+
 
 
     def __len__(self):
         if self.fetch_use_parrallel_iterator:
             return len(self.result_data)
         return len(self.offsets)
+
 
 
     def reset_for_test_mode(self):
@@ -87,6 +91,52 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
             for fetch_id in fetch_idx_list:
                 self.result_data.append(self.AU_image_dataset.result_data[fetch_id])
 
+    def reset_for_debug_mode(self):
+        self.offsets.clear()
+        assert self.train_mode
+        T = self.sample_frame
+        jump_frame = random.randint(4, 7)
+        if T > 0:
+            for sequence_id, fetch_idx_lst in self.seq_dict.items():
+                for start_offset in range(jump_frame):
+                    sub_idx_list = fetch_idx_lst[start_offset::jump_frame]
+                    for i in range(0, len(sub_idx_list), T):
+                        extended_list = sub_idx_list[i: i + T]
+                        if len(extended_list) < T:
+                            last_idx = extended_list[-1]
+                            rest_list = list(filter(lambda e: e > last_idx, fetch_idx_lst))
+                            if len(rest_list) > T - len(extended_list):
+                                extended_list.extend(sorted(random.sample(rest_list, T - len(extended_list))))
+                            else:
+                                extended_list.extend(sorted(rest_list))
+                        self.offsets.append(extended_list)
+        else:
+            for sequence_id, fetch_idx_lst in self.seq_dict.items():
+                self.offsets.append(fetch_idx_lst)
+        self.offsets = random.sample(self.offsets, len(self.offsets)//50)
+        self._order = np.random.permutation(len(self.offsets))
+        previous_data_length = len(self.result_data)
+        self.result_data.clear()
+
+        for order in self._order:
+            fetch_idx_list = self.offsets[order]
+            if len(fetch_idx_list) < T:
+                rest_pad_len = T - len(fetch_idx_list)
+                fetch_idx_list = np.pad(fetch_idx_list, (0, rest_pad_len), 'edge')
+            assert len(fetch_idx_list) == T
+            for fetch_id in fetch_idx_list:
+                self.result_data.append(self.AU_image_dataset.result_data[fetch_id])
+        if previous_data_length != 0:
+            if previous_data_length < len(self.result_data):
+                assert (len(self.result_data) - previous_data_length) % T == 0
+                del self.result_data[previous_data_length - len(self.result_data):]
+            elif previous_data_length > len(self.result_data):
+                assert len(self.result_data) % T == 0
+                assert (previous_data_length - len(self.result_data)) % T == 0
+                chunks = [self.result_data[i:i + T] for i in range(0, len(self.result_data), T)]
+                while previous_data_length > len(self.result_data):
+                    self.result_data.extend(random.choice(chunks))
+            assert len(self.result_data) == previous_data_length
 
 
     def reset_for_train_mode(self):
