@@ -113,7 +113,7 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
         else:
             for sequence_id, fetch_idx_lst in self.seq_dict.items():
                 self.offsets.append(fetch_idx_lst)
-        self.offsets = random.sample(self.offsets, len(self.offsets)//50)
+        self.offsets = random.sample(self.offsets, len(self.offsets)//3)
         self._order = np.random.permutation(len(self.offsets))
         previous_data_length = len(self.result_data)
         self.result_data.clear()

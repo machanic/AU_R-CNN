@@ -232,7 +232,6 @@ class AU_RCNN(chainer.Chain):
         xp = cuda.get_array_module(imgs)
 
         with cuda.get_device_from_array(imgs) as device,\
-                chainer.using_config('train', False), \
                 chainer.function.no_backprop_mode():
             roi_scores, _, _ = self.__call__(imgs, bbox) # shape = R', class_num
             pred_label = self.fetch_labels_from_scores(xp, roi_scores.data)

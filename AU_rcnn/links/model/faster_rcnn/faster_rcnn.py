@@ -260,7 +260,7 @@ class FasterRCNN(chainer.Chain):
 
         with cuda.get_device_from_array(imgs) as device, \
                 chainer.function.no_backprop_mode():
-            roi_scores, _, _ = self.__call__(imgs, bbox) # shape = R', class_num
+            roi_scores, _, _ = self.__call__(imgs, bbox, layers=["fc"]) # shape = R', class_num
             pred_label = self.fetch_labels_from_scores(xp, roi_scores.data)
         return pred_label, roi_scores.data
 

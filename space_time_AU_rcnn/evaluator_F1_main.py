@@ -3,7 +3,7 @@ import sys
 
 
 sys.path = sys.path[1:]
-sys.path.append("/home1/machen/face_expr")
+sys.path.append("/home/machen/face_expr")
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 
 from chainer.iterators import MultiprocessIterator, SerialIterator
@@ -13,7 +13,7 @@ from space_time_AU_rcnn.extensions.AU_evaluator import ActionUnitEvaluator
 from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
 from space_time_AU_rcnn.model.roi_space_time_net.label_dependency_rnn import LabelDependencyLayer
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_conv_lstm import SpaceTimeConv
-from space_time_AU_rcnn.model.roi_space_time_net.space_time_fc_lstm import SpaceTimeLSTM
+from space_time_AU_rcnn.model.roi_space_time_net.space_time_seperate_fc_lstm import SpaceTimeSepFcLSTM
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_seperate_conv_lstm import SpaceTimeSepConv
 from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
@@ -116,7 +116,10 @@ def main():
     use_label_dep_rnn_layer = mode_dict["label_dep_rnn_layer"]
     sample_frame = mode_dict["sample_frame"]
     conv_rnn_type = mode_dict["conv_rnn_type"]
-    use_conv_lstm = (conv_rnn_type != ConvRNNType.conv_rcnn)
+    use_feature_map = (conv_rnn_type != ConvRNNType.conv_rcnn) and (conv_rnn_type != ConvRNNType.fc_lstm)
+    use_au_rcnn_loss = (conv_rnn_type == ConvRNNType.conv_rcnn)
+
+
     adaptive_AU_database(database)
     paper_report_label, class_num = squeeze_label_num_report(database, use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
@@ -139,14 +142,14 @@ def main():
     if backbone == 'resnet101':
         au_rcnn = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model,
                                     min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                    mean_file=args.mean, classify_mode=(not use_conv_lstm), n_class=class_num,
-                                    use_roi_align=use_roi_align, use_feature_map=use_conv_lstm,
+                                    mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
+                                    use_roi_align=use_roi_align, use_feature_map=use_feature_map,
                                     use_feature_map_res5=(
-                                    conv_rnn_type == ConvRNNType.fc_lstm or conv_rnn_type == ConvRNNType.sep_conv_lstm))
+                                    conv_rnn_type != ConvRNNType.fc_lstm or conv_rnn_type == ConvRNNType.sep_conv_lstm))
     elif backbone == 'resnet50':
         au_rcnn = AU_RCNN_Resnet50(pretrained_model=args.pretrained_model,min_size=config.IMG_SIZE[0],
-                                   max_size=config.IMG_SIZE[1], mean_file=args.mean,classify_mode=(not use_conv_lstm),
-                                   n_class=class_num,  use_roi_align=use_roi_align, use_feature_map=use_conv_lstm
+                                   max_size=config.IMG_SIZE[1], mean_file=args.mean,classify_mode=use_au_rcnn_loss,
+                                   n_class=class_num,  use_roi_align=use_roi_align, use_feature_map=use_feature_map
                                    )
     au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
 
@@ -164,7 +167,7 @@ def main():
                                              conv_rnn_type=conv_rnn_type)
         loss_head_module = space_time_conv_lstm
     elif conv_rnn_type == ConvRNNType.fc_lstm:
-        space_time_fc_lstm =SpaceTimeLSTM(class_num, spatial_edge_mode=spatial_edge_mode, temporal_edge_mode=temporal_edge_mode)
+        space_time_fc_lstm =SpaceTimeSepFcLSTM(database, class_num, spatial_edge_mode=spatial_edge_mode, temporal_edge_mode=temporal_edge_mode)
         loss_head_module = space_time_fc_lstm
     elif conv_rnn_type == ConvRNNType.conv_rcnn:
         au_rcnn_train_loss = AU_RCNN_TrainChainLoss()
@@ -174,7 +177,7 @@ def main():
         loss_head_module = space_time_sep_conv_lstm
 
     model = Wrapper(au_rcnn_train_chain, loss_head_module, database, sample_frame,
-                        use_feature_map=use_conv_lstm)
+                        use_feature_map=use_feature_map)
     chainer.serializers.load_npz(args.model, model)
     print("loading {}".format(args.model))
     if args.gpu >= 0:
@@ -201,14 +204,14 @@ def main():
 
 
 
-    with chainer.no_backprop_mode(), chainer.using_config('train', False):
-
+    with chainer.no_backprop_mode(),chainer.using_config('cudnn_deterministic',True), chainer.using_config("train",False):
+        npz_path = os.path.dirname(args.model) + os.sep + "pred_" + os.path.basename(args.model)[:os.path.basename(args.model).rindex("_")] + ".npz"
+        print("npz_path: {}".format(npz_path))
         au_evaluator = ActionUnitEvaluator(test_iter, model, args.gpu, database=database,
                                            paper_report_label=paper_report_label,
                                            converter=lambda batch, device: concat_examples_not_labels(batch, device, padding=0),
-                                           use_feature_map=use_conv_lstm, sample_frame=sample_frame)
+                                           sample_frame=sample_frame, output_path=npz_path)
         observation = au_evaluator.evaluate()
-        print(observation)
         with open(os.path.dirname(args.model) + os.sep + "evaluation_result_{0}.json".format(os.path.basename(args.model)\
                                                                             [:os.path.basename(args.model).rindex("_")]
                                                            ), "w") as file_obj:

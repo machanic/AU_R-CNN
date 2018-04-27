@@ -26,9 +26,9 @@ from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_vgg import AU_RCNN_VGG16
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_mobilenet_v1 import AU_RCNN_MobilenetV1
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_rnn import SpaceTimeRNN
-from space_time_AU_rcnn.model.roi_space_time_net.space_time_fc_lstm import SpaceTimeLSTM
+from space_time_AU_rcnn.model.roi_space_time_net.space_time_seperate_fc_lstm import SpaceTimeSepFcLSTM
 from space_time_AU_rcnn.model.roi_space_time_net.space_time_seperate_conv_lstm import SpaceTimeSepConv
-
+from space_time_AU_rcnn.extensions.special_converter import concat_examples_not_labels
 from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
 from space_time_AU_rcnn.datasets.AU_video_dataset import AU_video_dataset
@@ -40,7 +40,7 @@ import config
 from chainer.iterators import MultiprocessIterator, SerialIterator
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 from space_time_AU_rcnn.updater.partial_parallel_updater import PartialParallelUpdater
-
+from space_time_AU_rcnn.extensions.validate_set_evaluator import ValidateDataEvaluator
 # new feature support:
 # 1. 支持resnet101/resnet50/VGG的模块切换; 3.支持多GPU切换
 # 5.支持是否进行validate（每制定epoch的时候）
@@ -181,7 +181,7 @@ def main():
 
     paper_report_label, class_num = squeeze_label_num_report(args.database, args.use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
-    use_feature_map = (args.conv_rnn_type != ConvRNNType.conv_rcnn)
+    use_feature_map = (args.conv_rnn_type != ConvRNNType.conv_rcnn) and (args.conv_rnn_type != ConvRNNType.fc_lstm)
     use_au_rcnn_loss = (args.conv_rnn_type == ConvRNNType.conv_rcnn)
 
     if args.backbone == 'vgg':
@@ -194,7 +194,7 @@ def main():
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
                                         mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
                                     use_roi_align=args.roi_align, use_feature_map=use_feature_map,
-                                    use_feature_map_res5=(args.conv_rnn_type==ConvRNNType.fc_lstm or args.conv_rnn_type == ConvRNNType.sep_conv_lstm))
+                                    use_feature_map_res5=(args.conv_rnn_type!=ConvRNNType.fc_lstm or args.conv_rnn_type == ConvRNNType.sep_conv_lstm))
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
 
 
@@ -207,8 +207,6 @@ def main():
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
 
 
-
-
     if use_au_rcnn_loss:
         au_rcnn_train_loss = AU_RCNN_TrainChainLoss()
         loss_head_module = au_rcnn_train_loss
@@ -218,7 +216,6 @@ def main():
                                       train_mode=True, label_win_size=args.label_win_size, x_win_size=args.x_win_size,
                                       label_dropout_ratio=args.ld_rnn_dropout, spatial_sequence_type=args.spatial_sequence_type)
         loss_head_module = space_time_rnn
-    assert not use_au_rcnn_loss == use_feature_map
 
     if args.conv_rnn_type == ConvRNNType.conv_lstm:
         label_dependency_layer = None
@@ -235,7 +232,7 @@ def main():
         loss_head_module = space_time_sep_conv_lstm
 
     elif args.conv_rnn_type == ConvRNNType.fc_lstm:
-        space_time_fc_lstm = SpaceTimeLSTM(class_num,
+        space_time_fc_lstm = SpaceTimeSepFcLSTM(database=args.database, class_num=class_num,
                                              spatial_edge_mode=args.spatial_edge_mode,
                                              temporal_edge_mode=args.temporal_edge_mode)
         loss_head_module = space_time_fc_lstm
@@ -255,7 +252,7 @@ def main():
 
     Transform = Transform3D
 
-    train_video_data = TransformDataset(train_video_data, Transform(au_rcnn, mirror=True))
+    train_video_data = TransformDataset(train_video_data, Transform(au_rcnn, mirror=False))
 
     if args.proc_num == 1:
         train_iter = SerialIterator(train_video_data, batch_size * args.sample_frame, repeat=True, shuffle=False)
@@ -366,12 +363,12 @@ def main():
                 getattr(au_rcnn.extractor.res2, res2_name).bn3.beta.update_rule.enabled = False
 
 
-    if (args.spatial_edge_mode in [SpatialEdgeMode.ld_rnn, SpatialEdgeMode.bi_ld_rnn] or args.temporal_edge_mode in \
-        [TemporalEdgeMode.ld_rnn, TemporalEdgeMode.bi_ld_rnn]) or (args.conv_rnn_type != ConvRNNType.conv_rcnn):
-        updater = BPTTUpdater(train_iter, optimizer, converter=lambda batch, device: concat_examples(batch, device,
-                              padding=0), device=args.gpu[0])
+    # if (args.spatial_edge_mode in [SpatialEdgeMode.ld_rnn, SpatialEdgeMode.bi_ld_rnn] or args.temporal_edge_mode in \
+    #     [TemporalEdgeMode.ld_rnn, TemporalEdgeMode.bi_ld_rnn]) or (args.conv_rnn_type != ConvRNNType.conv_rcnn):
+    #     updater = BPTTUpdater(train_iter, optimizer, converter=lambda batch, device: concat_examples(batch, device,
+    #                           padding=0), device=args.gpu[0])
 
-    elif len(args.gpu) > 1:
+    if len(args.gpu) > 1:
         gpu_dict = {"main": args.gpu[0]} # many gpu will use
         parallel_models = {"parallel": model.au_rcnn_train_chain}
         for slave_gpu in args.gpu[1:]:

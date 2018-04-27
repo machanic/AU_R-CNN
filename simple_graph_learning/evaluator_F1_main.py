@@ -98,7 +98,7 @@ def main():
     if args.gpu >= 0:
         chainer.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu(args.gpu)
-    with chainer.no_backprop_mode(), chainer.using_config('train', False):
+    with chainer.no_backprop_mode():
         dataset = SimpleFeatureDataset(directory=args.test, database=mode_dict['database'], each_file_pic_num=200,
                                        previous_frame=80,
                                        sample_pic_count=0, paper_report_label_idx=paper_report_label_idx,

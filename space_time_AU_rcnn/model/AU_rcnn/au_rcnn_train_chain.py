@@ -106,6 +106,12 @@ class AU_RCNN_TrainChainLoss(chainer.Chain):
         self.neg_pos_ratio = 3
         super(AU_RCNN_TrainChainLoss,self).__init__()
 
+    def predict(self, roi_features):  # B, T, F, C, H, W
+        with chainer.cuda.get_device_from_array(roi_features.data) as device:
+            pred = chainer.cuda.to_cpu(roi_features.data)  # B, T, F, class_num
+            pred = (pred > 0).astype(np.int32)
+            return pred
+
     def __call__(self, roi_score, gt_roi_label):  # shape = B, T, F, D (D can be 22(label_number) or 2048)
         with chainer.cuda.get_device_from_array(roi_score.data) as device:
             roi_score = roi_score.reshape(-1, roi_score.shape[-1])
@@ -134,6 +140,7 @@ class AU_RCNN_TrainChainLoss(chainer.Chain):
                 gt_neg_index_set = set(list(zip(*gt_neg_index)))
                 gt_neg_index_set = gt_neg_index_set - set(gt_pos_index_lst)  # remove already picked
                 gt_neg_index_array = np.asarray(list(gt_neg_index_set))
+                rest_pick_count = len(gt_neg_index_array) if len(gt_neg_index_array) < rest_pick_count else rest_pick_count
                 choice_rest = np.random.choice(np.arange(len(gt_neg_index_array)), size=rest_pick_count, replace=False)
                 gt_pos_index_lst.extend(list(map(tuple, gt_neg_index_array[choice_rest].tolist())))
             # TODO need class imbalance? NO

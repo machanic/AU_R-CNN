@@ -357,7 +357,7 @@ class ReverseSrnnNet(chainer.Chain):
         if not isinstance(xs, chainer.Variable):
             xs = chainer.Variable(xs)
         xp = chainer.cuda.cupy.get_array_module(xs)
-        with chainer.no_backprop_mode(),chainer.using_config('train', False) :
+        with chainer.no_backprop_mode():
             if self.spatial_edge_mode == SpatialEdgeMode.all_edge:
                 node_out, conn_out_dict = self.forward(xs) # node_out is B,T,F,class_num
                 node_out = chainer.cuda.to_cpu(node_out.data) # B, T, F, class_num

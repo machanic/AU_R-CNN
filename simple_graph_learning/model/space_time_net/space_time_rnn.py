@@ -199,7 +199,7 @@ class SpaceTimeRNN(chainer.Chain):
         if not isinstance(xs, chainer.Variable):
             xs = chainer.Variable(xs)
         xp = chainer.cuda.cupy.get_array_module(xs)
-        with chainer.no_backprop_mode(), chainer.using_config('train', False) :
+        with chainer.no_backprop_mode():
             node_out = self.forward(xs) # node_out B,T,F,D
             node_out = chainer.cuda.to_cpu(node_out.data)
             node_out = node_out[:, -1, :, :] # B, F, D

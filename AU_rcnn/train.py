@@ -1,7 +1,7 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
 import sys
-sys.path.insert(0, '/home1/machen/face_expr')
+sys.path.insert(0, '/home/machen/face_expr')
 from AU_rcnn.links.model.faster_rcnn.faster_rcnn_mobilenet_v1 import FasterRCNN_MobilenetV1
 
 try:
@@ -152,6 +152,7 @@ def main():
     parser.add_argument("--fix", '-fix', action="store_true", help="whether to fix first few conv layers or not")
     parser.add_argument("--prefix", '-prefix', default="", help="_beta, for example 3_fold_beta")
     parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
+    parser.add_argument("--test_config", action='store_true')
     args = parser.parse_args()
     if not os.path.exists(args.pid):
         os.makedirs(args.pid)
@@ -200,28 +201,54 @@ def main():
     batch_size = args.batch_size if not args.use_lstm else 1
 
     if args.eval_mode:
-        with chainer.no_backprop_mode():
-            test_data = AUDataset(database=args.database, fold=args.fold,
-                                          split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
-                                          use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
-            test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=args.use_lstm))
-            if args.proc_num == 1:
-                test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=True)
-            else:
-                test_iter = MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
-                                                                   repeat=False, shuffle=True,
-                                                                   n_prefetch=10, shared_mem=10000000)
+        if not args.test_config:
+            with chainer.no_backprop_mode():
+                test_data = AUDataset(database=args.database, fold=args.fold,
+                                              split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
+                                              use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
+                test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=args.use_lstm))
+                if args.proc_num == 1:
+                    test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=True)
+                else:
+                    test_iter = MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
+                                                                       repeat=False, shuffle=True,
+                                                                       n_prefetch=10, shared_mem=10000000)
 
 
-            gpu = int(args.gpu) if "," not in args.gpu else int(args.gpu[:args.gpu.index(",")])
-            chainer.cuda.get_device_from_id(gpu).use()
-            faster_rcnn.to_gpu(gpu)
-            evaluator = AUEvaluator(test_iter, faster_rcnn, lambda batch, device: concat_examples(batch, device, padding=-99),
-                                    args.database,device=gpu)
-            observation = evaluator.evaluate()
-            with open(args.out + os.sep + "evaluation_result.json", "w") as file_obj:
-                file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
-                file_obj.flush()
+                gpu = int(args.gpu) if "," not in args.gpu else int(args.gpu[:args.gpu.index(",")])
+                chainer.cuda.get_device_from_id(gpu).use()
+                faster_rcnn.to_gpu(gpu)
+                evaluator = AUEvaluator(test_iter, faster_rcnn, lambda batch, device: concat_examples(batch, device, padding=-99),
+                                        args.database,device=gpu)
+                observation = evaluator.evaluate()
+                with open(args.out + os.sep + "evaluation_split_{}_result_train_mode.json".format(args.split_idx), "w") as file_obj:
+                    file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
+                    file_obj.flush()
+        else:
+            with chainer.no_backprop_mode(), chainer.using_config("train",False):
+                test_data = AUDataset(database=args.database, fold=args.fold,
+                                      split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
+                                      use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix,
+                                      pretrained_target=args.pretrained_target)
+                test_data = TransformDataset(test_data,
+                                             Transform(faster_rcnn, mirror=False, shift=False, use_lstm=args.use_lstm))
+                if args.proc_num == 1:
+                    test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=True)
+                else:
+                    test_iter = MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
+                                                     repeat=False, shuffle=True,
+                                                     n_prefetch=10, shared_mem=10000000)
+
+                gpu = int(args.gpu) if "," not in args.gpu else int(args.gpu[:args.gpu.index(",")])
+                chainer.cuda.get_device_from_id(gpu).use()
+                faster_rcnn.to_gpu(gpu)
+                evaluator = AUEvaluator(test_iter, faster_rcnn,
+                                        lambda batch, device: concat_examples(batch, device, padding=-99),
+                                        args.database, device=gpu)
+                observation = evaluator.evaluate()
+                with open(args.out + os.sep + "evaluation_split_{}_result_test_mode.json".format(args.split_idx), "w") as file_obj:
+                    file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
+                    file_obj.flush()
         return
 
 

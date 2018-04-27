@@ -117,11 +117,10 @@ def main():
                               RecurrentType[mode_dict["temporal_edge_mode"]], attn_heads=args.attn_heads, dropout=0.0,
                               use_geometry_features=mode_dict["use_geo_feature"], layers=args.layers, bi_lstm=args.bi_lstm)
     print("loading {}".format(args.model))
-    chainer.serializers.load_npz(args.model, model)
     if args.gpu >= 0:
         chainer.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu(args.gpu)
-    with chainer.no_backprop_mode(), chainer.using_config('train', False):
+    with chainer.no_backprop_mode():
         test_data = GraphDataset(directory=test_dir, attrib_size=dataset.num_attrib_type, global_dataset=dataset,
                                  need_s_rnn=True, npy_in_parent_dir=False,
                                  need_cache_factor_graph=False, get_geometry_feature=True,
