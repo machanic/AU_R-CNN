@@ -19,7 +19,7 @@ from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
 from chainer.datasets import TransformDataset
 import chainer
-from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode, ConvRNNType
+from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode, ConvRNNType, TwoStreamMode
 
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
 from space_time_AU_rcnn.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor, AU_RCNN_TrainChainLoss
@@ -100,7 +100,11 @@ def main():
     parser.add_argument("--memcached_host", default="127.0.0.1")
     parser.add_argument('--mean', default=config.ROOT_PATH + "BP4D/idx/mean_no_enhance.npy",
                         help='image mean .npy file')
-    parser.add_argument('--proc_num', type=int, default=3, help="multiprocess fetch data process number")
+    parser.add_argument('--proc_num', type=int, default=10, help="multiprocess fetch data process number")
+    parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
+                        help='spatial/ temporal/ spatial_temporal')
+    parser.add_argument('--batch', '-b', type=int, default=10,
+                        help='mini batch size')
     args = parser.parse_args()
     if not args.model.endswith("model.npz"):
         return
@@ -145,7 +149,11 @@ def main():
                                     mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
                                     use_roi_align=use_roi_align, use_feature_map=use_feature_map,
                                     use_feature_map_res5=(
-                                    conv_rnn_type != ConvRNNType.fc_lstm or conv_rnn_type == ConvRNNType.sep_conv_lstm))
+                                    conv_rnn_type != ConvRNNType.fc_lstm or conv_rnn_type == ConvRNNType.sep_conv_lstm),
+                                    use_optical_flow_input=(args.two_stream_mode == TwoStreamMode.temporal),
+                                    temporal_length=sample_frame)
+
+
     elif backbone == 'resnet50':
         au_rcnn = AU_RCNN_Resnet50(pretrained_model=args.pretrained_model,min_size=config.IMG_SIZE[0],
                                    max_size=config.IMG_SIZE[1], mean_file=args.mean,classify_mode=use_au_rcnn_loss,
@@ -177,7 +185,7 @@ def main():
         loss_head_module = space_time_sep_conv_lstm
 
     model = Wrapper(au_rcnn_train_chain, loss_head_module, database, sample_frame,
-                        use_feature_map=use_feature_map)
+                        use_feature_map=use_feature_map, two_stream_mode=args.two_stream_mode)
     chainer.serializers.load_npz(args.model, model)
     print("loading {}".format(args.model))
     if args.gpu >= 0:
@@ -190,21 +198,21 @@ def main():
                             split_index=split_idx, mc_manager=mc_manager,
                             train_all_data=False)
 
-    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=False,  #FIXME
+    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=True,  #FIXME
                     paper_report_label_idx=paper_report_label_idx,fetch_use_parrallel_iterator=True)
 
     video_dataset = TransformDataset(video_dataset, Transform3D(au_rcnn, mirror=False))
 
-    # test_iter = SerialIterator(video_dataset, batch_size=sample_frame,
-    #                                  repeat=False, shuffle=False, )
+    # test_iter = SerialIterator(video_dataset, batch_size=sample_frame * args.batch,
+    #                                  repeat=False, shuffle=False)
 
-    test_iter = MultiprocessIterator(video_dataset, batch_size=sample_frame,
+    test_iter = MultiprocessIterator(video_dataset, batch_size=sample_frame * args.batch,
                                        n_processes=args.proc_num,
-                                       repeat=False, shuffle=False, n_prefetch=10, shared_mem=314572800)
+                                       repeat=False, shuffle=False, n_prefetch=10, shared_mem=10000000)
 
 
 
-    with chainer.no_backprop_mode(),chainer.using_config('cudnn_deterministic',True), chainer.using_config("train",False):
+    with chainer.no_backprop_mode(),chainer.using_config('cudnn_deterministic',True),chainer.using_config('train',False):
         npz_path = os.path.dirname(args.model) + os.sep + "pred_" + os.path.basename(args.model)[:os.path.basename(args.model).rindex("_")] + ".npz"
         print("npz_path: {}".format(npz_path))
         au_evaluator = ActionUnitEvaluator(test_iter, model, args.gpu, database=database,

@@ -33,7 +33,8 @@ from space_time_AU_rcnn.model.wrap_model.wrapper import Wrapper
 from space_time_AU_rcnn import transforms
 from space_time_AU_rcnn.datasets.AU_video_dataset import AU_video_dataset
 from space_time_AU_rcnn.datasets.AU_dataset import AUDataset
-from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode, SpatialSequenceType,ConvRNNType
+from space_time_AU_rcnn.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode, SpatialSequenceType, ConvRNNType, \
+    TwoStreamMode
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
@@ -134,6 +135,8 @@ def main():
                         help='1:all_edge, 2:configure_edge, 3:no_edge')
     parser.add_argument('--temporal_edge_mode', type=TemporalEdgeMode, choices=list(TemporalEdgeMode),
                         help='1:rnn, 2:attention_block, 3.point-wise feed forward(no temporal)')
+    parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
+                        help='spatial/ temporal/ spatial_temporal')
     parser.add_argument('--conv_rnn_type', type=ConvRNNType, choices=list(ConvRNNType),
                         help='conv_lstm or conv_sru')
     parser.add_argument("--bi_lstm", action="store_true", help="whether to use bi-lstm as Edge/Node RNN")
@@ -157,7 +160,6 @@ def main():
 
     parser.add_argument("--proc_num", "-proc", type=int, default=1)
     parser.add_argument("--fetch_mode", type=int, default=1)
-    parser.add_argument("--au_rcnn_loss", action="store_true", help="whether to train AU R-CNN or not")
     parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
     args = parser.parse_args()
     os.makedirs(args.pid, exist_ok=True)
@@ -193,8 +195,9 @@ def main():
         au_rcnn = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model,
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
                                         mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
-                                    use_roi_align=args.roi_align, use_feature_map=use_feature_map,
-                                    use_feature_map_res5=(args.conv_rnn_type!=ConvRNNType.fc_lstm or args.conv_rnn_type == ConvRNNType.sep_conv_lstm))
+        use_roi_align=args.roi_align, use_feature_map=use_feature_map,
+        use_feature_map_res5=(args.conv_rnn_type!=ConvRNNType.fc_lstm or args.conv_rnn_type == ConvRNNType.sep_conv_lstm),
+        use_optical_flow_input=(args.two_stream_mode==TwoStreamMode.temporal), temporal_length=args.sample_frame)
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
 
 
@@ -210,14 +213,8 @@ def main():
     if use_au_rcnn_loss:
         au_rcnn_train_loss = AU_RCNN_TrainChainLoss()
         loss_head_module = au_rcnn_train_loss
-    else:
-        space_time_rnn = SpaceTimeRNN(args.database, args.layers, in_size=2048, out_size=class_num,
-                                      spatial_edge_model=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode,
-                                      train_mode=True, label_win_size=args.label_win_size, x_win_size=args.x_win_size,
-                                      label_dropout_ratio=args.ld_rnn_dropout, spatial_sequence_type=args.spatial_sequence_type)
-        loss_head_module = space_time_rnn
 
-    if args.conv_rnn_type == ConvRNNType.conv_lstm:
+    elif args.conv_rnn_type == ConvRNNType.conv_lstm:
         label_dependency_layer = None
         if args.use_label_dependency:
             label_dependency_layer = LabelDependencyRNNLayer(args.database, in_size=2048, class_num=class_num,
@@ -239,7 +236,8 @@ def main():
 
 
 
-    model = Wrapper(au_rcnn_train_chain, loss_head_module, args.database, args.sample_frame, use_feature_map=use_feature_map)
+    model = Wrapper(au_rcnn_train_chain, loss_head_module, args.database, args.sample_frame, use_feature_map=use_feature_map,
+                    two_stream_mode=args.two_stream_mode)
     batch_size = args.batch_size
     img_dataset = AUDataset(database=args.database,
                            fold=args.fold, split_name='trainval',
@@ -247,7 +245,8 @@ def main():
                            train_all_data=False)
 
     train_video_data = AU_video_dataset(au_image_dataset=img_dataset,
-                            sample_frame=args.sample_frame, train_mode=True, debug_mode=args.debug,
+                            sample_frame=args.sample_frame, train_mode=(args.two_stream_mode != TwoStreamMode.temporal),
+                                        debug_mode=args.debug,
                            paper_report_label_idx=paper_report_label_idx, fetch_use_parrallel_iterator=True)
 
     Transform = Transform3D
@@ -257,8 +256,9 @@ def main():
     if args.proc_num == 1:
         train_iter = SerialIterator(train_video_data, batch_size * args.sample_frame, repeat=True, shuffle=False)
     else:
-        train_iter = MultiprocessIterator(train_video_data,  batch_size=batch_size * args.sample_frame, n_processes=args.proc_num,
-                                      repeat=True, shuffle=False, n_prefetch=10,shared_mem=314572800)
+        train_iter = MultiprocessIterator(train_video_data,  batch_size=batch_size * args.sample_frame,
+                                          n_processes=args.proc_num,
+                                      repeat=True, shuffle=False, n_prefetch=10, shared_mem=10000000)
 
     if len(args.gpu) > 1:
         for gpu in args.gpu:

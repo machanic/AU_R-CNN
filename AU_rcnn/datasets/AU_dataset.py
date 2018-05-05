@@ -43,8 +43,8 @@ class AUDataset(chainer.dataset.DatasetMixin):
                         AU_set = set()
                     from_img_path = img_path if from_img_path == "#" else from_img_path
 
-                    img_path = config.TRAINING_PATH[current_database_name] + os.sep + img_path  # id file 是相对路径
-                    from_img_path = config.TRAINING_PATH[current_database_name] + os.sep + from_img_path
+                    img_path = config.TRAINING_PATH[current_database_name] + os.path.sep + img_path  # id file 是相对路径
+                    from_img_path = config.TRAINING_PATH[current_database_name] + os.path.sep + from_img_path
 
                     video_id = "/".join([img_path.split("/")[-3], img_path.split("/")[-2]])
                     if video_id not in self.video_offset:
@@ -113,13 +113,17 @@ class AUDataset(chainer.dataset.DatasetMixin):
         try:
             # print("begin fetch cropped image and bbox {}".format(img_path))
             read_img_path = img_path if from_img_path == "#" else from_img_path
+            rgb_img_path = config.RGB_PATH[self.database] + os.path.sep + os.path.sep.join(read_img_path.split("/")[-3:])
+
+
+
             img_id = "/".join((read_img_path.split("/")[-3], read_img_path.split("/")[-2],
                                read_img_path.split("/")[-1][:read_img_path.split("/")[-1].index(".")]))
             key_prefix = self.database+"|"
             if self.pretrained_target is not None and len(self.pretrained_target) > 0:
                 key_prefix = self.pretrained_target+"|"
 
-            cropped_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(read_img_path,
+            cropped_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(read_img_path, rgb_img_path,
                                                                                channel_first=True,
                                                                                mc_manager=self.mc_manager, key_prefix=key_prefix)
 

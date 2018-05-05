@@ -106,7 +106,7 @@ class AU_RCNN_TrainChainLoss(chainer.Chain):
         self.neg_pos_ratio = 3
         super(AU_RCNN_TrainChainLoss,self).__init__()
 
-    def predict(self, roi_features):  # B, T, F, C, H, W
+    def predict(self, roi_features):  # B, T, F, 12
         with chainer.cuda.get_device_from_array(roi_features.data) as device:
             pred = chainer.cuda.to_cpu(roi_features.data)  # B, T, F, class_num
             pred = (pred > 0).astype(np.int32)

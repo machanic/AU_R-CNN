@@ -3,13 +3,15 @@ import numpy as np
 
 import config
 from space_time_AU_rcnn.model.dynamic_AU_rcnn.dynamic_au_rcnn_train_chain import DynamicAU_RCNN_ROI_Extractor
-
+from space_time_AU_rcnn.constants.enum_type import TwoStreamMode
 
 class Wrapper(chainer.Chain):
-    def __init__(self, au_rcnn_train_chain, loss_head_module, database, T, use_feature_map):
+    def __init__(self, au_rcnn_train_chain, loss_head_module, database, T, use_feature_map, two_stream_mode):
         self.database = database
         self.T = T
         self.use_feature_map = use_feature_map
+        self.two_stream_mode = two_stream_mode
+
         super(Wrapper, self).__init__()
         with self.init_scope():
             self.au_rcnn_train_chain = au_rcnn_train_chain
@@ -29,10 +31,22 @@ class Wrapper(chainer.Chain):
         # bboxes shape = B, T, F(9 or 8), 4
         # labels shape = B, T, F(9 or 8), 12
         batch, T, channel, height, width = images.shape
-        if not isinstance(self.au_rcnn_train_chain, DynamicAU_RCNN_ROI_Extractor):
+        if self.two_stream_mode == TwoStreamMode.spatial:
             images = images.reshape(batch * T, channel, height, width)  # B*T, C, H, W
             bboxes = bboxes.reshape(batch * T, config.BOX_NUM[self.database], 4)  # B*T, 9, 4
+        elif self.two_stream_mode == TwoStreamMode.temporal:
+            # optical flow will only use x and y information
+            images = images[:, :, 0:2, :, :]  # only use two channel x and y of optical flow image
+            images = images.reshape(batch, T * 2, height, width)  # B, T*2, H, W
+            bboxes = bboxes[:, -1, :, :]  # B, F(9 or 8), 4
+            labels = labels[:, -1, :, :]  # B, F(9 or 8), 12
+
+
         roi_feature = self.au_rcnn_train_chain(images, bboxes)  # shape = B*T, F, D or B*T, F, C, H, W
+        # if it use temporal network, the shape is B, F, D
+        if self.two_stream_mode == TwoStreamMode.temporal:
+            T = 1
+            labels = labels.reshape(batch, T, config.BOX_NUM[self.database], -1)
         if not self.use_feature_map:
             roi_feature = roi_feature.reshape(batch, T, config.BOX_NUM[self.database], -1)  # shape = B, T, F, D
         else:
@@ -42,7 +56,7 @@ class Wrapper(chainer.Chain):
         return roi_feature, labels
 
     def __call__(self, images, bboxes, labels):
-        roi_feature, labels = self.get_roi_feature(images, bboxes, labels)
+        roi_feature, labels = self.get_roi_feature(images, bboxes, labels)  # temporal network, output B, 1, F, D;  B, 1, F, 12
         loss, accuracy = self.loss_head_module(roi_feature, labels)
         report_dict = {'loss': loss, "accuracy": accuracy}
         chainer.reporter.report(report_dict,

@@ -86,8 +86,9 @@ class AUDataset(chainer.dataset.DatasetMixin):
             key_prefix = self.database + "|"
             if self.pretrained_target is not None and len(self.pretrained_target) > 0:
                 key_prefix = self.pretrained_target + "|"
+            rgb_img_path = config.RGB_PATH[self.database] + os.path.sep + "/".join(img_path.split("/")[-3:])
 
-            cropped_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(img_path,
+            cropped_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(img_path,rgb_img_path,
                                                                              channel_first=True,
                                                                              mc_manager=self.mc_manager,
                                                                              key_prefix=key_prefix)

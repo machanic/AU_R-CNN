@@ -89,11 +89,14 @@ class AU_RCNN_Resnet101(AU_RCNN):
     def __init__(self,
                  pretrained_model=None,
                  min_size=512, max_size=512,
-                 mean_file=None, n_class=12, classify_mode=False,use_roi_align=False,use_feature_map=False, use_feature_map_res5=False
+                 mean_file=None, n_class=12, classify_mode=False,use_roi_align=False,use_feature_map=False, use_feature_map_res5=False,
+                 use_optical_flow_input=False, temporal_length=10
                  ):
         self.n_class = n_class
         self.mean_file = mean_file
-        extractor = ResnetFeatureExtractor()
+        self.temporal_length = temporal_length
+        self.use_optical_flow_input = use_optical_flow_input
+        extractor = ResnetFeatureExtractor(use_optical_flow_input, temporal_length)
         head = ResRoIHead(
             roi_size=14, spatial_scale=1. / self.feat_stride,
             n_class=n_class, classify_mode=classify_mode, use_roi_align=use_roi_align, use_feature_map=use_feature_map,
@@ -120,7 +123,14 @@ class AU_RCNN_Resnet101(AU_RCNN):
 
     def _copy_imagenet_pretrained_resnet101(self, path):
         pretrained_model = ResNet101Layers(pretrained_model=path)
-        self.extractor.conv1.copyparams(pretrained_model.conv1)
+        # pretrained_model.conv1 is shape of (64, 3, 7, 7)
+        if self.use_optical_flow_input:
+            average_conv1_W = np.mean(pretrained_model.conv1.W.data, axis=1, dtype=np.float32, keepdims=True)
+            average_conv1_W = np.tile(average_conv1_W, reps=(1,2 * self.temporal_length, 1,1))
+            self.extractor.conv1.W.copydata(average_conv1_W)
+        else:
+            self.extractor.conv1.copyparams(pretrained_model.conv1)
+
         self.extractor.bn1.copyparams(pretrained_model.bn1)
         self.extractor.res2.copyparams(pretrained_model.res2)
         self.extractor.res3.copyparams(pretrained_model.res3)
@@ -131,7 +141,14 @@ class AU_RCNN_Resnet101(AU_RCNN):
     def _copy_imagenet_pretrained_faster(self, path):
         pretrained_model = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE), pretrained_model=path, extract_len=1000,
                                                fix=True, mean_file=self.mean_file, use_lstm=False)
-        self.extractor.conv1.copyparams(pretrained_model.extractor.conv1)
+
+        if self.use_optical_flow_input:
+            average_conv1_W = np.mean(pretrained_model.extractor.conv1.W.data, axis=1, dtype=np.float32, keepdims=True)
+            average_conv1_W = np.tile(average_conv1_W, reps=(1,2 * self.temporal_length, 1,1))
+            self.extractor.conv1.W.copydata(average_conv1_W)
+        else:
+            self.extractor.conv1.copyparams(pretrained_model.extractor.conv1)
+
         self.extractor.bn1.copyparams(pretrained_model.extractor.bn1)
         self.extractor.res2.copyparams(pretrained_model.extractor.res2)
         self.extractor.res3.copyparams(pretrained_model.extractor.res3)
@@ -299,10 +316,13 @@ class ResnetFeatureExtractor(chainer.Chain):
 
     """
 
-    def __init__(self):
+    def __init__(self, use_optical_flow=False, temporal_length=10):
         super(ResnetFeatureExtractor, self).__init__()
         with self.init_scope():
-            self.conv1 = L.Convolution2D(3, 64, 7, 2, 3, initialW=initializers.HeNormal(), nobias=True)
+            if use_optical_flow:
+                self.conv1 = L.Convolution2D(2 * temporal_length, 64, 7, 2, 3, initialW=initializers.HeNormal(), nobias=True)
+            else:
+                self.conv1 = L.Convolution2D(3, 64, 7, 2, 3, initialW=initializers.HeNormal(), nobias=True)
             self.bn1 = L.BatchNormalization(64)
             self.res2 = Block(3, 64, 64, 256, 1)
             self.res3 = Block(4, 256, 128, 512)

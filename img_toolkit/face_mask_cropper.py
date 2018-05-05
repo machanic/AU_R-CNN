@@ -60,12 +60,12 @@ class FaceMaskCropper(object):
         return (y_max - y_min) * (x_max - x_min)
 
     @staticmethod
-    def get_cropface_and_box(orig_img_path, channel_first=True, mc_manager=None, key_prefix=""):
-        key = key_prefix+ "/".join((orig_img_path.split("/")[-3], orig_img_path.split("/")[-2],orig_img_path.split("/")[-1]))
+    def get_cropface_and_box(orig_img_path, rgb_img_path, channel_first=True, mc_manager=None, key_prefix=""):
+        key = key_prefix+ "/".join((rgb_img_path.split("/")[-3], rgb_img_path.split("/")[-2],rgb_img_path.split("/")[-1]))
         if mc_manager is not None:
             try:
                 if key in mc_manager:
-                    orig_img = cv2.imread(orig_img_path, cv2.IMREAD_COLOR)
+                    orig_img = cv2.imread(orig_img_path, cv2.IMREAD_COLOR) # may be optical flow
                     result = mc_manager.get(key)
                     if "crop_rect" in result:
                         crop_rect = result["crop_rect"]
@@ -82,7 +82,10 @@ class FaceMaskCropper(object):
             except Exception:
                 pass
         orig_img = cv2.imread(orig_img_path, cv2.IMREAD_COLOR)
-        landmark_dict, _, _ = FaceMaskCropper.landmark.landmark(orig_img, need_txt_img=False)
+        rgb_img = orig_img
+        if rgb_img_path != orig_img_path:
+            rgb_img = cv2.imread(rgb_img_path, cv2.IMREAD_COLOR)
+        landmark_dict, _, _ = FaceMaskCropper.landmark.landmark(rgb_img, need_txt_img=False)
         new_face, rect = FaceMaskCropper.dlib_face_crop(orig_img, landmark_dict)
         new_face = cv2.resize(new_face, config.IMG_SIZE)
 

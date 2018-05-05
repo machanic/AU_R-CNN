@@ -56,7 +56,8 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
         self.offsets.clear()
         self.result_data.clear()
         T = self.sample_frame
-        jump_frame = 7 #FIXME
+        # jump_frame = random.randint(2, 5) #FIXME
+        jump_frame = 2
         # if temporal_edge_mode == TemporalEdgeMode.no_temporal:
         #     for sequence_id, fetch_idx_lst in self.seq_dict.items():
         #         for i in range(0, len(fetch_idx_lst), T):

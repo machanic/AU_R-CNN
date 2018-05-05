@@ -13,6 +13,16 @@ class ConvRNNType(Enum):
     def __str__(self):
         return self.value
 
+
+
+class TwoStreamMode(Enum):
+    spatial_temporal = "spatial_temporal"
+    spatial = "spatial"
+    temporal = "temporal"
+    def __str__(self):
+        return self.value
+
+
 class TemporalEdgeMode(Enum):
     rnn = 'rnn'
     ld_rnn = 'ld_rnn'
