@@ -17,7 +17,7 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
     default_name = "AU_RCNN_validation"
     priority = chainer.training.PRIORITY_WRITER
 
-    def __init__(self, iterator, target, concat_example_func, database, device):
+    def __init__(self, iterator, target, concat_example_func, database, output_dir, device):
         super(AUEvaluator, self).__init__(iterator, target, converter=concat_example_func,device=device)
         self.paper_use_AU = []
         if database == "BP4D":
@@ -27,6 +27,7 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
         elif database == "BP4D_DISFA":
             self.paper_use_AU = set(config.paper_use_BP4D + config.paper_use_DISFA)
         self.database = database
+        self.output_dir = output_dir
 
     def evaluate(self):
         iterator = self._iterators['main']
@@ -37,7 +38,12 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
 
         all_gt_label = []
         all_pred_label = []
+        output_pred_csv_file = open(self.output_dir + "/" + "output_eval_result.csv", "w")
+        output_gt_csv_file = open(self.output_dir + "/" + "output_gt_result.csv", "w")
+        use_idx = sorted(
+            filter(lambda idx: config.AU_SQUEEZE[idx] in self.paper_use_AU, list(config.AU_SQUEEZE.keys())))
 
+        print(list(config.AU_SQUEEZE[idx] for idx in use_idx))
         for idx, batch in enumerate(it):
 
             batch = self.converter(batch, device=self.device)
@@ -48,12 +54,21 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
                 print("error box num {0} != {1}".format(bbox.shape[1], config.BOX_NUM[self.database]))
                 continue
             preds, _ = target.predict(imgs, bbox)  # R', class_num
-            preds = preds.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B, N, Y
-            preds = chainer.cuda.to_cpu(preds)
-            labels = chainer.cuda.to_cpu(labels)
+            preds = preds.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B, F, Y
+
+            preds = chainer.cuda.to_cpu(preds) # B, F, Y, where B always = 1
+            labels = chainer.cuda.to_cpu(labels)  # B, F, Y
             preds = np.bitwise_or.reduce(preds, axis=1)  # shape = B, Y
             gt_labels = np.bitwise_or.reduce(labels, axis=1) # shape = B, Y
 
+
+
+
+            out_str = ",".join(map(str, preds[0][use_idx])) + "\n"
+            output_pred_csv_file.write(out_str)
+
+            gt_out_str = ",".join(map(str, gt_labels[0][use_idx])) + "\n"
+            output_gt_csv_file.write(gt_out_str)
 
             all_gt_index = set()
             pos_pred = np.nonzero(preds)
@@ -65,6 +80,10 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
                 print("batch idx:{0} current batch accuracy is :{1}".format(idx, accuracy))
             all_gt_label.extend(gt_labels)
             all_pred_label.extend(preds)
+        output_gt_csv_file.flush()
+        output_gt_csv_file.close()
+        output_pred_csv_file.flush()
+        output_pred_csv_file.close()
         all_gt_label = np.asarray(all_gt_label)  # shape = (N, len(AU_SQUEEZE))
         all_pred_label = np.asarray(all_pred_label)  # shape = (N, len(AU_SQUEEZE))
         AU_gt_label = np.transpose(all_gt_label)  # shape = (len(AU_SQUEEZE), N)

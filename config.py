@@ -24,8 +24,8 @@ RGB_PATH = {
 
 TRAINING_PATH = {
     # "BP4D": ROOT_PATH + "/BP4D/BP4D-training/",
-    "BP4D": ROOT_PATH + "/BP4D/optical_flow",
-    "DISFA": ROOT_PATH + "DISFA/optical_flow",
+    "BP4D": ROOT_PATH + "/BP4D/BP4D-training",
+    "DISFA": ROOT_PATH + "DISFA/BP4D-training",
 }
 
 CROP_DATA_PATH = {
@@ -40,65 +40,30 @@ ENHANCE_BALANCE_PATH = {
     "BP4D": ROOT_PATH + "/BP4D/BP4D_enhance_balance/"
 }
 
+ANCHOR_SIZE = [30, 40, 65, 70, 120, 140, 180]
 
-'''
-READER_CREATER's key must equally match DATA_PATH's key
-'''
-READER_CREATER = {
-    "ck+": "CKPlusDataReader",
-    "fer2013" : "Fer2013DataReader",
-    "CASME2" : "CASME2DataReader",
-    "BP4D" : "BP4DDataReader",
+AU_GROUP_TOWER_INDEX = {
+    0: [2],
+    1: [3],
+    2: [4],
+    3: [4],
+    4: [1, 5, 6],
+    5: [1],
+    6: [1],
+    7: [0, 1]
 }
-READ_COLOR_TYPE = {
-    "CASME2" : cv2.IMREAD_COLOR,
-    "BP4D" : cv2.IMREAD_COLOR,
-}
-AU_LABEL_BP4D = {
-    0: 0,
-    1: 1,
-    9: "unlabeled",
-}
-AU_INTENSITY_BP4D = { i:i for i in range(0, 9)}
-AU_INTENSITY_BP4D.update({9: "unlabeled"})
+MAX_SEGMENTS_PER_TIMELINE = 100
 
-EMOTION_LABEL_CK = {
-    0: "neutral",
-    1: "anger",
-    2: "contempt",
-    3: "disgust",
-    4: "fear",
-    5: "happiness",
-    6: "sadness",
-    7: "surprise",
-}
+ANCHOR_STRIDE = 1  # 根据time axis卷积再定
 
-EMOTION_LABEL_CASME2 = {
-    "happiness": 0,
-    "disgust": 1,
-    "repression": 2,
-    "surprise": 3,
-    "fear": 4,
-    "sadness": 5,
-    "others": 6
-}
-KMEANS_CLUSTER_NUM = 3
-
-NUM_CLASSES = {
-    "CASME2": 7,
-    "mnist": 10,
-}
 
 IMG_SIZE = (512, 512)  # width, height, cv2.resize will use this
-CHANNEL = 3
-MEAN_VALUE = 128
-TRN_TEST_FOLD = 5
+
 
 CV_PRETRAIN_MODEL = ROOT_PATH + "/landmark_model"
 DLIB_LANDMARK_PRETRAIN = CV_PRETRAIN_MODEL + os.sep + "shape_predictor_68_face_landmarks.dat"
 
 
-DEBUG = True
 
 BACKEND = "lmdb"
 BACKEND_DIR = "CAFFE_IN"

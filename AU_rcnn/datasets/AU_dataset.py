@@ -96,6 +96,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
                 label.append(AU_bin)
                 AU_couple_lst.append(au_couple_tuple)
 
+
     def get_example(self, i):
         '''
         Returns a color image and bounding boxes. The image is in CHW format.
@@ -128,8 +129,9 @@ class AUDataset(chainer.dataset.DatasetMixin):
                                                                                mc_manager=self.mc_manager, key_prefix=key_prefix)
 
         except IndexError:
-            # print("read image error:{}".format(read_img_path))
-            return self.get_example(i-1)  # 不得已为之
+            print("crop image error:{}".format(read_img_path))
+            raise
+            #return self.get_example(i-1)  # 不得已为之
 
             # raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(read_img_path))
         # print("fetch over")

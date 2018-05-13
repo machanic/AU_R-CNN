@@ -109,13 +109,16 @@ class FasterRCNN(chainer.Chain):
     def reset_state(self):
         self.head.reset_state()
 
+
+
+
     def extract(self, image, bbox, layer='res5'): # image shape is C,H,W, bboxes is R,4 where R is box number inside one image
         _, H, W = image.shape
         x = self.prepare(image)
         _, o_H, o_W = x.shape
         bbox = transforms.resize_bbox(bbox, (H, W), (o_H, o_W))
         assert len(np.where(bbox < 0)[0]) == 0
-        x = chainer.Variable(self.xp.asarray([x]))  # shape = (1,C,H,W)
+        x = chainer.Variable(self.xp.asarray([x]))  # shape = (1,C,H,W)  # look https://github.com/chainer/chainer/issues/1087
         bbox = chainer.Variable(self.xp.asarray([bbox])) # shape = (1, box_num, 4)
         roi_scores, rois, roi_indices = self.__call__(x, bbox, layers=[layer])
         feature = self.extract_dict[layer]  # shape = R' x 2048 where R' is number bbox
@@ -123,16 +126,18 @@ class FasterRCNN(chainer.Chain):
         return feature
 
     def extract_batch(self, images, bboxes, layer='res5'):  # images = batch x C x H x W
-        x = []
+        xs = []
         for image in images:
-            x.append(self.prepare(image))
-        x = chainer.Variable(self.xp.asarray(x))
-        bboxes = chainer.Variable(self.xp.asarray(bboxes,dtype=self.xp.float32))
-        roi_scores, rois, roi_indices = self.__call__(x, bboxes, layers=[layer])
-        feature = self.extract_dict[layer]  # shape = R' x 4096 where R' is number bbox in all batch idx
-        assert feature.shape[0] == bboxes.shape[0] * bboxes.shape[1], "box_shape:{0}, feature:{1}".format(bboxes.shape, feature.shape)
-        feature = feature.reshape(bboxes.shape[0],bboxes.shape[1],-1)
+            x = self.prepare(image)
+            xs.append(x)
+        xs = np.stack(xs)
+        xs = chainer.Variable(self.xp.asarray(xs))         # shape = (B, C, H, W)
+        bboxes = chainer.Variable(self.xp.asarray(bboxes))  # shape = (B, F, 4)
+        mini_batch, frame_box_num, _ = bboxes.shape
+        roi_scores, rois, roi_indices = self.__call__(xs, bboxes, layers=[layer])
+        feature = self.extract_dict[layer]  # shape = R' x 2048 where R' is number bbox across batch
         self.extract_dict.clear()
+        feature = feature.reshape(mini_batch, frame_box_num, feature.shape[1])
         return feature
 
 

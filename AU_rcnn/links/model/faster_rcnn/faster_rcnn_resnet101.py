@@ -294,7 +294,6 @@ class ResRoIHead(chainer.Chain):
             self.spatial_scale)
         h = pool
         for key, funcs in self.functions.items():
-
             for func in funcs:
                 h = func(h)
             if key in target_layers:

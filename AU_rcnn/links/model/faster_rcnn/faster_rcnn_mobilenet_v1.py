@@ -1,5 +1,5 @@
 import numpy as np
-from space_time_AU_rcnn.model.AU_rcnn.roi_tools.roi_align_2d import roi_align_2d
+from lstm_end_to_end.model.AU_rcnn.roi_tools.roi_align_2d import roi_align_2d
 import chainer
 import chainer.functions as F
 import chainer.links as L
