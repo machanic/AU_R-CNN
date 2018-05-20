@@ -43,8 +43,8 @@ class AUDataset(chainer.dataset.DatasetMixin):
                         AU_set = set()
                     from_img_path = img_path if from_img_path == "#" else from_img_path
 
-                    img_path = config.TRAINING_PATH[current_database_name] + os.path.sep + img_path  # id file 是相对路径
-                    from_img_path = config.TRAINING_PATH[current_database_name] + os.path.sep + from_img_path
+                    img_path = config.RGB_PATH[current_database_name] + os.path.sep + img_path  # id file 是相对路径
+                    from_img_path = config.RGB_PATH[current_database_name] + os.path.sep + from_img_path
 
                     video_id = "/".join([img_path.split("/")[-3], img_path.split("/")[-2]])
                     if video_id not in self.video_offset:

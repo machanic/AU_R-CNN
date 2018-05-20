@@ -118,7 +118,9 @@ class FasterRCNNResnet101(FasterRCNN):
             use_lstm=use_lstm,
             extract_len=extract_len
         )
-        mean_array = np.load(mean_file)
+        mean_array = None
+        if mean_file is not None:
+            mean_array = np.load(mean_file)
         print("loading mean_file in: {} done".format(mean_file))
         super(FasterRCNNResnet101, self).__init__(
             extractor,

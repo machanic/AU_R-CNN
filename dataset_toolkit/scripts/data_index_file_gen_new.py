@@ -36,7 +36,7 @@ def single_AU_RCNN_BP4D_subject_id_file(idx_folder_path, kfold=None,  validation
             if not file_name.endswith(".csv"): continue
             subject_name = file_name.split("_")[0]
             sequence_name = file_name[file_name.rindex("_") + 1:file_name.rindex(".")]
-            video_dir = config.TRAINING_PATH["BP4D"] +os.sep + subject_name + os.sep + sequence_name
+            video_dir = config.RGB_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name
             first_frame_file_name = os.listdir(video_dir)[0]
             first_frame_file_name = first_frame_file_name[:first_frame_file_name.rindex(".")]
             frame_len = len(first_frame_file_name)
@@ -235,7 +235,7 @@ def gen_BP4D_subject_id_file(idx_folder_path, kfold=None, partition_path=None, v
         if not file_name.endswith(".csv"): continue
         subject_name = file_name.split("_")[0]
         sequence_name = file_name[file_name.rindex("_") + 1:file_name.rindex(".")]
-        video_dir = config.TRAINING_PATH["BP4D"] +os.sep + subject_name + os.sep + sequence_name
+        video_dir = config.RGB_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name
         first_frame_file_name = os.listdir(video_dir)[0]
         first_frame_file_name = first_frame_file_name[:first_frame_file_name.rindex(".")]
         frame_len = len(first_frame_file_name)

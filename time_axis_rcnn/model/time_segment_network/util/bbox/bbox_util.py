@@ -31,7 +31,7 @@ def decode_segment_target(src_seg, loc): # in paper fomular (2). from offset and
                 Its shape is :math:`(R, 2)`. These coordinates are used to
                 compute :math:`p_x,  p_w`.
             loc (array): An array with offsets and scales.
-                The shapes of :obj:`src_bbox` and :obj:`loc` should be same.
+                The shapes of :obj:`src_seg` and :obj:`loc` should be same.
                 This contains values :math:`t_x, t_w`.
 
         Returns:
@@ -90,15 +90,15 @@ def encode_segment_target(src_seg, dst_seg):
     segmentation. CVPR 2014.
 
     Args:
-        src_seg (array): An image coordinate array whose shape is
+        src_seg (np.array): An image coordinate array whose shape is
             :math:`(R, 2)`. :math:`R` is the number of bounding boxes.
             These coordinates are used to compute :math:`p_y, p_x, p_h, p_w`.
-        dst_seg (array): An image coordinate array whose shape is
+        dst_seg (np.array): An image coordinate array whose shape is
             :math:`(R, 2)`.
             These coordinates are used to compute :math:`g_y, g_x, g_h, g_w`.
 
     Returns:
-        array:
+        np.array:
         Bounding box offsets and scales from :obj:`src_bbox` \
         to :obj:`dst_bbox`. \
         This has shape :math:`(R, 2)`.

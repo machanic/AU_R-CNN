@@ -19,10 +19,10 @@ class ActionUnitEvaluator(Evaluator):
     default_name = 'AU_validation'
     priority = chainer.training.PRIORITY_WRITER
 
-    def __init__(self, iterator, model, device, database, paper_report_label, converter, sample_frame,
+    def __init__(self, iterator, model, device, database, paper_report_label, converter, T,
                  output_path):
         super(ActionUnitEvaluator, self).__init__(iterator, model, device=device, converter=converter)
-        self.T = sample_frame
+        self.T = T
         self.database = database
         self.paper_use_AU = []
         self.paper_report_label = paper_report_label  # original AU_idx -> original AU
@@ -61,17 +61,17 @@ class ActionUnitEvaluator(Evaluator):
         for idx, batch in enumerate(it):
             print("processing :{}".format(idx))
             batch = self.converter(batch, self.device)
-            images, bboxes, labels = batch  # images shape = B*T, C, H, W; bboxes shape = B*T, F, 4; labels shape = B*T, F, 12
-            if not isinstance(images, chainer.Variable):
-                images = chainer.Variable(images.astype('f'))
+            rgb_images, flow_images, bboxes, labels = batch  # images shape = B*T, C, H, W; bboxes shape = B*T, F, 4; labels shape = B*T, F, 12
+            if not isinstance(rgb_images, chainer.Variable):
+                rgb_images = chainer.Variable(rgb_images.astype('f'))
                 bboxes = chainer.Variable(bboxes.astype('f'))
+                flow_images = chainer.Variable(flow_images.astype('f'))
 
-            roi_feature, labels = model.get_roi_feature(images, bboxes, labels)
+            roi_feature, labels = model.get_roi_feature(rgb_images, flow_images, bboxes, labels)
             pred_labels = model.loss_head_module.predict(roi_feature)  # B, T, F, 12
             pred_labels = pred_labels[:, -1, :, :]  # B, F, D
             unreduce_pred.extend(pred_labels)  # list of F,D
             pred_labels = np.bitwise_or.reduce(pred_labels, axis=1)  # B, class_number
-            labels = labels[:, -1, :, :]  # B, F, D
             unreduce_gt.extend(labels)  # shape  = list of F,D
             labels = np.bitwise_or.reduce(labels, axis=1)  # B, class_number
             assert labels.shape == pred_labels.shape

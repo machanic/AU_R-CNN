@@ -5,8 +5,7 @@ import sys
 
 sys.path.insert(0, '/home/machen/face_expr')
 
-from lstm_end_to_end.model.roi_space_time_net.label_dependency_rnn import LabelDependencyRNNLayer
-from lstm_end_to_end.model.roi_space_time_net.space_time_conv_lstm import SpaceTimeConv
+
 
 try:
     import matplotlib
@@ -25,19 +24,16 @@ from chainer.datasets import TransformDataset
 from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor, AU_RCNN_TrainChainLoss
 from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
 from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_vgg import AU_RCNN_VGG16
-from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_mobilenet_v1 import AU_RCNN_MobilenetV1
 from two_stream_rgb_flow.model.wrap_model.wrapper import Wrapper
 from two_stream_rgb_flow import transforms
 from two_stream_rgb_flow.datasets.AU_video_dataset import AU_video_dataset
 from two_stream_rgb_flow.datasets.AU_dataset import AUDataset
-from two_stream_rgb_flow.constants.enum_type import SpatialEdgeMode, TemporalEdgeMode, SpatialSequenceType, ConvRNNType, \
-    TwoStreamMode
+from two_stream_rgb_flow.constants.enum_type import TwoStreamMode
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
 from chainer.iterators import MultiprocessIterator, SerialIterator
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
-from two_stream_rgb_flow.updater.partial_parallel_updater import PartialParallelUpdater
 
 
 # new feature support:
@@ -48,25 +44,27 @@ from two_stream_rgb_flow.updater.partial_parallel_updater import PartialParallel
 
 class Transform3D(object):
 
-    def __init__(self, au_rcnn, mirror=True):
+    def __init__(self, au_rcnn, mean_rgb_path, mean_flow_path, mirror=True):
         self.au_rcnn = au_rcnn
         self.mirror = mirror
+        self.mean_rgb = np.load(mean_rgb_path)
+        self.mean_flow = np.load(mean_flow_path)
 
     def __call__(self, in_data):
-        img, bbox, label = in_data
-        _, H, W = img.shape
-        img = self.au_rcnn.prepare(img)
-        _, o_H, o_W = img.shape
-        bbox = transforms.resize_bbox(bbox, (H, W), (o_H, o_W))
+        rgb_img, flow_img, bbox, label = in_data
+        rgb_img = self.au_rcnn.prepare(rgb_img, self.mean_rgb)
+        flow_img = self.au_rcnn.prepare(flow_img, self.mean_flow)
         assert len(np.where(bbox < 0)[0]) == 0
         # horizontally flip and random shift box
         if self.mirror:
-            img, params = transforms.random_flip(
-                img, x_random=True, return_param=True)
+            rgb_img, params = transforms.random_flip(
+                rgb_img, x_random=True, return_param=True)
+            if params['x_flip']:
+                flow_img = flow_img[:,:,::-1]
             bbox = transforms.flip_bbox(
-                bbox, (o_H, o_W), x_flip=params['x_flip'])
+                bbox, (rgb_img.shape[0], rgb_img.shape[1]), x_flip=params['x_flip'])
 
-        return img, bbox, label
+        return rgb_img, flow_img, bbox, label
 
 
 
@@ -92,7 +90,7 @@ def main():
     parser.add_argument('--pid', '-pp', default='/tmp/SpaceTime_AU_R_CNN/')
     parser.add_argument('--gpu', '-g', nargs='+', type=int, help='GPU ID, multiple GPU split by space')
     parser.add_argument('--lr', '-l', type=float, default=0.001)
-    parser.add_argument('--out', '-o', default='end_to_end_result',
+    parser.add_argument('--out', '-o', default='two_stream_out',
                         help='Output directory')
     parser.add_argument('--database',  default='BP4D',
                         help='Output directory: BP4D/DISFA/BP4D_DISFA')
@@ -100,54 +98,34 @@ def main():
     parser.add_argument('--epoch', '-e', type=int, default=20)
     parser.add_argument('--batch_size', '-bs', type=int, default=1)
     parser.add_argument('--snapshot', '-snap', type=int, default=1000)
-    parser.add_argument('--need_validate', action='store_true', help='do or not validate during training')
-    parser.add_argument('--mean', default=config.ROOT_PATH+"BP4D/idx/mean_no_enhance.npy", help='image mean .npy file')
+    parser.add_argument('--mean_rgb', default=config.ROOT_PATH+"BP4D/idx/mean_rgb.npy", help='image mean .npy file')
+    parser.add_argument('--mean_flow', default=config.ROOT_PATH+"BP4D/idx/mean_flow.npy", help='image mean .npy file')
     parser.add_argument('--backbone', default="mobilenet_v1", help="vgg/resnet101/mobilenet_v1 for train")
     parser.add_argument('--optimizer', default='SGD', help='optimizer: RMSprop/AdaGrad/Adam/SGD/AdaDelta')
     parser.add_argument('--pretrained_model_rgb', help='imagenet/mobilenet_v1/resnet101/*.npz')
-    parser.add_argument('--pretrained_model_of', help="path of optical flow pretrained model (may be single stream OF model)")
-
-    parser.add_argument('--pretrained_model_args', nargs='+', type=float, help='you can pass in "1.0 224" or "0.75 224"')
-    parser.add_argument('--spatial_edge_mode', type=SpatialEdgeMode, choices=list(SpatialEdgeMode),
-                        help='1:all_edge, 2:configure_edge, 3:no_edge')
-    parser.add_argument('--spatial_sequence_type', type=SpatialSequenceType, choices=list(SpatialSequenceType),
-                        help='1:all_edge, 2:configure_edge, 3:no_edge')
-    parser.add_argument('--temporal_edge_mode', type=TemporalEdgeMode, choices=list(TemporalEdgeMode),
-                        help='1:rnn, 2:attention_block, 3.point-wise feed forward(no temporal)')
+    parser.add_argument('--pretrained_model_flow', help="path of optical flow pretrained model (may be single stream OF model)")
     parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
-                        help='spatial/ temporal/ spatial_temporal')
-    parser.add_argument('--conv_rnn_type', type=ConvRNNType, choices=list(ConvRNNType),
-                        help='conv_lstm or conv_sru')
-    parser.add_argument("--bi_lstm", action="store_true", help="whether to use bi-lstm as Edge/Node RNN")
+                        help='rgb_flow/ optical_flow/ rgb')
     parser.add_argument('--use_memcached', action='store_true', help='whether use memcached to boost speed of fetch crop&mask') #
     parser.add_argument('--memcached_host', default='127.0.0.1')
     parser.add_argument("--fold", '-fd', type=int, default=3)
-    parser.add_argument("--layers", type=int, default=1)
-    parser.add_argument("--label_win_size", type=int, default=3)
     parser.add_argument("--fix", action="store_true", help="fix parameter of conv2 update when finetune")
-    parser.add_argument("--x_win_size", type=int, default=1)
-    parser.add_argument("--use_label_dependency", action="store_true", help="use label dependency layer after conv_lstm")
-    parser.add_argument("--dynamic_backbone", action="store_true", help="use dynamic backbone: conv lstm as backbone")
-    parser.add_argument("--ld_rnn_dropout", type=float, default=0.4)
     parser.add_argument("--split_idx",'-sp', type=int, default=1)
     parser.add_argument("--use_paper_num_label", action="store_true", help="only to use paper reported number of labels"
                                                                            " to train")
     parser.add_argument("--roi_align", action="store_true", help="whether to use roi align or roi pooling layer in CNN")
     parser.add_argument("--debug", action="store_true", help="debug mode for 1/50 dataset")
-    parser.add_argument("--sample_frame", '-sample', type=int, default=10)
-    parser.add_argument("--snap_individual", action="store_true", help="whether to snapshot each individual epoch/iteration")
-
+    parser.add_argument("--T", '-T', type=int, default=10)
     parser.add_argument("--proc_num", "-proc", type=int, default=1)
     parser.add_argument("--fetch_mode", type=int, default=1)
-    parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
     args = parser.parse_args()
     os.makedirs(args.pid, exist_ok=True)
     os.makedirs(args.out, exist_ok=True)
     pid = str(os.getpid())
     pid_file_path = args.pid + os.sep + "{0}_{1}_fold_{2}.pid".format(args.database, args.fold, args.split_idx)
-    # with open(pid_file_path, "w") as file_obj:
-    #     file_obj.write(pid)
-    #     file_obj.flush()
+    with open(pid_file_path, "w") as file_obj:
+        file_obj.write(pid)
+        file_obj.flush()
 
 
     print('GPU: {}'.format(",".join(list(map(str, args.gpu)))))
@@ -162,86 +140,53 @@ def main():
 
     paper_report_label, class_num = squeeze_label_num_report(args.database, args.use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
-    use_feature_map_res45 = (args.conv_rnn_type != ConvRNNType.conv_rcnn) and (args.conv_rnn_type != ConvRNNType.fc_lstm)
-    use_au_rcnn_loss = (args.conv_rnn_type == ConvRNNType.conv_rcnn)
+
     au_rcnn_train_chain_list = []
     if args.backbone == 'vgg':
         au_rcnn = AU_RCNN_VGG16(pretrained_model=args.pretrained_model_rgb,
                                     min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                    mean_file=args.mean,use_roi_align=args.roi_align)
+                                    use_roi_align=args.roi_align)
         au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
         au_rcnn_train_chain_list.append(au_rcnn_train_chain)
     elif args.backbone == 'resnet101':
 
-        if args.two_stream_mode != TwoStreamMode.spatial_temporal:
-            pretrained_model = args.pretrained_model_rgb if args.pretrained_model_rgb else args.pretrained_model_of
+        if args.two_stream_mode != TwoStreamMode.rgb_flow:
+            assert (args.pretrained_model_rgb == "" and args.pretrained_model_flow != "") or\
+                   (args.pretrained_model_rgb != "" and args.pretrained_model_flow == "")
+            pretrained_model = args.pretrained_model_rgb if args.pretrained_model_rgb else args.pretrained_model_flow
             au_rcnn = AU_RCNN_Resnet101(pretrained_model=pretrained_model,
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                        mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
-                                        use_roi_align=args.roi_align, use_feature_map_res45=use_feature_map_res45,
-                                        use_feature_map_res5=(args.conv_rnn_type!=ConvRNNType.fc_lstm or args.conv_rnn_type == ConvRNNType.sep_conv_lstm),
-                                        use_optical_flow_input=(args.two_stream_mode == TwoStreamMode.optical_flow), temporal_length=args.sample_frame)
+                                         classify_mode=True, n_class=class_num,
+                                        use_roi_align=args.roi_align,
+                                        use_optical_flow_input=(args.two_stream_mode == TwoStreamMode.optical_flow),
+                                        temporal_length=args.T)
             au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
             au_rcnn_train_chain_list.append(au_rcnn_train_chain)
-        else:
+        else: # rgb_flow mode
             au_rcnn_rgb = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model_rgb,
                                             min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                            mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
-                                            use_roi_align=args.roi_align, use_feature_map_res45=use_feature_map_res45,
-                                            use_feature_map_res5=(args.conv_rnn_type!=ConvRNNType.fc_lstm or args.conv_rnn_type == ConvRNNType.sep_conv_lstm),
-                                            use_optical_flow_input=False, temporal_length=args.sample_frame)
+                                             classify_mode=True, n_class=class_num,
+                                            use_roi_align=args.roi_align,
+                                            use_optical_flow_input=False, temporal_length=args.T)
 
 
-            au_rcnn_optical_flow = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model_of,
+            au_rcnn_optical_flow = AU_RCNN_Resnet101(pretrained_model=args.pretrained_model_flow,
                                                      min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                                     mean_file=args.mean, classify_mode=use_au_rcnn_loss,
+                                                      classify_mode=True,
                                                      n_class=class_num,
-                                                     use_roi_align=args.roi_align, use_feature_map_res45=use_feature_map_res45,
-                                                     use_feature_map_res5=(args.conv_rnn_type != ConvRNNType.fc_lstm or args.conv_rnn_type == ConvRNNType.sep_conv_lstm),
-                                                     use_optical_flow_input=True, temporal_length=args.sample_frame)
+                                                     use_roi_align=args.roi_align,
+                                                     use_optical_flow_input=True, temporal_length=args.T)
             au_rcnn_train_chain_rgb = AU_RCNN_ROI_Extractor(au_rcnn_rgb)
             au_rcnn_train_chain_optical_flow = AU_RCNN_ROI_Extractor(au_rcnn_optical_flow)
             au_rcnn_train_chain_list.append(au_rcnn_train_chain_rgb)
             au_rcnn_train_chain_list.append(au_rcnn_train_chain_optical_flow)
+            au_rcnn = au_rcnn_rgb
 
 
-    elif args.backbone == "mobilenet_v1":
-        au_rcnn = AU_RCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
-                                      min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                      mean_file=args.mean, classify_mode=use_au_rcnn_loss, n_class=class_num,
-                                      use_roi_align=args.roi_align
-                                      )
-        au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
+    loss_head_module = AU_RCNN_TrainChainLoss()
 
-
-    if use_au_rcnn_loss:
-        au_rcnn_train_loss = AU_RCNN_TrainChainLoss()
-        loss_head_module = au_rcnn_train_loss
-
-    elif args.conv_rnn_type == ConvRNNType.conv_lstm:
-        label_dependency_layer = None
-        if args.use_label_dependency:
-            label_dependency_layer = LabelDependencyRNNLayer(args.database, in_size=2048, class_num=class_num,
-                                                          train_mode=True, label_win_size=args.label_win_size)
-        space_time_conv_lstm = SpaceTimeConv(label_dependency_layer, args.use_label_dependency, class_num,
-                                                spatial_edge_mode=args.spatial_edge_mode, temporal_edge_mode=args.temporal_edge_mode,
-                                                conv_rnn_type=args.conv_rnn_type)
-        loss_head_module = space_time_conv_lstm
-    elif args.conv_rnn_type == ConvRNNType.sep_conv_lstm:
-        space_time_sep_conv_lstm = SpaceTimeSepConv(database=args.database, class_num=class_num, spatial_edge_mode=args.spatial_edge_mode,
-                                                    temporal_edge_mode=args.temporal_edge_mode)
-        loss_head_module = space_time_sep_conv_lstm
-
-    elif args.conv_rnn_type == ConvRNNType.fc_lstm:
-        space_time_fc_lstm = SpaceTimeSepFcLSTM(database=args.database, class_num=class_num,
-                                             spatial_edge_mode=args.spatial_edge_mode,
-                                             temporal_edge_mode=args.temporal_edge_mode)
-        loss_head_module = space_time_fc_lstm
-
-
-
-    model = Wrapper(au_rcnn_train_chain_list, loss_head_module, args.database, args.sample_frame, use_feature_map=use_feature_map_res45,
-                    two_stream_mode=args.two_stream_mode)
+    model = Wrapper(au_rcnn_train_chain_list, loss_head_module, args.database, args.T,
+                    two_stream_mode=args.two_stream_mode, gpus=args.gpu)
     batch_size = args.batch_size
     img_dataset = AUDataset(database=args.database,
                            fold=args.fold, split_name='trainval',
@@ -249,18 +194,18 @@ def main():
                            train_all_data=False)
 
     train_video_data = AU_video_dataset(au_image_dataset=img_dataset,
-                                        sample_frame=args.sample_frame, train_mode=(args.two_stream_mode != TwoStreamMode.optical_flow),
-                                        debug_mode=args.debug,
-                                        paper_report_label_idx=paper_report_label_idx, fetch_use_parrallel_iterator=True)
+                                        sample_frame=args.T, train_mode=(args.two_stream_mode != TwoStreamMode.optical_flow),
+                                        paper_report_label_idx=paper_report_label_idx)
 
     Transform = Transform3D
 
-    train_video_data = TransformDataset(train_video_data, Transform(au_rcnn, mirror=False))
+    train_video_data = TransformDataset(train_video_data, Transform(au_rcnn, mirror=False,mean_rgb_path=args.mean_rgb,
+                                                                    mean_flow_path=args.mean_flow))
 
     if args.proc_num == 1:
-        train_iter = SerialIterator(train_video_data, batch_size * args.sample_frame, repeat=True, shuffle=False)
+        train_iter = SerialIterator(train_video_data, batch_size * args.T, repeat=True, shuffle=False)
     else:
-        train_iter = MultiprocessIterator(train_video_data,  batch_size=batch_size * args.sample_frame,
+        train_iter = MultiprocessIterator(train_video_data,  batch_size=batch_size * args.T,
                                           n_processes=args.proc_num,
                                       repeat=True, shuffle=False, n_prefetch=10, shared_mem=10000000)
 
@@ -289,35 +234,28 @@ def main():
     optimizer_name = args.optimizer
 
 
-
-
-    key_str = "{0}_fold_{1}".format(args.fold, args.split_idx)
-    file_list = []
-    file_list.extend(os.listdir(args.out))
-    snapshot_model_file_name = args.out + os.sep + filter_last_checkpoint_filename(file_list, "model", key_str)
-
     # BP4D_3_fold_1_resnet101@rnn@no_temporal@use_paper_num_label@roi_align@label_dep_layer@conv_lstm@sampleframe#13_model.npz
     use_paper_key_str = "use_paper_num_label" if args.use_paper_num_label else "all_avail_label"
     roi_align_key_str = "roi_align" if args.roi_align else "roi_pooling"
-    label_dependency_layer_key_str ="label_dep_layer" if args.use_label_dependency else "no_label_dep"
 
     single_model_file_name = args.out + os.sep + \
-                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}@sampleframe#{10}_model.npz'.format(args.database,
-                                                                                args.fold, args.split_idx,
-                                                                                args.backbone, args.spatial_edge_mode,
-                                                                                args.temporal_edge_mode,
-                                                                                use_paper_key_str, roi_align_key_str,
-                                                                                label_dependency_layer_key_str,
-                                                                                 args.conv_rnn_type,args.sample_frame )#, args.label_win_size)
+                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@T#{7}_model.npz'.format(args.database,
+                                                                                                 args.fold,
+                                                                                                 args.split_idx,
+                                                                                                 args.backbone,
+                                                                                                 args.two_stream_mode,
+                                                                                                 use_paper_key_str,
+                                                                                                 roi_align_key_str,
+                                                                                                 args.T)
+
     print(single_model_file_name)
-    pretrained_optimizer_file_name = args.out + os.sep +\
-                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}@sampleframe#{10}_optimizer.npz'.format(args.database,
-                                                                                args.fold, args.split_idx,
-                                                                                args.backbone, args.spatial_edge_mode,
-                                                                                args.temporal_edge_mode,
-                                                                                use_paper_key_str, roi_align_key_str,
-                                                                                label_dependency_layer_key_str,
-                                                                                args.conv_rnn_type, args.sample_frame)# args.label_win_size)
+    pretrained_optimizer_file_name = args.out + os.sep + \
+                                     '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@T#{7}_optimizer.npz'.format(
+                                         args.database,
+                                         args.fold, args.split_idx,
+                                         args.backbone, args.two_stream_mode,
+                                         use_paper_key_str, roi_align_key_str,
+                                         args.T)
     print(pretrained_optimizer_file_name)
 
 
@@ -325,14 +263,9 @@ def main():
         print("loading optimizer snatshot:{}".format(pretrained_optimizer_file_name))
         chainer.serializers.load_npz(pretrained_optimizer_file_name, optimizer)
 
-    if args.snap_individual:
-        if os.path.exists(snapshot_model_file_name) and os.path.isfile(snapshot_model_file_name):
-            print("loading pretrained snapshot:{}".format(snapshot_model_file_name))
-            chainer.serializers.load_npz(snapshot_model_file_name, model)
-    else:
-        if os.path.exists(single_model_file_name):
-            print("loading pretrained snapshot:{}".format(single_model_file_name))
-            chainer.serializers.load_npz(single_model_file_name, model)
+    if os.path.exists(single_model_file_name):
+        print("loading pretrained snapshot:{}".format(single_model_file_name))
+        chainer.serializers.load_npz(single_model_file_name, model)
 
     if args.fix:
         au_rcnn = model.au_rcnn_train_chain.au_rcnn
@@ -372,29 +305,14 @@ def main():
     #     updater = BPTTUpdater(train_iter, optimizer, converter=lambda batch, device: concat_examples(batch, device,
     #                           padding=0), device=args.gpu[0])
 
-    if len(args.gpu) > 1:
-        gpu_dict = {"main": args.gpu[0]} # many gpu will use
-        parallel_models = {"parallel": model.au_rcnn_train_chain}
-        for slave_gpu in args.gpu[1:]:
-            gpu_dict[slave_gpu] = int(slave_gpu)
-
-        updater = PartialParallelUpdater(train_iter, optimizer, args.database, models=parallel_models,
-                                                   devices=gpu_dict,
-                                                   converter=lambda batch, device: concat_examples(batch, device,
-                                                                                                   padding=0))
-    else:
-        print("only one GPU({0}) updater".format(args.gpu[0]))
-        updater = chainer.training.StandardUpdater(train_iter, optimizer, device=args.gpu[0],
-                              converter=lambda batch, device: concat_examples(batch, device, padding=0))
+    updater = chainer.training.StandardUpdater(train_iter, optimizer, device=args.gpu[0],
+                          converter=lambda batch, device: concat_examples(batch, device, padding=0))
 
 
     @training.make_extension(trigger=(1, "epoch"))
     def reset_order(trainer):
         print("reset dataset order after one epoch")
-        if args.debug:
-            trainer.updater._iterators["main"].dataset._dataset.reset_for_debug_mode()
-        else:
-            trainer.updater._iterators["main"].dataset._dataset.reset_for_train_mode()
+        trainer.updater._iterators["main"].dataset._dataset.reset_for_train_mode()
 
     trainer = training.Trainer(
         updater, (args.epoch, 'epoch'), out=args.out)
@@ -404,34 +322,13 @@ def main():
                                                     filename=os.path.basename(pretrained_optimizer_file_name)),
         trigger=(args.snapshot, 'iteration'))
 
-    if not args.snap_individual:
-
-        trainer.extend(
-            chainer.training.extensions.snapshot_object(model,
-                                                        filename=os.path.basename(single_model_file_name)),
-            trigger=(args.snapshot, 'iteration'))
-
-    else:
-        snap_model_file_name = '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@{7}@{8}@{9}sampleframe#{10}@win#{11}_'.format(args.database,
-                                                                        args.fold, args.split_idx,
-                                                                        args.backbone, args.spatial_edge_mode,
-                                                                        args.temporal_edge_mode,
-                                                                        use_paper_key_str, roi_align_key_str,
-                                                                        label_dependency_layer_key_str,
-                                                                        args.conv_rnn_type,args.sample_frame,
-                                                                        args.label_win_size)
-
-        snap_model_file_name = snap_model_file_name+"{.updater.iteration}.npz"
-
-        trainer.extend(
-            chainer.training.extensions.snapshot_object(model,
-                                                        filename=snap_model_file_name),
-            trigger=(args.snapshot, 'iteration'))
-
-
+    trainer.extend(
+        chainer.training.extensions.snapshot_object(model,
+                                                    filename=os.path.basename(single_model_file_name)),
+        trigger=(args.snapshot, 'iteration'))
 
     log_interval = 100, 'iteration'
-    print_interval = 10, 'iteration'
+    print_interval = 100, 'iteration'
     plot_interval = 10, 'iteration'
     if args.optimizer != "Adam" and args.optimizer != "AdaDelta":
         trainer.extend(chainer.training.extensions.ExponentialShift('lr', 0.1),
@@ -441,10 +338,12 @@ def main():
     if args.optimizer != "AdaDelta":
         trainer.extend(chainer.training.extensions.observe_lr(),
                        trigger=log_interval)
-    trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,log_name="log_{0}_fold_{1}_{2}@{3}@{4}@{5}.log".format(
-                                                                                        args.fold, args.split_idx,
-                                                                                         args.backbone, args.spatial_edge_mode,
-                                                                                          args.temporal_edge_mode, args.conv_rnn_type)))
+    trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,log_name="log_{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@T#{7}.log".format(
+                                                                                args.database,
+                                                                                args.fold, args.split_idx,
+                                                                                args.backbone, args.two_stream_mode,
+                                                                                use_paper_key_str, roi_align_key_str,
+                                                                                args.T)))
     # trainer.reporter.add_observer("main_par", model.loss_head_module)
     trainer.extend(chainer.training.extensions.PrintReport(
         ['iteration', 'epoch', 'elapsed_time', 'lr',
@@ -456,18 +355,24 @@ def main():
         trainer.extend(
             chainer.training.extensions.PlotReport(
                 ['main/loss'],
-                file_name='loss_{0}_fold_{1}_{2}@{3}@{4}@{5}.png'.format(args.fold, args.split_idx,
-                                                                                         args.backbone, args.spatial_edge_mode,
-                                                                                          args.temporal_edge_mode,args.conv_rnn_type), trigger=plot_interval
+                file_name="loss_{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@T#{7}.png".format(
+                                                                                args.database,
+                                                                                args.fold, args.split_idx,
+                                                                                args.backbone, args.two_stream_mode,
+                                                                                use_paper_key_str, roi_align_key_str,
+                                                                                args.T), trigger=plot_interval
             ),
             trigger=plot_interval
         )
         trainer.extend(
             chainer.training.extensions.PlotReport(
                 ['main/accuracy'],
-                file_name='accuracy_{0}_fold_{1}_{2}@{3}@{4}@{5}.png'.format(args.fold, args.split_idx,
-                                                                                         args.backbone, args.spatial_edge_mode,
-                                                                                          args.temporal_edge_mode,args.conv_rnn_type), trigger=plot_interval
+                file_name="accuracy_{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@T#{7}.png".format(
+                                                                                args.database,
+                                                                                args.fold, args.split_idx,
+                                                                                args.backbone, args.two_stream_mode,
+                                                                                use_paper_key_str, roi_align_key_str,
+                                                                                args.T), trigger=plot_interval
             ),
             trigger=plot_interval
         )

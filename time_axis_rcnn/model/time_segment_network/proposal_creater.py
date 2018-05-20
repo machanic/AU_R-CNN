@@ -1,7 +1,7 @@
 import chainer
 from chainer import cuda
-from time_axis_rcnn.util.bbox.bbox_util import decode_segment_target
-from time_axis_rcnn.util.bbox.non_maximum_suppression import non_maximum_suppression
+from time_axis_rcnn.model.time_segment_network.util.bbox.bbox_util import decode_segment_target
+from time_axis_rcnn.model.time_segment_network.util.bbox.non_maximum_suppression import non_maximum_suppression
 import numpy as np
 
 class ProposalCreator(object):

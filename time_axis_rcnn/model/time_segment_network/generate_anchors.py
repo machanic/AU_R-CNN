@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import numpy as np
 import config
+import six
 
 def _mkanchors(ws, x_ctr):
     """
@@ -37,12 +38,15 @@ def _scale_enum(anchor, scales):
     return anchors
 
 
-def generate_anchors(base_size, scales=2**np.arange(3, 6)):
-    base_anchor = np.array([1, base_size]) - 1  # x_min, y_max
-    anchors = _scale_enum(base_anchor, scales=scales)
-    return anchors
-
-
+def generate_anchor_base(base_size=16, anchor_scales=config.ANCHOR_SIZE):
+    px = base_size / 2.
+    anchor_base = np.zeros((len(anchor_scales), 2),
+                           dtype=np.float32)
+    for i in range(len(anchor_scales)):
+        w = base_size * anchor_scales[i]
+        anchor_base[i, 0] = px - w / 2.
+        anchor_base[i, 1] = px + w / 2.
+    return anchor_base
 
 def get_all_anchors(time_seq_len, stride=config.ANCHOR_STRIDE, sizes=config.ANCHOR_SIZE):
     """
@@ -53,7 +57,7 @@ def get_all_anchors(time_seq_len, stride=config.ANCHOR_STRIDE, sizes=config.ANCH
             The layout in the NUM_ANCHOR dim is NUM_RATIO x NUM_SCALE.
 
         """
-    base_anchors = generate_anchors(stride, scales=sizes)  # shape=A,2  scale是anchor的scale，要跟stride去乘
+    base_anchors = generate_anchor_base(stride, sizes) # shape=A,2  scale是anchor的scale，要跟stride去乘
     # 由向量变成矩阵，下面两句话难理解
     field_size = time_seq_len // stride
     # 这里K = field_size x field_size = 83 * 83 = 6889
@@ -72,3 +76,6 @@ def get_all_anchors(time_seq_len, stride=config.ANCHOR_STRIDE, sizes=config.ANCH
     return field_of_anchors.astype(np.float32)
 
 
+if __name__ == "__main__":
+    field_anchors= get_all_anchors(10,sizes=[3,5,7])
+    print(field_anchors)

@@ -85,12 +85,13 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
     """
 
     def __init__(
-            self, spn, head,
+            self,feature_backbone, spn, head,
             loc_normalize_mean=(0., 0.),
             loc_normalize_std=(0.1, 0.2),
     ):
         super(TimeSegmentRCNNPredictor, self).__init__()
         with self.init_scope():
+            self.feature_backbone = feature_backbone
             self.spn = spn
             self.head = head
 
@@ -142,15 +143,17 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
         ww = x.shape[2]
         # x, AU_group_id_array, seq_len, scale=1.
         AU_group_id_array = seg_info[:, 0]
+        h = self.feature_backbone(x, AU_group_id_array, ww)
         # rpn_scores shape = (N, W * A, 2)
         # rpn_locs shape = (N, W * A, 2)
         # rois  = (R, 2), R 是跨越各个batch的，也就是跨越各个AU group的，每个AU group相当于独立的一张图片
         # roi_indices = (R,)
         # anchor shape =  (W, A, 2)
+
         rpn_locs, rpn_scores, rois, roi_indices, anchor =\
-            self.spn(x, AU_group_id_array, ww)
+            self.spn(h, AU_group_id_array, ww)
         roi_cls_locs, roi_scores = self.head(
-            x, rois, roi_indices)
+            h, rois, roi_indices)
         return roi_cls_locs, roi_scores, rois, roi_indices
         # roi_cls_loc = (S, class*2), roi_score = (S, class), rois = (R, 2), roi_indices=(R,)
 
@@ -200,9 +203,9 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
             # The labels are in [0, self.n_class - 2]. 抛去完全背景的1个label
             label.append((l - 1) * np.ones((len(keep),)))
 
-        bbox = np.concatenate(bbox, axis=0).astype(np.float32)
-        label = np.concatenate(label, axis=0).astype(np.int32)
-        score = np.concatenate(score, axis=0).astype(np.float32)
+        bbox = np.concatenate(bbox, axis=0).astype(np.float32)  # R', 2
+        label = np.concatenate(label, axis=0).astype(np.int32)  # R'
+        score = np.concatenate(score, axis=0).astype(np.float32)  # R'
         return bbox, label, score
 
     def predict(self, feature_1D, seg_info):
@@ -238,14 +241,13 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
             with chainer.function.no_backprop_mode():
                 x_var = chainer.Variable(self.xp.asarray(feature_inside_batch[None]))
                 # roi_cls_loc = (R, class*2), roi_score = (R, class), rois = (R, 2), roi_indices=(R,)
-                roi_cls_locs, roi_scores, rois, roi_indices = self.__call__(
+                roi_cls_locs, roi_scores, rois, _ = self.__call__(
                     x_var, seg_info)
                 assert roi_cls_locs.shape[0] == rois.shape[0]
             # We are assuming that batch size is 1.
             roi_cls_loc = roi_cls_locs.data
             roi_score = roi_scores.data
             roi = rois # shape = (R, 2) ,R across all batch index
-            roi_indice = roi_indices
 
             # Convert predictions to bounding boxes in image coordinates.
             # Bounding boxes are scaled to the scale of the input images.
@@ -253,8 +255,8 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
                                 self.n_class)  # shape = (n_class * 2)
             std = self.xp.tile(self.xp.asarray(self.loc_normalize_std),
                                self.n_class) # shape = (n_class * 2)
-            roi_cls_loc = (roi_cls_loc * std + mean).astype(np.float32)
-            roi_cls_loc = roi_cls_loc.reshape(-1, self.n_class, 2) # shape = (R, class, 2)
+            roi_cls_loc = (roi_cls_loc * std + mean).astype(np.float32)  # (R, class * 2)  element-wise dot (class*2) = (R, class* 2)
+            roi_cls_loc = roi_cls_loc.reshape(-1, self.n_class, 2)  # shape = (R, class, 2)
             # roi (R, 1, 2) to (R, class, 2), 类似tile复制
             roi = self.xp.broadcast_to(roi[:, None], roi_cls_loc.shape)  # R, class, 2
             cls_bbox = decode_segment_target(roi.reshape(-1, 2), roi_cls_loc.reshape(-1, 2))
@@ -265,7 +267,7 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
                 cls_bbox, 0, seq_len)  # 开眼了
 
             prob = F.softmax(roi_score).data
-            raw_cls_bbox = cuda.to_cpu(cls_bbox) # R, class * 2
+            raw_cls_bbox = cuda.to_cpu(cls_bbox)  # R, class * 2
             raw_prob = cuda.to_cpu(prob)  # R, class
             # the number of foreground ROIs are constant until they are NMSed
             bbox, label, score = self._suppress(raw_cls_bbox, raw_prob)

@@ -4,10 +4,10 @@ import chainer
 import chainer.functions as F
 import chainer.links as L
 from chainer.links import VGG16Layers
-from lstm_end_to_end.model.AU_rcnn.au_rcnn import AU_RCNN
+from two_stream_rgb_flow.model.AU_rcnn.au_rcnn import AU_RCNN
 
-from lstm_end_to_end.utils import download_model
-from lstm_end_to_end.model.AU_rcnn.roi_tools.roi_align_2d import roi_align_2d
+from two_stream_rgb_flow.utils import download_model
+from two_stream_rgb_flow.model.AU_rcnn.roi_tools.roi_align_2d import roi_align_2d
 import config
 
 
@@ -89,7 +89,7 @@ class AU_RCNN_VGG16(AU_RCNN):
                  pretrained_model=None,
                  min_size=512, max_size=512,
                  vgg_initialW=None,
-                 mean_file=None, use_roi_align=False
+                  use_roi_align=False
                  ):
 
         if vgg_initialW is None and pretrained_model:
@@ -101,13 +101,11 @@ class AU_RCNN_VGG16(AU_RCNN):
             vgg_initialW=vgg_initialW,use_roi_align=use_roi_align
         )
 
-        mean_array = np.load(mean_file)
 
         print("loading mean_file in: {} done".format(mean_file))
         super(AU_RCNN_VGG16, self).__init__(
             extractor,
             head,
-            mean=mean_array,
             min_size=min_size,
             max_size=max_size
         )

@@ -230,14 +230,14 @@ def main():
     roi_align_key_str = "roi_align" if args.roi_align else "roi_pooling"
 
     single_model_file_name = args.out + os.sep + \
-                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@sampleframe#{7}_model.npz'.format(args.database,
+                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@T#{7}_model.npz'.format(args.database,
                                                                                 args.fold, args.split_idx,
                                                                                 args.backbone, args.two_stream_mode,
                                                                                 use_paper_key_str, roi_align_key_str,
                                                                                  args.T)
     print(single_model_file_name)
     pretrained_optimizer_file_name = args.out + os.sep +\
-                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@sampleframe#{7}_optimizer.npz'.format(args.database,
+                             '{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@T#{7}_optimizer.npz'.format(args.database,
                                                                                 args.fold, args.split_idx,
                                                                                 args.backbone, args.two_stream_mode,
                                                                                 use_paper_key_str, roi_align_key_str,
@@ -281,7 +281,7 @@ def main():
         trainer.extend(chainer.training.extensions.observe_lr(),
                        trigger=log_interval)
     trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,
-                                            log_name="log_{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@sampleframe#{7}.log".format(
+                                            log_name="log_{0}_{1}_fold_{2}_{3}@{4}@{5}@{6}@T#{7}.log".format(
                                                                                 args.database,
                                                                                 args.fold, args.split_idx,
                                                                                 args.backbone, args.two_stream_mode,

@@ -13,7 +13,7 @@ from img_toolkit.face_mask_cropper import FaceMaskCropper
 # obtain the cropped face image and bounding box and ground truth label for each box
 class AUDataset(chainer.dataset.DatasetMixin):
 
-    def __init__(self, database, fold, split_name, split_index, mc_manager, train_all_data, prefix="", pretrained_target=""):
+    def __init__(self, database, fold, split_name, split_index, mc_manager, train_all_data, pretrained_target=""):
         self.database = database
         self.split_name = split_name
         self.au_couple_dict = get_zip_ROI_AU()
@@ -26,7 +26,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
             id_list_file_path = os.path.join(self.dir + "/idx/{}_fold".format(fold),
                                              "full_pretrain.txt")
         else:
-            id_list_file_path = os.path.join(self.dir + "/idx/{0}_fold{1}".format(fold, prefix),
+            id_list_file_path = os.path.join(self.dir + "/idx/{0}_fold".format(fold),
                                              "id_{0}_{1}.txt".format(split_name, split_index))
         self.result_data = []
 
@@ -35,13 +35,14 @@ class AUDataset(chainer.dataset.DatasetMixin):
             for idx, line in enumerate(file_obj):
                 if line.rstrip():
                     line = line.rstrip()
-                    img_path, au_set_str, _, current_database_name = line.split("\t")
+                    relative_path, au_set_str, _, current_database_name = line.split("\t")
                     AU_set = set(AU for AU in au_set_str.split(',') if AU in config.AU_ROI and AU in config.AU_SQUEEZE.inv)
                     if au_set_str == "0":
                         AU_set = set()
-                    img_path = config.RGB_PATH[current_database_name] + os.sep + img_path  # id file 是相对路径
-                    if os.path.exists(img_path):
-                        self.result_data.append((img_path, AU_set, current_database_name))
+                    rgb_path = config.RGB_PATH[current_database_name] + os.path.sep + relative_path  # id file 是相对路径
+                    flow_path = config.FLOW_PATH[current_database_name] + os.path.sep + relative_path
+                    if os.path.exists(rgb_path):
+                        self.result_data.append((rgb_path, flow_path, AU_set, current_database_name))
 
         self.result_data.sort(key=lambda entry: (entry[0].split("/")[-3],entry[0].split("/")[-2],
                                                  int(entry[0].split("/")[-1][:entry[0].split("/")[-1].rindex(".")])))
@@ -76,49 +77,34 @@ class AUDataset(chainer.dataset.DatasetMixin):
             for _ in box_list:
                 label.append(AU_bin)
 
-    def get_from_entry(self, img_path, AU_set, database_name):
-        if not os.path.exists(img_path):
-            raise IndexError("image file_path: {} not exist!".format(img_path))
+    def get_from_entry(self, flow_image_path, rgb_image_path, AU_set, database_name):
+        if not os.path.exists(flow_image_path):
+            raise IndexError("image file_path: {} not exist!".format(flow_image_path))
 
         try:
             # print("begin fetch cropped image and bbox {}".format(img_path))
-
             key_prefix = self.database + "|"
             if self.pretrained_target is not None and len(self.pretrained_target) > 0:
                 key_prefix = self.pretrained_target + "|"
-            rgb_img_path = config.RGB_PATH[self.database] + os.path.sep + "/".join(img_path.split("/")[-3:])
-
-            cropped_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(img_path,rgb_img_path,
+            flow_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(flow_image_path, rgb_image_path,
                                                                              channel_first=True,
                                                                              mc_manager=self.mc_manager,
                                                                              key_prefix=key_prefix)
-
+            rgb_face, _ = FaceMaskCropper.get_cropface_and_box(rgb_image_path, rgb_image_path,
+                                                                          channel_first=True,
+                                                                          mc_manager=self.mc_manager,
+                                                                          key_prefix=key_prefix)
         except IndexError:
             # print("read image error:{}".format(read_img_path))
             # return AUDataset.get_example(self, i-1)  # 不得已为之
-            raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(img_path))
+            raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(flow_image_path))
 
-        non_AU_set = set()
-        for AU in config.AU_ROI.keys():
-            if AU not in AU_set and "?{}".format(AU) not in AU_set:
-                non_AU_set.add("-{}".format(AU))
-        unknown_AU_set = set()
-        known_AU_set = set()
-        for AU in AU_set:
-            if AU.startswith("?"):
-                unknown_AU_set.add(AU)
-            else:
-                known_AU_set.add(AU)
-        all_AU_set = set()
-        all_AU_set.update(non_AU_set)
-        all_AU_set.update(unknown_AU_set)
-        all_AU_set.update(known_AU_set)
 
         current_AU_couple = defaultdict(set)  # key = AU couple, value = AU 用于合并同一个区域的不同AU
         couple_box_dict = OrderedDict()  # key= AU couple
 
         # mask_path_dict's key AU maybe 3 or -2 or ?5
-        for AU in all_AU_set:
+        for AU in AU_set:
             _AU = AU if AU.isdigit() else AU[1:]
             # print("AU:",AU,"_AU:",_AU)
             try:
@@ -141,7 +127,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
         label = np.stack(label).astype(np.int32)
         # bbox, label = self.proposal(bbox, label)  # 必须保证每个batch拿到的box数量一样
         assert bbox.shape[0] == label.shape[0]
-        return cropped_face, bbox, label
+        return rgb_face, flow_face, bbox, label
 
     def get_example(self, i):
         '''

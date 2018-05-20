@@ -79,7 +79,6 @@ class AU_RCNN(chainer.Chain):
 
     def __init__(
             self, extractor, head,
-            mean,
             min_size=512,
             max_size=512,
     ):
@@ -88,7 +87,6 @@ class AU_RCNN(chainer.Chain):
             self.extractor = extractor
             self.head = head
 
-        self.mean = mean
         self.min_size = min_size
         self.max_size = max_size
         self.extract_dict = dict()
@@ -148,7 +146,7 @@ class AU_RCNN(chainer.Chain):
         return roi_scores, rois, roi_indices
 
 
-    def prepare(self, img):
+    def prepare(self, img, mean):
         """Preprocess an image for feature extraction.
 
         The length of the shorter edge is scaled to :obj:`self.min_size`.
@@ -178,7 +176,7 @@ class AU_RCNN(chainer.Chain):
 
         img = resize_img(img, (int(H * scale), int(W * scale)))
 
-        img = (img - self.mean).astype(np.float32, copy=False)
+        img = (img - mean).astype(np.float32, copy=False)
         return img
 
     def fetch_labels_from_scores(self, xp, raw_score):

@@ -9,27 +9,15 @@ import chainer.functions as F
 
 class SegmentProposalNetwork(chainer.Chain):
 
-    def __init__(self, conv_layer_num, database, in_channels, mid_channels, n_anchors=len(config.ANCHOR_SIZE), proposal_creator_params={},
+    def __init__(self, database, mid_channels, n_anchors=len(config.ANCHOR_SIZE),
+                 proposal_creator_params={},
                  initialW=None):
         super(SegmentProposalNetwork, self).__init__()
         self.proposal_layer = ProposalCreator(**proposal_creator_params)
-        self.conv_layer_num = conv_layer_num
         self.groups = len(config.BOX_NUM[database])
         self.conv_layers = defaultdict(list)
         self.n_anchors = n_anchors
         with self.init_scope():
-            dilation_rates = [2,3,5,7,9]
-            for i in range(conv_layer_num):
-                if i != 0:
-                    in_channels = mid_channels
-
-                for group_id in range(self.groups):
-                    setattr(self, "conv_#{0}_layer_{1}".format(group_id, i),DilatedConvolution1D(in_channels, mid_channels,
-                                                                        ksize=3, stride=1,
-                                                                        pad=1, dilate=dilation_rates[i%len(dilation_rates)],
-                                                                        nobias=True))  # Note That we use one group conv
-                    self.conv_layers[group_id].append("conv_#{0}_layer_{1}".format(group_id, i))
-
             # 下面的类同样要加group
             # score's channel 2 means 1/0  loc's channel 2 means x_min, x_max
             self.score_layers = {}
@@ -52,18 +40,15 @@ class SegmentProposalNetwork(chainer.Chain):
         score_out_list = []
         loc_out_list = []
         for batch_idx, group_id in enumerate(AU_group_id_array):
-            x_inside_batch = F.expand_dims(x[batch_idx], 0) # 1,C,W
-            for conv_layer in self.conv_layers[group_id]:
-                x_inside_batch = getattr(self, conv_layer)(x_inside_batch)
-
-            score_out = getattr(self, self.score_layers[group_id])(x_inside_batch)
-            loc_out = getattr(self, self.loc_layers[group_id])(x_inside_batch)
-            score_out_list.append(score_out)
+            x_inside_batch = F.expand_dims(x[batch_idx], axis=0) # 1,C,W
+            score_out = getattr(self, self.score_layers[group_id])(x_inside_batch)  # 1, n_anchors * 2, w
+            loc_out = getattr(self, self.loc_layers[group_id])(x_inside_batch)  # 1, n_anchors * 2, w
+            score_out_list.append(score_out)  #
             loc_out_list.append(loc_out)
         rpn_locs = F.concat(loc_out_list, axis=0) # shape = B, C, W; output channel is n_anchor * 2
-
+        # 1. transpose to (B, W, A * 2) then reshape to (B, W * A, 2)
         rpn_locs = rpn_locs.transpose((0, 2, 1)).reshape(n, -1,
-                                                            2)  # put channel last dimension, then reshape to (N, W * A, 2) , 第二个维度每个都是一个anchor
+                                                            2)  # put channel last dimension, then reshape to (B, W * A, 2) , 第二个维度每个都是一个anchor
 
         rpn_scores = F.concat(score_out_list, axis=0)  # output channel is n_anchor * 2
         rpn_scores = rpn_scores.transpose(0, 2, 1)  # put channel last dimension shape = (N, W, C) C= A * 2
@@ -76,6 +61,7 @@ class SegmentProposalNetwork(chainer.Chain):
         roi_indices = []
         for i in range(n):
             # rpn_loc[i].data 只是算的一个偏差，再结合anchor，才算出真正的roi位置
+            # NMS算法
             roi = self.proposal_layer(
                 rpn_locs[i].data, rpn_fg_scores[i].data, anchor.reshape(-1, 2), ww)  # 按照score从大到小排序，并且删掉超出屏幕的，以及他重叠很大IOU的被删除，即NMS算法
             # roi shape = R, 2

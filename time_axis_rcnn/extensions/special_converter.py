@@ -30,7 +30,7 @@ def to_device(device, x):
         return cuda.to_gpu(x, device)
 
 
-def concat_examples_not_labels(batch, device=None, padding=None):
+def concat_examples_not_video_seq_id(batch, device=None, padding=None):
     """Concatenates a list of examples into array(s).
     Dataset iterator yields a list of examples. If each example is an array,
     this function concatenates them along the newly-inserted first axis (called
@@ -53,7 +53,7 @@ def concat_examples_not_labels(batch, device=None, padding=None):
     TODO(beam2d): Add an example.
     Args:
         batch (list): A list of examples. This is typically given by a dataset
-            iterator.
+            iterator. Each entry is a tuple of (rgb_face, flow_face, bbox, label, rgb_path)
         device (int): Device ID to which each array is sent. Negative value
             indicates the host memory (CPU). If it is omitted, all arrays are
             left in the original device.
@@ -71,23 +71,19 @@ def concat_examples_not_labels(batch, device=None, padding=None):
 
     first_elem = batch[0]
     assert isinstance(first_elem, tuple)
-    if isinstance(first_elem, tuple):
-        result = []
-        if not isinstance(padding, tuple):
-            padding = [padding] * len(first_elem)
+    result = []
+    if not isinstance(padding, tuple):
+        padding = [padding] * len(first_elem) # len(first_elem) is 5
 
-        for i in six.moves.range(len(first_elem)):
-            if i == len(first_elem) - 1:
-                _device = -1
-            else:
-                _device = device
-            result.append(to_device(_device, _concat_arrays(
-                [example[i] for example in batch], padding[i])))
+    for i in six.moves.range(len(first_elem)): # for:  rgb_face, flow_face, bbox, label, rgb_path
+        if i >= len(first_elem) - 2:  # label, rgb_path
+            result.append(
+                [example[i] for example in batch])  # label and rgb_path will be a list inside batch dimension
 
-        return tuple(result)
-
-    else:
-        return to_device(device, _concat_arrays(batch, padding))
+        else:
+            result.append(to_device(device, _concat_arrays(
+                [example[i] for example in batch], padding[i])))    # other element is a numpy array
+    return tuple(result)
 
 
 def _concat_arrays(arrays, padding):

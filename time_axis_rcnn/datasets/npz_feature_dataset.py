@@ -8,10 +8,10 @@ import os
 from itertools import groupby
 
 
-class SimpleFeatureDataset(chainer.dataset.DatasetMixin):
+class NpzFeatureDataset(chainer.dataset.DatasetMixin):
 
     def __init__(self, directory, database, paper_report_label_idx=None):
-        super(SimpleFeatureDataset, self).__init__()
+        super(NpzFeatureDataset, self).__init__()
         self.database = database
         self.directory = directory
         self.paper_report_label_idx = paper_report_label_idx
@@ -26,7 +26,8 @@ class SimpleFeatureDataset(chainer.dataset.DatasetMixin):
     def get_example(self, i):
         file_path = self.file_list[i]
         npz_file = np.load(file_path)
-        feature = npz_file['feature']  # shape = N x 2048 it is one AU group box's feature
+        flow_feature = npz_file['flow_feature']  # shape = N x 2048 it is one AU group box's feature
+        rgb_feature = npz_file['rgb_feature']
         label = npz_file['label']  # label is N x 12
         AU_group_id = npz_file["AU_group_id"]  # AU_group_id
         label_trans = label.transpose()  # 12, N

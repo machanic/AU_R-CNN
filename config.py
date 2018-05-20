@@ -17,15 +17,15 @@ DATA_PATH = {
     "BP4D_DISFA": ROOT_PATH + "/BP4D_DISFA/"
 }
 
-RGB_PATH = {
-    "BP4D": ROOT_PATH + "/BP4D/BP4D-training",
-    "DISFA": ROOT_PATH + "DISFA/"
+FLOW_PATH = {
+    "BP4D": ROOT_PATH + "/BP4D/optical_flow/",
+    "DISFA": ROOT_PATH + "DISFA/optical_flow/"
 }
 
-TRAINING_PATH = {
+RGB_PATH = {
     # "BP4D": ROOT_PATH + "/BP4D/BP4D-training/",
     "BP4D": ROOT_PATH + "/BP4D/BP4D-training",
-    "DISFA": ROOT_PATH + "DISFA/BP4D-training",
+    "DISFA": ROOT_PATH + "DISFA/",
 }
 
 CROP_DATA_PATH = {

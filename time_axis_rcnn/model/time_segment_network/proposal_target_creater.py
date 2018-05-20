@@ -72,7 +72,7 @@ class ProposalTargetCreator(object):
                 Its shape is :math:`(B, R', 2)`.
             labels (np.array): Ground truth bounding box labels. Its shape
                 is :math:` (B, R')`.
-            batch_seg_info (np.array) its shape is `(B, 2)`, which indicate AU group index, segment number of each batch index
+            batch_seg_info (np.array) its shape is `(B, 2)`, which indicate AU group index, segment count of each batch index
             loc_normalize_mean (tuple of 2 floats): Mean values to normalize
                 coordinates of bouding segments.
             loc_normalize_std (tupler of 2 floats): Standard deviation of
@@ -98,6 +98,7 @@ class ProposalTargetCreator(object):
         labels = cuda.to_cpu(labels) # shape = (B, R')
         batch_seg_info = cuda.to_cpu(batch_seg_info)
         mini_batch = gt_segments.shape[0]
+        assert mini_batch == labels.shape[0]
         batch_rois =[]
         batch_rois_indices = []
         batch_labels = []
@@ -117,7 +118,7 @@ class ProposalTargetCreator(object):
             iou = segments_iou(all_rois, gt_seg) # 返回一个n x k的矩阵（表格）。表示n个rois与k个bbox的IOU
             gt_assignment = iou.argmax(axis=1) # shape = n, 挑出每一行中哪个列最大的index，gt_assigment的shape与roi的行数相同，但gt_assigment的值范围再bbox的R'内
             max_iou = iou.max(axis=1) # shape = n, 挑出每一行中哪个列最大，也就是哪个gt的bbox与该roi_bbox混合列表的元素最接近
-            gt_roi_label = label[gt_assignment] + 1 # shape = (n, 12) 因为label的index是跟bbox是一致的，而与roi不一致，因此上面gt_assignment = iou.argmax(axis=1)
+            gt_roi_label = label[gt_assignment] + 1  # shape = (n, 12) 因为label的index是跟bbox是一致的，而与roi不一致，因此上面gt_assignment = iou.argmax(axis=1)
             # Select foreground RoIs as those with >= pos_iou_thresh IoU. IoU刷掉了一批不合适的ROI，从roi_bbox混合列表去选
             pos_index = np.where(max_iou >= self.pos_iou_thresh)[0]
             pos_roi_this_timeline = int(min(pos_roi_per_timeline, pos_index.size))  # 取1:3的pos个数和实际pos_index个数的较小者
@@ -160,6 +161,6 @@ class ProposalTargetCreator(object):
             batch_labels.append(gt_roi_label)
             batch_roi_locs.append(gt_roi_loc)
             # TODO _get_bbox_regression_labels???
-
+        # return (B*S, 2)  (B*S,),  (B*S, 2),  (B*S, )
         return xp.concatenate(batch_rois, axis=0), xp.concatenate(batch_rois_indices, axis=0), \
                xp.concatenate(batch_roi_locs,axis=0), xp.concatenate(batch_labels, axis=0)

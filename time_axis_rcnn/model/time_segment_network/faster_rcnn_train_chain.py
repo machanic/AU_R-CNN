@@ -46,12 +46,13 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
 
     """
 
-    def __init__(self, faster_head_module, spn_module, rpn_sigma=3., roi_sigma=1.,
+    def __init__(self, faster_extractor_backbone, faster_head_module, spn_module, rpn_sigma=3., roi_sigma=1.,
                  anchor_target_creator=AnchorTargetCreator(),
                  proposal_target_creator=ProposalTargetCreator()):
         super(TimeSegmentRCNNTrainChain, self).__init__()
         with self.init_scope():
             self.faster_head_module = faster_head_module
+            self.faster_extractor_backbone = faster_extractor_backbone
             self.spn_module = spn_module
         self.rpn_sigma = rpn_sigma
         self.roi_sigma = roi_sigma
@@ -76,7 +77,7 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
         Args:
             featuremap_1d (~chainer.Variable): A variable with a batch of 1d_featuremap.
                 Its shape is :math:`(B, C, W)`, where W means width of timeline, B means AU group number
-            seg_info (~chainer.Variable): shape = `(B, 2)` each row contains (AU group index, segment number of each batch index)
+            seg_info (~chainer.Variable): shape = `(B, 2)` each row contains (AU group index, segment count of each batch index)
             gt_segments (~chainer.Variable): A batch of bounding boxes.
                 Its shape is :math:`(B, R, 2)`. where R = config.MAX_SEGMENTS_PER_TIMELINE
             labels (~chainer.Variable): A batch of labels.
@@ -95,19 +96,21 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
         if isinstance(labels, chainer.Variable):
             labels = labels.data
 
-        B, _, W = featuremap_1d.shape
-        features = featuremap_1d
+        B, _, W = featuremap_1d.shape  # because W across mini-batch must be same, thus we need
+        AU_group_id_arr = seg_info[:, 0]  # shape = (B,)
+
+        features = self.faster_extractor_backbone(featuremap_1d, AU_group_id_arr, W)
 
         # rpn_scores shape = (N, W * A, 2)
         # rpn_locs shape = (N, W * A, 2)
         # rois  = (R, 2), R 是跨越各个batch的，也就是跨越各个AU group的，每个AU group相当于独立的一张图片
         # roi_indices = (R,)
         # anchor shape =  (W, A, 2)
-        AU_group_id_arr = seg_info[:, 0]  # shape = (B,)
+
         rpn_locs, rpn_scores, rois, roi_indices, anchor = self.spn_module(
             features, AU_group_id_arr, W)
 
-        # Sample RoIs and forward，下面这句话才是1：3 sample
+        # Sample RoIs and forward，下面这句话才是1:3 sample
         # rois = (R, 2) roi_indices=(R,), gt_segments = (B, R', 2), label = (B, R'),
         sample_roi, sample_roi_index, gt_roi_loc, gt_roi_label = self.proposal_target_creator(
             rois, roi_indices, gt_segments, labels,
@@ -140,6 +143,7 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
         roi_loc = roi_cls_loc[self.xp.arange(n_sample), gt_roi_label]
         roi_loc_loss = _fast_rcnn_loc_loss(
             roi_loc, gt_roi_loc, gt_roi_label, self.roi_sigma)
+
         roi_cls_loss = F.softmax_cross_entropy(roi_score, gt_roi_label)  # multi-label 问题分类用sigmoid cross entropy
 
         loss = rpn_loc_loss + rpn_cls_loss + roi_loc_loss + roi_cls_loss

@@ -32,7 +32,7 @@ class AnchorTargetCreator(object):
     def __init__(self,
                  n_sample=256,
                  pos_iou_thresh=0.7, neg_iou_thresh=0.3,
-                 pos_ratio=0.3):
+                 pos_ratio=0.5):
         self.n_sample = n_sample
         self.pos_iou_thresh = pos_iou_thresh
         self.neg_iou_thresh = neg_iou_thresh
@@ -75,8 +75,8 @@ class AnchorTargetCreator(object):
         mini_batch_size = gt_segments.shape[0]
 
         n_anchor = len(anchor)  # W x A
-        inside_index = _get_inside_index(anchor, sequence_length)
-        anchor = anchor[inside_index]   # inside_num, 2  # 这就意味着，每个batch传入的sequence_length必须一样长
+        inside_index = _get_inside_index(anchor, sequence_length) # 这就意味着，每个batch传入的sequence_length必须一样长
+        anchor = anchor[inside_index]   # inside_num, 2
         batch_labels = []
         batch_locs = []
         for b_id in range(mini_batch_size):
@@ -96,8 +96,8 @@ class AnchorTargetCreator(object):
             batch_labels.append(label)
             batch_locs.append(loc)
 
-        batch_locs = xp.concatenate(batch_locs, axis=0)  # shape = S, 2;  S is all segments' ground truth segment number across batch
-        batch_labels = xp.concatenate(batch_labels, axis=0)  # shape = S; S is all segments' ground truth segment number
+        batch_locs = xp.concatenate(batch_locs, axis=0)  # shape = S, 2;   S is all segments' ground truth segment number across batch
+        batch_labels = xp.concatenate(batch_labels, axis=0)  # shape = S;  S is all segments' ground truth segment number
         return batch_locs, batch_labels
 
     def _create_label(self, inside_index, anchor, gt_seg):

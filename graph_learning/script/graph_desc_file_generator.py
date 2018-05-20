@@ -192,7 +192,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
         resultdict = {}
         if proc_num > 1:
 
-            one_image_path = os.listdir(config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[0]
+            one_image_path = os.listdir(config.RGB_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[0]
             zfill_len = len(one_image_path[:one_image_path.rindex(".")])
 
             procs = 0
@@ -206,7 +206,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                     lines = line.split(",")
                     frame = lines[0].zfill(zfill_len)
 
-                    img_path = config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
+                    img_path = config.RGB_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
                     if not os.path.exists(img_path):
                         print("not exists img_path:{}".format(img_path))
                         continue
@@ -228,7 +228,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
             pool.join()
             del pool
         else:  # only one process
-            one_image_path = os.listdir(config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[
+            one_image_path = os.listdir(config.RGB_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name)[
                 0]
             zfill_len = len(one_image_path[:one_image_path.rindex(".")])
             with open(label_file_dir + "/" + file_name, "r") as au_file_obj:  # each file is a video
@@ -237,7 +237,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
                     lines = line.split(",")
                     frame = lines[0].zfill(zfill_len)
 
-                    img_path = config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
+                    img_path = config.RGB_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
                     if not os.path.exists(img_path):
                         print("not exists img_path:{}".format(img_path))
                         continue
@@ -267,7 +267,7 @@ def read_BP4D_video_label(output_dir, is_binary_AU, is_need_adaptive_AU_relation
 
                 frame = lines[0].zfill(zfill_len)
 
-                img_path = config.TRAINING_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
+                img_path = config.RGB_PATH["BP4D"] + os.sep + subject_name + os.sep + sequence_name + os.sep + frame + ".jpg"
                 if not os.path.exists(img_path):
                     print("not exists img_path:{}".format(img_path))
                     continue

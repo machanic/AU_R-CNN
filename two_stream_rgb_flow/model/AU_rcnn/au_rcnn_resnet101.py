@@ -6,7 +6,7 @@ import chainer.functions as F
 import chainer.links as L
 from chainer.links import ResNet101Layers
 import functools
-from lstm_end_to_end.model.AU_rcnn.au_rcnn import AU_RCNN
+from two_stream_rgb_flow.model.AU_rcnn.au_rcnn import AU_RCNN
 import config
 from chainer import initializers
 from AU_rcnn.links.model.faster_rcnn.faster_rcnn_resnet101 import FasterRCNNResnet101
@@ -89,11 +89,10 @@ class AU_RCNN_Resnet101(AU_RCNN):
     def __init__(self,
                  pretrained_model=None,
                  min_size=512, max_size=512,
-                 mean_file=None, n_class=12, classify_mode=False, use_roi_align=False,
+                 n_class=12, classify_mode=False, use_roi_align=False,
                  use_optical_flow_input=False, temporal_length=10
                  ):
         self.n_class = n_class
-        self.mean_file = mean_file
         self.temporal_length = temporal_length
         self.use_optical_flow_input = use_optical_flow_input
         extractor = ResnetFeatureExtractor(use_optical_flow_input, temporal_length)
@@ -102,12 +101,9 @@ class AU_RCNN_Resnet101(AU_RCNN):
             n_class=n_class, classify_mode=classify_mode, use_roi_align=use_roi_align
             # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
         )
-        mean_array = np.load(mean_file)
-        print("loading mean_file in: {} done".format(mean_file))
         super(AU_RCNN_Resnet101, self).__init__(
             extractor,
             head,
-            mean=mean_array,
             min_size=min_size,
             max_size=max_size
         )
@@ -116,9 +112,8 @@ class AU_RCNN_Resnet101(AU_RCNN):
             self._copy_imagenet_pretrained_resnet101(path=self._models['resnet101']['path'])
             print("load pretrained file: {} done".format(self._models['resnet101']['path']))
         elif pretrained_model.endswith(".npz"):
-            print("loading :{} to Faster R-CNN ResNet-101".format(pretrained_model))
+            print("loading :{} RGB to Faster R-CNN ResNet-101".format(pretrained_model))
             self._copy_imagenet_pretrained_faster(path=pretrained_model)
-
 
 
     def _copy_imagenet_pretrained_resnet101(self, path):
@@ -140,11 +135,10 @@ class AU_RCNN_Resnet101(AU_RCNN):
 
     def _copy_imagenet_pretrained_faster(self, path):
         pretrained_model = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE), pretrained_model=path, extract_len=1000,
-                                               fix=True, mean_file=self.mean_file, use_lstm=False)
-
+                                               fix=True, use_lstm=False)
         if self.use_optical_flow_input:
             average_conv1_W = np.mean(pretrained_model.extractor.conv1.W.data, axis=1, dtype=np.float32, keepdims=True)
-            average_conv1_W = np.tile(average_conv1_W, reps=(1,2 * self.temporal_length, 1,1))
+            average_conv1_W = np.tile(average_conv1_W, reps=(1, 2 * self.temporal_length, 1,1))
             self.extractor.conv1.W.copydata(average_conv1_W)
         else:
             self.extractor.conv1.copyparams(pretrained_model.extractor.conv1)

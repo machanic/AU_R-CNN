@@ -14,7 +14,8 @@ import os
 
 error_file = open("/home/machen/dataset/BP4D/idx/error_img.txt", "w")
 
-def compute(l,r,dataset,error,N):
+def compute(dataset, l, r, error, N):
+    # dataset = chainer.datasets.LabeledImageDataset('/home/machen/dataset/BP4D/idx/3_fold/all.txt', config.FLOW_PATH)
     sum_image = 0
     for x in range(l,r):
         try:
@@ -59,8 +60,8 @@ def compute_mean(dataset):
     N = len(dataset)
     error = 0
     pool = Pool(38)
-    arg = [[int(i*N/38),int((i+1)*N/38),dataset,error,N] for i in range(38)]
-    sum_image = pool.starmap(compute,arg)
+    arg = [(dataset, int(i*N/38),int((i+1)*N/38),error,N) for i in range(38)]
+    sum_image = pool.starmap(compute, arg)
     pool.close()
     pool.join()
     s = np.sum(sum_image,0)
@@ -69,9 +70,9 @@ def compute_mean(dataset):
 
 def main():
     import config
-    dataset = chainer.datasets.LabeledImageDataset('/home/machen/dataset/BP4D/idx/mean_no_path.txt', config.ROOT_PATH)
+    dataset = chainer.datasets.LabeledImageDataset('/home/machen/dataset/BP4D/idx/3_fold/all.txt', config.FLOW_PATH["BP4D"])
     mean = compute_mean(dataset)
-    np.save('/home/machen/dataset/BP4D/idx/mean_no_enhance.npy', mean)
+    np.save('/home/machen/dataset/BP4D/idx/mean_flow.npy', mean)
     print(mean.shape)
     print(mean.sum())
     error_file.flush()

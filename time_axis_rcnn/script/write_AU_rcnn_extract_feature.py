@@ -1,38 +1,74 @@
 import sys
+from collections import OrderedDict
+
+from chainer.datasets import TransformDataset
+
+from time_axis_rcnn.extensions.special_converter import concat_examples_not_video_seq_id
+
 sys.path.insert(0, '/home/machen/face_expr')
-from chainer.iterators import SerialIterator
+from chainer.iterators import SerialIterator, MultiprocessIterator
 
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
-
+from two_stream_rgb_flow import transforms
 import argparse
 from AU_rcnn.links.model.faster_rcnn.faster_rcnn_resnet101 import FasterRCNNResnet101
 from AU_rcnn.links.model.faster_rcnn.faster_rcnn_vgg import FasterRCNNVGG16
 
-from lstm_end_to_end.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
-from lstm_end_to_end.model.wrap_model.wrapper import Wrapper
-from lstm_end_to_end.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor
-from lstm_end_to_end.constants.enum_type import TwoStreamMode
+from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
+from two_stream_rgb_flow.model.wrap_model.wrapper import Wrapper
+from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor
+from two_stream_rgb_flow.constants.enum_type import TwoStreamMode
 
-from time_axis_rcnn.datasets.extract_feature_dataset import FeatureExtractorDataset
+from time_axis_rcnn.datasets.AU_video_dataset import AU_video_dataset, AUDataset
 import config
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
+from time_axis_rcnn.model.dump_feature_model.dump_feature_model import DumpRoIFeature
 
 import re
 import os
 import chainer
 import numpy as np
 
+
+class Transform(object):
+
+    def __init__(self, au_rcnn, mean_rgb_path, mean_flow_path):
+        self.au_rcnn = au_rcnn
+        self.mean_rgb = np.load(mean_rgb_path)
+        self.mean_flow = np.load(mean_flow_path)
+
+    def __call__(self, in_data):
+        rgb_img, flow_img, bbox, label, seq_key = in_data
+        rgb_img = self.au_rcnn.prepare(rgb_img, self.mean_rgb)
+        flow_img = self.au_rcnn.prepare(flow_img, self.mean_flow)
+        assert len(np.where(bbox < 0)[0]) == 0
+        return rgb_img, flow_img, bbox, label, seq_key
+
+
 def extract_mode(model_file_name):
-    pattern = re.compile('.*(\d+)_fold_(\d+)_(.*?)_.*?\.npz', re.DOTALL)
+    model_file_name = os.path.basename(model_file_name)
+    pattern = re.compile('(.*?)_(.*?)_fold_(.*?)_(.*?)@(.*?)@(.*?)@(.*?)@T#(.*?)_model\.npz', re.DOTALL)
     matcher = pattern.match(model_file_name)
-    return_dict = {}
+    return_dict = OrderedDict()
     if matcher:
-        fold = matcher.group(1)
-        split_idx = matcher.group(2)
-        backbone = matcher.group(3)
-        return_dict["fold"] = int(fold)
-        return_dict["split_idx"] = int(split_idx)
+        database = matcher.group(1)
+        fold = int(matcher.group(2))
+        split_idx = int(matcher.group(3))
+        backbone = matcher.group(4)
+        two_stream_mode = TwoStreamMode[matcher.group(5)]
+        use_paper_num_label = True if matcher.group(6) == "use_paper_num_label" else False
+        roi_align = True if matcher.group(7) == "roi_align" else False
+        T = int(matcher.group(8))
+
+        return_dict["database"] = database
+        return_dict["fold"] = fold
+        return_dict["split_idx"] = split_idx
         return_dict["backbone"] = backbone
+        return_dict["use_paper_num_label"] = use_paper_num_label
+        return_dict["use_roi_align"] = roi_align
+        return_dict["T"] = T
+        return_dict["two_stream_mode"] = two_stream_mode
+
     return return_dict
 
 def get_npz_name(AU_group_id, trainval_test, out_dir, database, fold, split_idx, sequence_key):
@@ -57,9 +93,11 @@ def main():
     parser.add_argument('--use_memcached', action='store_true',
                         help='whether use memcached to boost speed of fetch crop&mask')
     parser.add_argument('--stack_frames', type=int, default=1)
+    parser.add_argument('--proc_num', type=int, default=10)
     parser.add_argument('--memcached_host', default='127.0.0.1')
-    parser.add_argument('--mean', default=config.ROOT_PATH + "BP4D/idx/mean_no_enhance.npy",
-                        help='image mean .npy file')
+    parser.add_argument('--mean_rgb', default=config.ROOT_PATH + "BP4D/idx/mean_rgb.npy", help='image mean .npy file')
+    parser.add_argument('--mean_flow', default=config.ROOT_PATH + "BP4D/idx/mean_flow.npy", help='image mean .npy file')
+
     args = parser.parse_args()
     adaptive_AU_database(args.database)
     mc_manager = None
@@ -69,98 +107,89 @@ def main():
         if mc_manager is None:
             raise IOError("no memcached found listen in {}".format(args.memcached_host))
 
-    result_dict = extract_mode(args.model)
-    fold = result_dict["fold"]
-    backbone = result_dict["backbone"]
-    split_idx = result_dict["split_idx"]
-    paper_report_label, class_num = squeeze_label_num_report(args.database, True)
+    return_dict = extract_mode(args.model)
+    database = return_dict["database"]
+    fold = return_dict["fold"]
+    split_idx = return_dict["split_idx"]
+    backbone = return_dict["backbone"]
+    use_paper_num_label = return_dict["use_paper_num_label"]
+    roi_align = return_dict["use_roi_align"]
+    two_stream_mode = return_dict["two_stream_mode"]
+    T = return_dict["T"]
 
-    if backbone == 'vgg':
-        faster_rcnn = FasterRCNNVGG16(n_fg_class=len(config.AU_SQUEEZE),
-                                      pretrained_model="imagenet",
-                                      mean_file=args.mean,
-                                      use_lstm=False,
-                                      extract_len=1000,
-                                      fix=False)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
-    elif backbone == 'resnet101':
-        faster_rcnn = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE),
-                                          pretrained_model=backbone,
-                                          mean_file=args.mean,
-                                          use_lstm=False,
-                                          extract_len=1000, fix=False)
-    elif backbone == 'optical_flow':
-        au_rcnn = AU_RCNN_Resnet101(pretrained_model="resnet101",
-                                    min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                    mean_file=args.mean, classify_mode=False, n_class=class_num,
-                                    use_roi_align=False, use_feature_map_res45=False,
-                                    use_feature_map_res5=False,
-                                    use_optical_flow_input=True,
-                                    temporal_length=args.stack_frames)
-        au_rcnn_train_chain = AU_RCNN_ROI_Extractor(au_rcnn)
-        faster_rcnn = Wrapper([au_rcnn_train_chain], None, args.database, args.stack_frames, use_feature_map=False,
-                    two_stream_mode=TwoStreamMode.optical_flow)
+    class_num = len(config.paper_use_BP4D) if database == "BP4D" else len(config.paper_use_DISFA)
+    if use_paper_num_label:
+        paper_report_label, class_num = squeeze_label_num_report(database, True)
+        paper_report_label_idx = list(paper_report_label.keys())
 
+
+
+    # if backbone == 'resnet101':
+    #     model = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE),
+    #                                       pretrained_model=backbone,
+    #                                       mean_file=args.mean_rgb,
+    #                                       use_lstm=False,
+    #                                       extract_len=1000, fix=False)
+    assert two_stream_mode == TwoStreamMode.rgb_flow
+    if two_stream_mode ==TwoStreamMode.rgb_flow:
+        au_rcnn_train_chain_list = []
+        au_rcnn_rgb = AU_RCNN_Resnet101(pretrained_model=backbone,
+                                        min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
+                                        classify_mode=False, n_class=class_num,
+                                        use_roi_align=roi_align,
+                                        use_optical_flow_input=False, temporal_length=T)
+
+        au_rcnn_optical_flow = AU_RCNN_Resnet101(pretrained_model=backbone,
+                                                 min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
+                                                 classify_mode=False,
+                                                 n_class=class_num,
+                                                 use_roi_align=roi_align,
+                                                 use_optical_flow_input=True, temporal_length=T)
+
+        au_rcnn_train_chain_rgb = AU_RCNN_ROI_Extractor(au_rcnn_rgb)
+        au_rcnn_train_chain_optical_flow = AU_RCNN_ROI_Extractor(au_rcnn_optical_flow)
+
+        au_rcnn_train_chain_list.append(au_rcnn_train_chain_rgb)
+        au_rcnn_train_chain_list.append(au_rcnn_train_chain_optical_flow)
+        model = Wrapper(au_rcnn_train_chain_list, None, database, T,
+                        two_stream_mode=two_stream_mode, gpus=[args.gpu, args.gpu], train_mode=False)
 
     assert os.path.exists(args.model)
     print("loading model file : {}".format(args.model))
-    chainer.serializers.load_npz(args.model, faster_rcnn)
+    chainer.serializers.load_npz(args.model, model)
     if args.gpu >= 0:
         chainer.cuda.get_device_from_id(args.gpu).use()
-        faster_rcnn.to_gpu(args.gpu)
-
-    dataset = FeatureExtractorDataset(database=args.database,
-                           fold=fold, split_name=args.trainval_test,
-                           split_index=split_idx, mc_manager=mc_manager, use_lstm=False,
-                           train_all_data=False,
-                           prefix="", pretrained_target="", pretrained_model=faster_rcnn, extract_key="avg_pool",
-                           device=-1, batch_size=args.batch_size
-                           )
-    dataset_iter = SerialIterator(dataset, batch_size=args.batch_size,
-                                        repeat=False, shuffle=False)
-    last_sequence_key = None
-    features = []
-    labels = []
-    for batch in dataset_iter:
-
-        for idx, (feature, label, sequence_key) in enumerate(batch):  # feature shape = R x 2048
-            if last_sequence_key is None:
-                last_sequence_key = sequence_key
-            if sequence_key != last_sequence_key:  # 换video了
-                if len(features) == 0:
-                    print("all feature cannot obtain {}".format(last_sequence_key))
-                features = np.stack(features)  # shape = N, R, 2048
-                labels = np.stack(labels)  # shape = N, R, 12
-                features_trans = np.transpose(features, axes=(1, 0, 2))  # shape = R, N, 2048
-                labels_trans = np.transpose(labels, axes=(1,0,2))  # shape = R, N, 12
-
-                for AU_group_id, box_feature in enumerate(features_trans):
-                    output_filename = get_npz_name(AU_group_id + 1, args.trainval_test, args.out_dir, args.database, fold, split_idx, last_sequence_key)
-                    print("write : {}".format(output_filename))
-                    os.makedirs(os.path.dirname(output_filename), exist_ok=True)
-                    np.savez(output_filename, feature=features_trans[AU_group_id],  label=labels_trans[AU_group_id])
-                features = []
-                labels = []
-                last_sequence_key = sequence_key
-
-            if label is not None and label.shape[1] == config.BOX_NUM[args.database]:
-                features.extend(feature)
-                labels.extend(label)
-            else:
-                print("one batch cannot fetch from seq: {0}".format(sequence_key))
+        if isinstance(model, FasterRCNNResnet101):
+            model.to_gpu(args.gpu)
 
 
-    # the last sequence
-    features = np.stack(features)  # shape = N, R, 2048
-    labels = np.stack(labels)  # shape = N, R, 12
-    features_trans = np.transpose(features, axes=(1, 0, 2))  # shape = R, N, 2048
-    labels_trans = np.transpose(labels, axes=(1, 0, 2))  # shape = R, N, 12
+    split_names = ["trainval", "test"]
+    for split_name in split_names:
+        img_dataset = AUDataset(database=database,
+                                fold=fold, split_name=split_name,
+                                split_index=split_idx, mc_manager=mc_manager,
+                                train_all_data=False)
 
-    for AU_group_id, box_feature in enumerate(features_trans):
-        output_filename = get_npz_name(AU_group_id + 1, args.trainval_test, args.out_dir, args.database, fold,
-                                       split_idx, last_sequence_key)
-        print("write : {}".format(output_filename))
-        os.makedirs(os.path.dirname(output_filename), exist_ok=True)
-        np.savez(output_filename, feature=features_trans[AU_group_id], label=labels_trans[AU_group_id])
+        train_video_data = AU_video_dataset(au_image_dataset=img_dataset,
+                                            sample_frame=T,
+                                            paper_report_label_idx=paper_report_label_idx, is_shuffle_pieces=False)
+
+        train_video_data = TransformDataset(train_video_data, Transform(au_rcnn_rgb, mean_rgb_path=args.mean_rgb,
+                                                                        mean_flow_path=args.mean_flow))
+
+        dataset_iter = SerialIterator(train_video_data, batch_size=args.batch_size * T,
+                                            repeat=False, shuffle=False)
+        if args.proc_num > 0:
+            dataset_iter = MultiprocessIterator(train_video_data, batch_size=args.batch_size * T,
+                             n_processes=args.proc_num,
+                             repeat=False, shuffle=False, n_prefetch=10, shared_mem=10000000)
+
+        with chainer.no_backprop_mode(), chainer.using_config('cudnn_deterministic', True), chainer.using_config(
+            'train', False):
+            model_dump = DumpRoIFeature(dataset_iter, model, args.gpu, database,
+                                        converter=lambda batch, device: concat_examples_not_video_seq_id(batch, device, padding=0),
+                                        output_path=args.out_dir, trainval_test=split_name, fold_split_idx=split_idx)
+            model_dump.evaluate()
 
 if __name__ == "__main__":
 
