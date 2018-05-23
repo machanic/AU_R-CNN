@@ -3,12 +3,6 @@ from __future__ import division
 
 import sys
 
-from time_axis_rcnn.constants.enum_type import OptimizerType
-from time_axis_rcnn.datasets.npz_feature_dataset import NpzFeatureDataset
-from time_axis_rcnn.model.time_segment_network.faster_head_module import FasterHeadModule
-from time_axis_rcnn.model.time_segment_network.faster_rcnn_backbone import FasterBackbone
-from time_axis_rcnn.model.time_segment_network.faster_rcnn_train_chain import TimeSegmentRCNNTrainChain
-from time_axis_rcnn.model.time_segment_network.segment_proposal_network import SegmentProposalNetwork
 
 sys.path.insert(0, '/home/machen/face_expr')
 
@@ -19,14 +13,20 @@ try:
 except ImportError:
     pass
 
+from time_axis_rcnn.constants.enum_type import OptimizerType
+from time_axis_rcnn.datasets.npz_feature_dataset import NpzFeatureDataset
+from time_axis_rcnn.model.time_segment_network.faster_head_module import FasterHeadModule
+from time_axis_rcnn.model.time_segment_network.faster_rcnn_backbone import FasterBackbone
+from time_axis_rcnn.model.time_segment_network.faster_rcnn_train_chain import TimeSegmentRCNNTrainChain
+from time_axis_rcnn.model.time_segment_network.segment_proposal_network import SegmentProposalNetwork
+from time_axis_rcnn.constants.enum_type import TwoStreamMode
+from time_axis_rcnn.model.time_segment_network.wrapper import Wrapper
+
 import argparse
-import numpy as np
 import os
 
 import chainer
 from chainer import training
-
-from chainer.datasets import TransformDataset
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
@@ -38,9 +38,9 @@ def main():
     parser = argparse.ArgumentParser(
         description='train script of Time-axis R-CNN:')
     parser.add_argument('--pid', '-pp', default='/tmp/SpaceTime_AU_R_CNN/')
-    parser.add_argument('--gpu', '-g', nargs='+', type=int, help='GPU ID, multiple GPU split by space')
-    parser.add_argument('--lr', '-l', type=float, default=0.001)
-    parser.add_argument('--out', '-o', default='end_to_end_result',
+    parser.add_argument('--gpu', '-g', type=int, help='GPU ID')
+    parser.add_argument('--lr', '-l', type=float, default=0.0001)
+    parser.add_argument('--out', '-o', default='time_axis_result',
                         help='Output directory')
     parser.add_argument('--database',  default='BP4D',
                         help='Output directory: BP4D/DISFA/BP4D_DISFA')
@@ -52,8 +52,11 @@ def main():
     parser.add_argument('--roi_size', type=int, default=10)
     parser.add_argument('--snapshot', '-snap', type=int, default=1000)
     parser.add_argument("--fold", '-fd', type=int, default=3)
+    parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
+                        help='rgb_flow/ optical_flow/ rgb')
+
     parser.add_argument("--data_dir", type=str, default="/extract_features")
-    parser.add_argument("--conv_layers", type=int, default=5)
+    parser.add_argument("--conv_layers", type=int, default=20)
     parser.add_argument("--split_idx",'-sp', type=int, default=1)
     parser.add_argument("--use_paper_num_label", action="store_true", help="only to use paper reported number of labels"
                                                                            " to train")
@@ -71,23 +74,43 @@ def main():
         file_obj.write(pid)
         file_obj.flush()
 
-
-    print('GPU: {}'.format(",".join(list(map(str, args.gpu)))))
+    print('GPU: {}'.format(args.gpu))
 
     adaptive_AU_database(args.database)
 
     paper_report_label, class_num = squeeze_label_num_report(args.database, args.use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
 
-    faster_extractor_backbone = FasterBackbone(args.database, args.conv_layers, args.feature_dim, 1024)
-    faster_head_module = FasterHeadModule(1024, class_num + 1, args.roi_size)  # note that the class number here must include background
-    initialW = chainer.initializers.Normal(0.001)
-    spn = SegmentProposalNetwork(args.database, 1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
+    if args.two_stream_mode == TwoStreamMode.rgb or args.two_stream_mode == TwoStreamMode.optical_flow:
+        faster_extractor_backbone = FasterBackbone(args.database, args.conv_layers, args.feature_dim, 1024)
+        faster_head_module = FasterHeadModule(1024, class_num + 1, args.roi_size)  # note that the class number here must include background
+        initialW = chainer.initializers.Normal(0.001)
+        spn = SegmentProposalNetwork(args.database, 1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
+        train_chain = TimeSegmentRCNNTrainChain(faster_extractor_backbone, faster_head_module, spn)
+        model = Wrapper([train_chain, train_chain], two_stream_mode=args.two_stream_mode)
 
-    model = TimeSegmentRCNNTrainChain(faster_extractor_backbone, faster_head_module, spn)
+    elif args.two_stream_mode == TwoStreamMode.rgb_flow:
+        faster_extractor_backbone_rgb = FasterBackbone(args.database, args.conv_layers, args.feature_dim, 1024)
+        faster_head_module_rgb = FasterHeadModule(1024, class_num + 1,
+                                              args.roi_size)  # note that the class number here must include background
+        initialW = chainer.initializers.Normal(0.001)
+        spn_rgb = SegmentProposalNetwork(args.database, 1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
+        train_chain_rgb = TimeSegmentRCNNTrainChain(faster_extractor_backbone_rgb, faster_head_module_rgb, spn_rgb)
+
+        faster_extractor_backbone_flow = FasterBackbone(args.database, args.conv_layers, args.feature_dim, 1024)
+        faster_head_module_flow = FasterHeadModule(1024, class_num + 1,
+                                              args.roi_size)  # note that the class number here must include background
+        initialW = chainer.initializers.Normal(0.001)
+        spn_flow = SegmentProposalNetwork(args.database, 1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
+        train_chain_flow = TimeSegmentRCNNTrainChain(faster_extractor_backbone_flow, faster_head_module_flow, spn_flow)
+        time_seg_train_chain_list = [train_chain_rgb, train_chain_flow]
+        model = Wrapper(time_seg_train_chain_list, two_stream_mode=args.two_stream_mode)
+
     if args.gpu >= 0:
         model.to_gpu(args.gpu)
         chainer.cuda.get_device(args.gpu).use()
+
+
     optimizer = None
     if args.optimizer == OptimizerType.AdaGrad:
         optimizer = chainer.optimizers.AdaGrad(
@@ -103,7 +126,7 @@ def main():
 
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
-    data_dir = args.data_dir + "{0}_{1}_fold_{2}/train".format(args.database, args.fold, args.split_idx)
+    data_dir = args.data_dir + "/{0}_{1}_fold_{2}/train".format(args.database, args.fold, args.split_idx)
     dataset = NpzFeatureDataset(data_dir, args.database, paper_report_label_idx=paper_report_label_idx)
     if args.proc_num == 1:
         train_iter = SerialIterator(dataset, args.batch_size, repeat=True, shuffle=True)
@@ -111,8 +134,7 @@ def main():
         train_iter = MultiprocessIterator(dataset,  batch_size=args.batch_size,
                                           n_processes=args.proc_num,
                                       repeat=True, shuffle=True, n_prefetch=10, shared_mem=10000000)
-    chainer.cuda.get_device_from_id(args.gpu[0]).use()
-    model.to_gpu(args.gpu[0])
+
 
     # BP4D_3_fold_1_resnet101@rnn@no_temporal@use_paper_num_label@roi_align@label_dep_layer@conv_lstm@sampleframe#13_model.npz
     use_paper_classnum = "use_paper_num_label" if args.use_paper_num_label else "all_avail_label"
@@ -136,7 +158,7 @@ def main():
         print("loading pretrained snapshot:{}".format(model_file_name))
         chainer.serializers.load_npz(model_file_name, model)
 
-    print("only one GPU({0}) updater".format(args.gpu[0]))
+    print("only one GPU({0}) updater".format(args.gpu))
     updater = chainer.training.StandardUpdater(train_iter, optimizer, device=args.gpu,
                           converter=lambda batch, device: concat_examples(batch, device, padding=0))
 
@@ -173,6 +195,7 @@ def main():
          'main/rpn_loc_loss',
          'main/rpn_cls_loss',
          'main/accuracy',
+         'main/rpn_accuracy',
          ]), trigger=print_interval)
     trainer.extend(chainer.training.extensions.ProgressBar(update_interval=100))
 

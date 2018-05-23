@@ -1,11 +1,13 @@
 import sys
 from collections import OrderedDict
 
+
+sys.path.insert(0, '/home/machen/face_expr')
+
 from chainer.datasets import TransformDataset
 
 from time_axis_rcnn.extensions.special_converter import concat_examples_not_video_seq_id
 
-sys.path.insert(0, '/home/machen/face_expr')
 from chainer.iterators import SerialIterator, MultiprocessIterator
 
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
@@ -93,7 +95,7 @@ def main():
     parser.add_argument('--use_memcached', action='store_true',
                         help='whether use memcached to boost speed of fetch crop&mask')
     parser.add_argument('--stack_frames', type=int, default=1)
-    parser.add_argument('--proc_num', type=int, default=10)
+    parser.add_argument('--proc_num', type=int, default=1)
     parser.add_argument('--memcached_host', default='127.0.0.1')
     parser.add_argument('--mean_rgb', default=config.ROOT_PATH + "BP4D/idx/mean_rgb.npy", help='image mean .npy file')
     parser.add_argument('--mean_flow', default=config.ROOT_PATH + "BP4D/idx/mean_flow.npy", help='image mean .npy file')

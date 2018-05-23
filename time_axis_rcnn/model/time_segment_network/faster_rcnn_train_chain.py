@@ -48,7 +48,8 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
 
     def __init__(self, faster_extractor_backbone, faster_head_module, spn_module, rpn_sigma=3., roi_sigma=1.,
                  anchor_target_creator=AnchorTargetCreator(),
-                 proposal_target_creator=ProposalTargetCreator()):
+                 proposal_target_creator=ProposalTargetCreator(), loc_normalize_mean=(0., 0.),
+                 loc_normalize_std=(0.1, 0.2)):
         super(TimeSegmentRCNNTrainChain, self).__init__()
         with self.init_scope():
             self.faster_head_module = faster_head_module
@@ -59,8 +60,32 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
 
         self.anchor_target_creator = anchor_target_creator
         self.proposal_target_creator = proposal_target_creator
-        self.loc_normalize_mean = faster_head_module.loc_normalize_mean
-        self.loc_normalize_std = faster_head_module.loc_normalize_std
+        self.loc_normalize_mean = loc_normalize_mean
+        self.loc_normalize_std = loc_normalize_std
+
+
+    def nms_process(self, batch_size, width, n_anchor, rpn_scores, rpn_locs, anchor):
+        rpn_fg_scores = \
+            rpn_scores.reshape(batch_size, width, n_anchor, 2)[:, :, :, 1]  # 变成4维向量，取idx=1是前景的概率 shape = N, W, A
+        rpn_fg_scores = rpn_fg_scores.reshape(batch_size, -1)  # n是batch_size，-1代表 ww x n_anchor个anchor
+
+        rois = []
+        roi_indices = []
+        for i in range(batch_size):
+            # rpn_loc[i].data 只是算的一个偏差，再结合anchor，才算出真正的roi位置
+            # NMS算法
+            roi = self.spn_module.proposal_layer(
+                rpn_locs[i].data, rpn_fg_scores[i].data, anchor.reshape(-1, 2), width)  # 按照score从大到小排序，并且删掉超出屏幕的，以及他重叠很大IOU的被删除，即NMS算法
+            # roi shape = R, 2
+            batch_index = i * self.xp.ones((len(roi),), dtype=np.int32)  # 每张图下几个ROI全放1，再乘以图的index
+            # batch——index仍旧是图片的index，而非ROI的
+            rois.append(roi)
+            roi_indices.append(batch_index)  # 是image的index
+
+        rois = self.xp.concatenate(rois, axis=0)
+        roi_indices = self.xp.concatenate(roi_indices, axis=0)
+        return rois, roi_indices
+
 
     # 生成labels的代码要好好写写，比如段合并等等
     # 生成gt_segments也要好好写写
@@ -107,13 +132,14 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
         # roi_indices = (R,)
         # anchor shape =  (W, A, 2)
 
-        rpn_locs, rpn_scores, rois, roi_indices, anchor = self.spn_module(
-            features, AU_group_id_arr, W)
+        rpn_locs, rpn_scores, anchor = self.spn_module(
+            features, AU_group_id_arr, W, 1.0)
+        rois, roi_indices = self.nms_process(B, W, anchor.shape[1], rpn_scores, rpn_locs, anchor)
 
         # Sample RoIs and forward，下面这句话才是1:3 sample
         # rois = (R, 2) roi_indices=(R,), gt_segments = (B, R', 2), label = (B, R'),
         sample_roi, sample_roi_index, gt_roi_loc, gt_roi_label = self.proposal_target_creator(
-            rois, roi_indices, gt_segments, labels,
+            rois, roi_indices, gt_segments, labels, seg_info,
             self.loc_normalize_mean, self.loc_normalize_std)
         assert sample_roi.shape[0] == sample_roi_index.shape[0] == gt_roi_loc.shape[0] == gt_roi_label.shape[0]
         # sample_roi = (S, 2), sample_roi_index=(S,), gt_roi_loc = (S, 2), gt_roi_label = (S)
@@ -134,9 +160,9 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
 
         # gt_rpn_label shape=(S',) ,each is 1/0/-1, indicate contain/ not contain object
         rpn_cls_loss = F.softmax_cross_entropy(rpn_scores.reshape(-1,2), gt_rpn_label)
-
+        rpn_accuracy = F.accuracy(rpn_scores.reshape(-1,2), gt_rpn_label)
         # Losses for outputs of the head.
-        # 每个位置回归一个坐标
+        # 每个分类回归一个坐标
         n_sample = roi_cls_loc.shape[0] #  roi_cls_loc = (S, n_class *2), where S is sample RoI across all batch
         roi_cls_loc = roi_cls_loc.reshape(n_sample, -1, 2) # shape = (S, n_class, 2), n_class是包含背景=0的
         # 由于gt_roi_label shape = (S, 12), 而非原始Faster RCNN的单label问题，所以修改如下:
@@ -145,15 +171,16 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
             roi_loc, gt_roi_loc, gt_roi_label, self.roi_sigma)
 
         roi_cls_loss = F.softmax_cross_entropy(roi_score, gt_roi_label)  # multi-label 问题分类用sigmoid cross entropy
-
+        accuracy = F.accuracy(roi_score, gt_roi_label)
         loss = rpn_loc_loss + rpn_cls_loss + roi_loc_loss + roi_cls_loss
-        chainer.reporter.report({'rpn_loc_loss': rpn_loc_loss,
+        report = {'rpn_loc_loss': rpn_loc_loss,
                                  'rpn_cls_loss': rpn_cls_loss,
                                  'roi_loc_loss': roi_loc_loss,
                                  'roi_cls_loss': roi_cls_loss,
-                                 'loss': loss},
-                                self)
-        return loss
+                                 'accuracy': accuracy,
+                                'rpn_accuracy':rpn_accuracy,
+                                 'loss': loss}
+        return report
 
 
 def _smooth_l1_loss(x, t, in_weight, sigma):

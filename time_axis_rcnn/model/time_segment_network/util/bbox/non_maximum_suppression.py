@@ -3,8 +3,7 @@ import numpy as np
 
 from chainer import cuda
 
-from time_axis_rcnn.util.bbox._nms_gpu_post import _nms_gpu_post
-
+from time_axis_rcnn.model.time_segment_network.util.bbox._nms_gpu_post import _nms_gpu_post
 
 if cuda.available:
     import cupy
@@ -44,7 +43,7 @@ def non_maximum_suppression(seg, thresh, score=None,
     The output is same type as the type of the inputs.
 
     Args:
-        bbox (array): Bounding boxes to be transformed. The shape is
+        seg (np.array): Bounding boxes to be transformed. The shape is
             :math:`(R, 2)`. :math:`R` is the number of bounding boxes.
         thresh (float): Threshold of IoUs.
         score (array): An array of confidences whose shape is :math:`(R,)`.
@@ -63,10 +62,12 @@ def non_maximum_suppression(seg, thresh, score=None,
     """
 
     xp = cuda.get_array_module(seg)
-
+    assert seg.ndim == 2, seg.ndim
+    assert seg.shape[1] == 2
     x_min, x_max = xp.split(seg, 2, axis=1)
     zeros = xp.zeros((seg.shape[0], 1), dtype=seg.dtype)
-    bbox = xp.concatenate((zeros, x_min, zeros, x_max), axis=1)
+    ones = xp.ones((seg.shape[0], 1), dtype=seg.dtype)
+    bbox = xp.concatenate((zeros, x_min, ones, x_max), axis=1)
     if xp == np:
         return _non_maximum_suppression_cpu(bbox, thresh, score, limit)
     else:

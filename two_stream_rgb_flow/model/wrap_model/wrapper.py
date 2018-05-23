@@ -46,7 +46,7 @@ class Wrapper(chainer.Chain):
         rgb_batch_size, T, channel, height, width = rgb_images.shape
         bboxes = bboxes.reshape(1, T, bboxes.shape[1], bboxes.shape[2]) # B, T, F, 4
         rgb_image = rgb_images.reshape(rgb_batch_size * T, channel, height, width)  # B*T, C, H, W
-        rgb_box = bboxes.reshape(rgb_batch_size * T, frame_box, 4)  # B*T, F, 4 ; where T = offset
+        rgb_box = bboxes.reshape(rgb_batch_size * T, frame_box, 4)  # B*T, F, 4
         with chainer.cuda.get_device_from_array(rgb_image.data) as device:
             roi_feature_rgb = self.au_rcnn_train_chain_rgb(rgb_image, rgb_box)
         roi_feature_rgb = roi_feature_rgb.reshape(rgb_batch_size * T, frame_box, -1)

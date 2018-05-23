@@ -5,7 +5,9 @@ from time_axis_rcnn.model.time_segment_network.soi_pooling import soi_pooling_1d
 import numpy as np
 import chainer.functions as F
 
+
 class FasterHeadModule(chainer.Chain):
+
     """
     Args:
         n_class (int): The number of classes possibly including the background.
@@ -17,7 +19,7 @@ class FasterHeadModule(chainer.Chain):
 
         self.roi_size = roi_size
         with self.init_scope():
-            self.fc6 = L.Linear(in_channels * roi_size * roi_size, 1024)
+            self.fc6 = L.Linear(in_channels * roi_size, 1024)
             self.fc7 = L.Linear(1024, 1024)
             self.cls_loc = L.Linear(1024, n_class * 2)
             self.score = L.Linear(1024, n_class)

@@ -107,13 +107,13 @@ class ProposalTargetCreator(object):
             _, seg_number = batch_seg_info[b_id]
             gt_seg = gt_segments[b_id][:int(seg_number)]
             roi_inds = np.where(roi_indices == b_id)
-            roi_indice_this_timeline = roi_indices[roi_inds]
+
             all_rois = rois[roi_inds]
             label = labels[b_id][:int(seg_number)]  # shape = R,
 
             n_bbox, _ = gt_seg.shape
             all_rois = np.concatenate((all_rois, gt_seg), axis=0)  # (R + R', 2), 和gt box的混合列表
-
+            roi_indice_this_timeline = np.ones(all_rois.shape[0], dtype=np.int32) * b_id
             pos_roi_per_timeline = np.round(self.n_sample * self.pos_ratio)  # 按照一定比例生成正例
             iou = segments_iou(all_rois, gt_seg) # 返回一个n x k的矩阵（表格）。表示n个rois与k个bbox的IOU
             gt_assignment = iou.argmax(axis=1) # shape = n, 挑出每一行中哪个列最大的index，gt_assigment的shape与roi的行数相同，但gt_assigment的值范围再bbox的R'内

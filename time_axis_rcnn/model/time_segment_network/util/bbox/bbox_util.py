@@ -121,18 +121,19 @@ def encode_segment_target(src_seg, dst_seg):
 
 
 def segments_iou(seg_a, seg_b):
-    #  seg_a (N,2); seg_b (K,2)
-    #
+    if seg_a.shape[1] != 2 or seg_a.shape[1] != 2:
+        raise IndexError
     xp = cuda.get_array_module(seg_a)
-    zero_a = xp.zeros((seg_a.shape[0], 1), dtype=seg_a.dtype)
-    zero_b = xp.zeros((seg_b.shape[0], 1), dtype=seg_b.dtype)
-    seg_a_xmin, seg_a_xmax = xp.split(seg_a, indices_or_sections=2, axis=1)
-    bbox_a = xp.hstack((zero_a, seg_a_xmin, zero_a, seg_a_xmax),axis=1)  # N, 4
+    xa_min, xa_max = xp.split(seg_a, 2, axis=1)  # xa_min = (N,)
+    xb_min, xb_max = xp.split(seg_b, 2, axis=1)
+    xA = xp.maximum(xa_min, xp.transpose(xb_min))
+    xB = xp.minimum(xa_max, xp.transpose(xb_max))
+    interArea = xp.maximum((xB - xA + 1), 0)
+    segAArea = (xa_max - xa_min + 1)
+    segBArea = (xb_max - xb_min + 1)
+    iou = interArea / (segAArea + xp.transpose(segBArea) - interArea)
+    return iou
 
-    seg_b_xmin, seg_b_xmax = xp.split(seg_b, indices_or_sections=2, axis=1)
-    bbox_b = xp.hstack((zero_b, seg_b_xmin, zero_b, seg_b_xmax),axis=1) # K, 4
-
-    return bbox_iou(bbox_a, bbox_b)
 
 
 def bbox_iou(bbox_a, bbox_b):
@@ -167,6 +168,7 @@ def bbox_iou(bbox_a, bbox_b):
     xp = cuda.get_array_module(bbox_a)
 
     # top left
+    # bbox_a -> N,1,2 -> N,(2),2   bbox_b -> N, 2 -> N, 2, (2)
     tl = xp.maximum(bbox_a[:, None, :2], bbox_b[:, :2])
     # bottom right
     br = xp.minimum(bbox_a[:, None, 2:], bbox_b[:, 2:])
