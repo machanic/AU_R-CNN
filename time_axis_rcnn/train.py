@@ -40,7 +40,7 @@ def main():
     parser.add_argument('--pid', '-pp', default='/tmp/SpaceTime_AU_R_CNN/')
     parser.add_argument('--gpu', '-g', type=int, help='GPU ID')
     parser.add_argument('--lr', '-l', type=float, default=0.0001)
-    parser.add_argument('--out', '-o', default='time_axis_result',
+    parser.add_argument('--out', '-o', default='output_time_axis_rcnn',
                         help='Output directory')
     parser.add_argument('--database',  default='BP4D',
                         help='Output directory: BP4D/DISFA/BP4D_DISFA')
@@ -50,13 +50,13 @@ def main():
     parser.add_argument('--batch_size', '-bs', type=int, default=1)
     parser.add_argument('--feature_dim', type=int, default=2048)
     parser.add_argument('--roi_size', type=int, default=10)
-    parser.add_argument('--snapshot', '-snap', type=int, default=1000)
+    parser.add_argument('--snapshot', '-snap', type=int, default=10)
     parser.add_argument("--fold", '-fd', type=int, default=3)
     parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
                         help='rgb_flow/ optical_flow/ rgb')
 
     parser.add_argument("--data_dir", type=str, default="/extract_features")
-    parser.add_argument("--conv_layers", type=int, default=20)
+    parser.add_argument("--conv_layers", type=int, default=40)
     parser.add_argument("--split_idx",'-sp', type=int, default=1)
     parser.add_argument("--use_paper_num_label", action="store_true", help="only to use paper reported number of labels"
                                                                            " to train")
@@ -82,26 +82,26 @@ def main():
     paper_report_label_idx = list(paper_report_label.keys())
 
     if args.two_stream_mode == TwoStreamMode.rgb or args.two_stream_mode == TwoStreamMode.optical_flow:
-        faster_extractor_backbone = FasterBackbone(args.database, args.conv_layers, args.feature_dim, 1024)
-        faster_head_module = FasterHeadModule(1024, class_num + 1, args.roi_size)  # note that the class number here must include background
+        faster_extractor_backbone = FasterBackbone(args.conv_layers, args.feature_dim, 1024)
+        faster_head_module = FasterHeadModule(args.feature_dim, class_num + 1, args.roi_size)  # note that the class number here must include background
         initialW = chainer.initializers.Normal(0.001)
-        spn = SegmentProposalNetwork(args.database, 1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
+        spn = SegmentProposalNetwork(1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
         train_chain = TimeSegmentRCNNTrainChain(faster_extractor_backbone, faster_head_module, spn)
         model = Wrapper([train_chain, train_chain], two_stream_mode=args.two_stream_mode)
 
     elif args.two_stream_mode == TwoStreamMode.rgb_flow:
-        faster_extractor_backbone_rgb = FasterBackbone(args.database, args.conv_layers, args.feature_dim, 1024)
+        faster_extractor_backbone_rgb = FasterBackbone(args.conv_layers, args.feature_dim, 1024)
         faster_head_module_rgb = FasterHeadModule(1024, class_num + 1,
                                               args.roi_size)  # note that the class number here must include background
         initialW = chainer.initializers.Normal(0.001)
-        spn_rgb = SegmentProposalNetwork(args.database, 1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
+        spn_rgb = SegmentProposalNetwork( 1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
         train_chain_rgb = TimeSegmentRCNNTrainChain(faster_extractor_backbone_rgb, faster_head_module_rgb, spn_rgb)
 
         faster_extractor_backbone_flow = FasterBackbone(args.database, args.conv_layers, args.feature_dim, 1024)
         faster_head_module_flow = FasterHeadModule(1024, class_num + 1,
                                               args.roi_size)  # note that the class number here must include background
         initialW = chainer.initializers.Normal(0.001)
-        spn_flow = SegmentProposalNetwork(args.database, 1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
+        spn_flow = SegmentProposalNetwork(1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
         train_chain_flow = TimeSegmentRCNNTrainChain(faster_extractor_backbone_flow, faster_head_module_flow, spn_flow)
         time_seg_train_chain_list = [train_chain_rgb, train_chain_flow]
         model = Wrapper(time_seg_train_chain_list, two_stream_mode=args.two_stream_mode)
@@ -167,19 +167,19 @@ def main():
 
     trainer.extend(
         chainer.training.extensions.snapshot_object(optimizer, filename=os.path.basename(pretrained_optimizer_file_name)),
-        trigger=(args.snapshot, 'iteration'))
+        trigger=(args.snapshot, 'epoch'))
 
     trainer.extend(
         chainer.training.extensions.snapshot_object(model,
                                                     filename=os.path.basename(model_file_name)),
-        trigger=(args.snapshot, 'iteration'))
+        trigger=(args.snapshot, 'epoch'))
 
     log_interval = 100, 'iteration'
     print_interval = 10, 'iteration'
     plot_interval = 10, 'iteration'
     if args.optimizer != "Adam" and args.optimizer != "AdaDelta":
         trainer.extend(chainer.training.extensions.ExponentialShift('lr', 0.1),
-                       trigger=(10, 'epoch'))
+                       trigger=(20, 'epoch'))
     elif args.optimizer == "Adam":
         trainer.extend(chainer.training.extensions.ExponentialShift("alpha", 0.1, optimizer=optimizer), trigger=(10, 'epoch'))
     if args.optimizer != "AdaDelta":

@@ -170,7 +170,7 @@ def main():
 
     mc_manager = PyLibmcManager(args.memcached_host)
     img_dataset = AUDataset(database=database,
-                            fold=fold, split_name='test',
+                            fold=fold, split_name='trainval',
                             split_index=split_idx, mc_manager=mc_manager,
                             train_all_data=False)
 

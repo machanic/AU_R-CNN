@@ -53,10 +53,11 @@ class NpzFeatureDataset(chainer.dataset.DatasetMixin):
             flow_end_idx = end_idx * flow_scale
             gt_segments_flow[idx] = np.array([flow_start_idx, flow_end_idx], dtype=np.float32)
             single_label = random.choice(AU_idx_list)
-            labels[idx] = single_label + 1 # 0 means background
+            labels[idx] = single_label # 0 means background
             gt_segments_rgb[idx] = np.array([start_idx, end_idx], dtype=np.float32)
 
         segment_num = len(all_start_end_range)
         assert segment_num > 0, "file_path: {} not segment found".format(file_path)
+        # print("read {}".format(file_path))
         return rgb_feature.transpose(), flow_feature.transpose(), gt_segments_rgb, gt_segments_flow,\
                   np.array([AU_group_id, segment_num],dtype=np.int32), labels

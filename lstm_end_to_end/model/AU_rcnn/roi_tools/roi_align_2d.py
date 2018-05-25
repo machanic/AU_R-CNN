@@ -272,7 +272,7 @@ class ROIAlign2D(function.Function):
 def roi_align_2d(x, rois, outh, outw, spatial_scale):
     """Spatial Region of Interest (ROI) align function.
 
-    This function acts similarly to :class:`~functions.RoIPooling2D`, but
+    This function acts similarly to :class:`~func.RoIPooling2D`, but
     #TODO explain
 
     Args:

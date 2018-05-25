@@ -147,7 +147,7 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
 
         # roi_cls_loc = (S, class*2), roi_score = (S, class)
         roi_cls_loc, roi_score = self.faster_head_module(
-            features, sample_roi, sample_roi_index)  # features shape = (B, C, W)
+            featuremap_1d, sample_roi, sample_roi_index)  # features shape = (B, C, W)
 
         # RPN losses, 根据anchor，为anchor打label，下面的这句话做按照pos:neg=0.5:0.5将gt_label修改
         # 返回gt_rpn_loc是一个偏差, shape = (B * W * A, 2); gt_rpn_label shape = (B * W * A,)

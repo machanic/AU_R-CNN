@@ -95,7 +95,7 @@ def main():
     parser.add_argument('--use_memcached', action='store_true',
                         help='whether use memcached to boost speed of fetch crop&mask')
     parser.add_argument('--stack_frames', type=int, default=1)
-    parser.add_argument('--proc_num', type=int, default=1)
+    parser.add_argument('--proc_num', type=int, default=10)
     parser.add_argument('--memcached_host', default='127.0.0.1')
     parser.add_argument('--mean_rgb', default=config.ROOT_PATH + "BP4D/idx/mean_rgb.npy", help='image mean .npy file')
     parser.add_argument('--mean_flow', default=config.ROOT_PATH + "BP4D/idx/mean_flow.npy", help='image mean .npy file')
@@ -174,7 +174,7 @@ def main():
 
         train_video_data = AU_video_dataset(au_image_dataset=img_dataset,
                                             sample_frame=T,
-                                            paper_report_label_idx=paper_report_label_idx, is_shuffle_pieces=False)
+                                            paper_report_label_idx=paper_report_label_idx)
 
         train_video_data = TransformDataset(train_video_data, Transform(au_rcnn_rgb, mean_rgb_path=args.mean_rgb,
                                                                         mean_flow_path=args.mean_flow))

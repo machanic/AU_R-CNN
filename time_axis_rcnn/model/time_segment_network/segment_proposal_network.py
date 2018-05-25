@@ -9,26 +9,20 @@ import chainer.functions as F
 import chainer.links as L
 class SegmentProposalNetwork(chainer.Chain):
 
-    def __init__(self, database, mid_channels, n_anchors=len(config.ANCHOR_SIZE),
+    def __init__(self,  mid_channels, n_anchors=len(config.ANCHOR_SIZE),
                  proposal_creator_params={},
                  initialW=None):
         super(SegmentProposalNetwork, self).__init__()
         self.proposal_layer = ProposalCreator(**proposal_creator_params)
-        self.groups = config.BOX_NUM[database]
         self.conv_layers = defaultdict(list)
         self.n_anchors = n_anchors
         with self.init_scope():
             # 下面的类同样要加group
             # score's channel 2 means 1/0  loc's channel 2 means x_min, x_max
-            self.score_layers = {}
-            self.loc_layers = {}
-            for group_id in range(self.groups):
-                setattr(self, "score_#{0}".format(group_id), L.ConvolutionND(1, mid_channels, n_anchors * 2, 1, 1,0,
-                                                                                  initialW=initialW))
-                self.score_layers[group_id] = "score_#{0}".format(group_id)
-                setattr(self, "loc_#{0}".format(group_id), L.ConvolutionND(1, mid_channels, n_anchors * 2,1,1,0,
-                                                                                   initialW=initialW))
-                self.loc_layers[group_id] = "loc_#{0}".format(group_id)
+            self.score = L.ConvolutionND(1, mid_channels, n_anchors * 2, 1, 1, 0,
+                                                                                  initialW=initialW)
+            self.loc = L.ConvolutionND(1, mid_channels, n_anchors * 2, 1, 1, 0,
+                                                                                   initialW=initialW)
 
 
 
@@ -43,8 +37,8 @@ class SegmentProposalNetwork(chainer.Chain):
         loc_out_list = []
         for batch_idx, group_id in enumerate(AU_group_id_array):
             x_inside_batch = F.expand_dims(x[batch_idx], axis=0) # 1,C,W
-            score_out = getattr(self, self.score_layers[group_id])(x_inside_batch)  # 1, n_anchors * 2, w
-            loc_out = getattr(self, self.loc_layers[group_id])(x_inside_batch)  # 1, n_anchors * 2, w
+            score_out = self.score(x_inside_batch)  # 1, n_anchors * 2, w
+            loc_out = self.loc(x_inside_batch)  # 1, n_anchors * 2, w
             score_out_list.append(score_out)  #
             loc_out_list.append(loc_out)
         rpn_locs = F.concat(loc_out_list, axis=0) # shape = B, C, W; output channel is n_anchor * 2

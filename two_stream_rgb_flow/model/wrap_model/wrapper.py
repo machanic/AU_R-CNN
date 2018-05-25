@@ -53,7 +53,7 @@ class Wrapper(chainer.Chain):
 
         flow_images = flow_images[:, :, :2, :, :]  # B, T, 2, H, W
         flow_images = flow_images.reshape(rgb_batch_size, self.T * 2, height, width)  # B, T*2, H, W
-        flow_box = bboxes[:, -1, :, :]  # B, F, 4
+        flow_box = bboxes[:, bboxes.shape[1]//2, :, :]  # B, F, 4
         with chainer.cuda.get_device_from_array(flow_images.data) as device:
             roi_feature_flow = self.au_rcnn_train_chain_flow(flow_images, flow_box)
         roi_feature_flow = roi_feature_flow.reshape(rgb_batch_size, frame_box, -1)
@@ -88,7 +88,7 @@ class Wrapper(chainer.Chain):
             with chainer.cuda.get_device_from_array(rgb_image.data) as device:
                 roi_feature_rgb = self.au_rcnn_train_chain_rgb(rgb_image, box)
             roi_feature_rgb = roi_feature_rgb.reshape(batch, T, frame_box, -1) # B, T, F, 2048
-            return roi_feature_rgb, labels  # B, T, F, 12
+            return roi_feature_rgb, labels.reshape(labels.shape[0] * labels.shape[1], labels.shape[2], labels.shape[3])  # B * T, F, 12
 
         elif self.two_stream_mode == TwoStreamMode.optical_flow:
             # optical flow will only use x and y information
@@ -104,7 +104,7 @@ class Wrapper(chainer.Chain):
                 roi_feature_flow = self.au_rcnn_train_chain_flow(flow_images, box)
             roi_feature_flow = F.copy(roi_feature_flow, dst=self.rgb_gpu)  # R, 2048
             roi_feature_flow = roi_feature_flow.reshape(batch, 1, frame_box, -1)  # B, T(=1), F, 2048
-            return roi_feature_flow, label.reshape(batch, 1, frame_box, -1)
+            return roi_feature_flow, label
 
         elif self.two_stream_mode == TwoStreamMode.rgb_flow:
             flow_images = flow_images[:, :, 0:2, :, :]  # only use two channel x and y of optical flow image
@@ -129,13 +129,11 @@ class Wrapper(chainer.Chain):
 
             with chainer.cuda.get_device_from_array(rgb_image.data) as device:
                 roi_feature_rgb = self.au_rcnn_train_chain_rgb(rgb_image, rgb_box)
-                roi_feature_flow = roi_feature_flow.reshape(batch, 1, frame_box, -1)
-                roi_feature_rgb = roi_feature_rgb.reshape(batch, 1, frame_box, -1)  # B, T(=1), F, 2048
-
                 roi_feature = F.average(F.stack([roi_feature_rgb, roi_feature_flow]),axis=0,
                                         weights=chainer.Variable(self.au_rcnn_train_chain_rgb.xp.array([0.3, 0.7],
                                         dtype=roi_feature_flow.data.dtype)))
-            return roi_feature, label.reshape(batch, 1, frame_box, -1)
+            roi_feature = roi_feature.reshape(batch, frame_box, -1)
+            return roi_feature, label
 
 
     def __call__(self, rgb_images, flow_images, bboxes, labels):

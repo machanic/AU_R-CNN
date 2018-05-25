@@ -13,16 +13,12 @@ import random
 class AU_video_dataset(chainer.dataset.DatasetMixin):
 
     def __init__(self, au_image_dataset:AUDataset,
-                  sample_frame=10,  paper_report_label_idx=None, is_shuffle_pieces=False
+                  sample_frame=10,  paper_report_label_idx=None
                 ):
         self.AU_image_dataset = au_image_dataset
-        self.is_shuffle_pieces = is_shuffle_pieces
         self.sample_frame = sample_frame
         self.paper_report_label_idx = paper_report_label_idx
-        self.class_num = len(config.AU_SQUEEZE)
 
-        if self.paper_report_label_idx:
-            self.class_num = len(self.paper_report_label_idx)
 
         self.seq_dict = DefaultOrderedDict(list)
         for idx, (img_path, *_) in enumerate(self.AU_image_dataset.result_data):

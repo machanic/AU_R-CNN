@@ -68,8 +68,8 @@ class ActionUnitEvaluator(Evaluator):
                 flow_images = chainer.Variable(flow_images.astype('f'))
 
             roi_feature, labels = model.get_roi_feature(rgb_images, flow_images, bboxes, labels)
-            pred_labels = model.loss_head_module.predict(roi_feature)  # B, T, F, 12
-            pred_labels = pred_labels[:, -1, :, :]  # B, F, D
+
+            pred_labels = model.loss_head_module.predict(roi_feature)  # B * T, F, 12
             unreduce_pred.extend(pred_labels)  # list of F,D
             pred_labels = np.bitwise_or.reduce(pred_labels, axis=1)  # B, class_number
             unreduce_gt.extend(labels)  # shape  = list of F,D

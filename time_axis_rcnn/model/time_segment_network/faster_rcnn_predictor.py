@@ -47,7 +47,7 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
     Each stage is carried out by one of the callable
     :class:`chainer.Chain` objects :obj:`feature`, :obj:`rpn` and :obj:`head`.
 
-    There are two functions :meth:`predict` and :meth:`__call__` to conduct
+    There are two func :meth:`predict` and :meth:`__call__` to conduct
     object detection.
     :meth:`predict` takes images and returns bounding boxes that are converted
     to image coordinates. This will be useful for a scenario when

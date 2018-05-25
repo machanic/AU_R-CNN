@@ -275,7 +275,7 @@ class SOIPooling1D(function.Function):
 def soi_pooling_1d(x, sois, outw, spatial_scale):
     """Spatial Region of Interest (ROI) pooling function.
 
-    This function acts similarly to :class:`~functions.MaxPooling2D`, but
+    This function acts similarly to :class:`~func.MaxPooling2D`, but
     it computes the maximum of input spatial patch for each channel
     with the region of interest.
 
