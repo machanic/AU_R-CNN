@@ -62,13 +62,13 @@ if __name__ == '__main__':
     parser.add_argument("out_dir")
     parser.add_argument("--num_worker", type=int, default=3)
     parser.add_argument("--flow_type", type=str, default='tvl1', choices=['tvl1', 'warp_tvl1'])
-    parser.add_argument("--df_path", type=str, default='/home/machen/download2/denseFlow_gpu', help='path to the dense_flow toolbox')
+    parser.add_argument("--df_path", type=str, default='/home/machen/download/denseFlow_gpu/denseFlow_gpu', help='path to the dense_flow toolbox')
     parser.add_argument("--out_format", type=str, default='dir', choices=['dir','zip'],
                         help='path to the dense_flow toolbox')
     parser.add_argument("--ext", type=str, default='mp4', choices=['avi','mp4'], help='video file extensions')
     parser.add_argument("--new_width", type=int, default=0, help='resize image width')
     parser.add_argument("--new_height", type=int, default=0, help='resize image height')
-    parser.add_argument("--num_gpu", type=int, default=8, help='number of GPU')
+    parser.add_argument("--num_gpu", type=int, default=2, help='number of GPU')
     parser.add_argument("--database", default="BP4D", help='BP4D/DISFA')
 
     args = parser.parse_args()

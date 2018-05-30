@@ -30,7 +30,7 @@ def to_device(device, x):
         return cuda.to_gpu(x, device)
 
 
-def concat_examples_not_video_seq_id(batch, device=None, padding=None):
+def concat_examples_not_string(batch, device=None, padding=None):
     """Concatenates a list of examples into array(s).
     Dataset iterator yields a list of examples. If each example is an array,
     this function concatenates them along the newly-inserted first axis (called
@@ -76,7 +76,7 @@ def concat_examples_not_video_seq_id(batch, device=None, padding=None):
         padding = [padding] * len(first_elem) # len(first_elem) is 5
 
     for i in six.moves.range(len(first_elem)): # for:  rgb_face, flow_face, bbox, label, rgb_path
-        if i >= len(first_elem) - 2:  # label, rgb_path
+        if i >= len(first_elem) - 1:  #  rgb_path
             result.append(
                 [example[i] for example in batch])  # label and rgb_path will be a list inside batch dimension
 

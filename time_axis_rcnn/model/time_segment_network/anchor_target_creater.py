@@ -71,7 +71,7 @@ class AnchorTargetCreator(object):
         gt_segments = cuda.to_cpu(gt_segments)
         anchor = cuda.to_cpu(anchor)
         seg_info = cuda.to_cpu(seg_info)
-
+        assert seg_info.ndim == 2
         mini_batch_size = gt_segments.shape[0]
 
         n_anchor = len(anchor)  # W x A

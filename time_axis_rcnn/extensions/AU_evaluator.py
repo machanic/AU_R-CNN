@@ -1,8 +1,8 @@
 import copy
 import os
-from collections import defaultdict
 
 import chainer
+import chainer.functions as F
 import numpy as np
 from chainer import DictSummary
 from chainer import Reporter
@@ -19,10 +19,9 @@ class ActionUnitEvaluator(Evaluator):
     default_name = 'AU_validation'
     priority = chainer.training.PRIORITY_WRITER
 
-    def __init__(self, iterator, model, device, database, paper_report_label, converter, sample_frame,
+    def __init__(self, iterator, model, device, database, paper_report_label, converter,
                  output_path):
         super(ActionUnitEvaluator, self).__init__(iterator, model, device=device, converter=converter)
-        self.T = sample_frame
         self.database = database
         self.paper_use_AU = []
         self.paper_report_label = paper_report_label  # original AU_idx -> original AU
@@ -31,6 +30,7 @@ class ActionUnitEvaluator(Evaluator):
         self.AU_convert = dict()  # new_AU_idx -> AU
         for new_AU_idx, orig_AU_idx in enumerate(sorted(paper_report_label_idx)):
             self.AU_convert[new_AU_idx] = paper_report_label[orig_AU_idx]
+        self.class_num = len(self.AU_convert)
 
         if database == "BP4D":
             self.paper_use_AU = config.paper_use_BP4D
@@ -58,31 +58,70 @@ class ActionUnitEvaluator(Evaluator):
         unreduce_pred = []
         unreduce_gt = []
 
+        last_seq_id = None
+        one_frame_predict_list = []
+        one_frame_gt_list = []
+
         for idx, batch in enumerate(it):
             print("processing :{}".format(idx))
             batch = self.converter(batch, self.device)
-            images, bboxes, labels = batch  # images shape = B*T, C, H, W; bboxes shape = B*T, F, 4; labels shape = B*T, F, 12
-            if not isinstance(images, chainer.Variable):
-                images = chainer.Variable(images.astype('f'))
-                bboxes = chainer.Variable(bboxes.astype('f'))
+            feature, gt_seg_rgb, gt_seg_flow, seg_info, seg_labels, gt_labels, npz_file_path = batch  # feature shape =(B, C, W); bboxes shape = B,W 4; labels shape B, W, 12
+            seg_id = os.path.basename(npz_file_path[0])
+            seg_id = seg_id[:seg_id.rindex("#")]
+            if last_seq_id is None:
+                last_seq_id = seg_id
 
-            roi_feature, labels = model.get_roi_feature(images, bboxes, labels)
-            pred_labels = model.loss_head_module.predict(roi_feature)  # B, T, F, 12
-            pred_labels = pred_labels[:, -1, :, :]  # B, F, D
-            unreduce_pred.extend(pred_labels)  # list of F,D
-            pred_labels = np.bitwise_or.reduce(pred_labels, axis=1)  # B, class_number
-            labels = labels[:, -1, :, :]  # B, F, D
-            unreduce_gt.extend(labels)  # shape  = list of F,D
-            labels = np.bitwise_or.reduce(labels, axis=1)  # B, class_number
-            assert labels.shape == pred_labels.shape
-            pred_labels_array.extend(pred_labels)
-            gt_labels_array.extend(labels)
+            if last_seq_id != seg_id:
+                one_frame_predict_result = np.stack(one_frame_predict_list, axis=2)  # B, W, F, class
+                unreduce_pred.extend(one_frame_predict_result.reshape(-1,
+                                                              one_frame_predict_result.shape[-2],one_frame_predict_result.shape[-1]))  # list of W, F, class
+                one_frame_predict_result = np.bitwise_or.reduce(one_frame_predict_result, axis=2) # B, W, class
+                one_frame_predict_result = one_frame_predict_result.reshape([-1, one_frame_predict_result.shape[-1]]) # B* W, class
+                pred_labels_array.extend(one_frame_predict_result)
 
-        unreduce_pred = np.stack(unreduce_pred).astype(np.int32)
-        unreduce_gt = np.stack(unreduce_gt).astype(np.int32)
-        np.savez(self.output_path , pred=unreduce_pred, gt=unreduce_gt)
+                one_frame_gt_result = np.stack(one_frame_gt_list, axis=2)  # B, W, F, class
+                unreduce_gt.extend(one_frame_gt_result.reshape(-1, one_frame_gt_result.shape[-2], one_frame_gt_result.shape[-1])) # list of W, F, class
+                one_frame_gt_result = np.bitwise_or.reduce(one_frame_gt_result, axis=2) # B, W, class
+                one_frame_gt_result = one_frame_gt_result.reshape([-1, one_frame_gt_result.shape[-1]])  # B * W, class
+                gt_labels_array.extend(one_frame_gt_result)
 
-        gt_labels_array = np.stack(gt_labels_array)
+                one_frame_predict_list.clear()
+                one_frame_gt_list.clear()
+
+            if not isinstance(feature, chainer.Variable):
+                feature = chainer.Variable(feature.astype('f'))
+             # feature = (B, C, W)
+            predict_labels = model.predict(feature)  # (B, W, class)
+            one_frame_predict_list.append(predict_labels)
+
+            gt_labels = chainer.cuda.to_cpu(gt_labels)
+            one_frame_gt_list.append(gt_labels)
+
+        one_frame_predict_result = np.stack(one_frame_predict_list, axis=2)  # B, W, F, class
+        unreduce_pred.extend(one_frame_predict_result.reshape(-1,
+                                                              one_frame_predict_result.shape[-2],one_frame_predict_result.shape[-1]))  # list of W, F, class
+        one_frame_predict_result = np.bitwise_or.reduce(one_frame_predict_result, axis=2)  # B, W, class
+        assert one_frame_predict_result.shape[-1] == self.class_num
+        one_frame_predict_result = one_frame_predict_result.reshape(
+            [-1, one_frame_predict_result.shape[-1]])  # B* W, class
+        pred_labels_array.extend(one_frame_predict_result)
+
+        one_frame_gt_result = np.stack(one_frame_gt_list, axis=2)  # B, W, F, class
+        unreduce_gt.extend(one_frame_gt_result.reshape(-1, one_frame_gt_result.shape[-2], one_frame_gt_result.shape[-1]))  # list of W, F, class
+        one_frame_gt_result = np.bitwise_or.reduce(one_frame_gt_result, axis=2)  # B, W, class
+        one_frame_gt_result = one_frame_gt_result.reshape([-1, one_frame_gt_result.shape[-1]])  # B * W, class
+        gt_labels_array.extend(one_frame_gt_result)
+
+        one_frame_predict_list.clear()
+        one_frame_gt_list.clear()
+
+
+        # 由于F不一样，因此不能stack
+        # unreduce_pred = np.stack(unreduce_pred).astype(np.int32)  # N, W, F, class
+        # unreduce_gt = np.stack(unreduce_gt).astype(np.int32)  # N, W, F, class
+        # np.savez(self.output_path , predict=unreduce_pred, gt=unreduce_gt)
+
+        gt_labels_array = np.stack(gt_labels_array)  # all_N, 12
         pred_labels_array = np.stack(pred_labels_array)  # shape = all_N, out_size
         gt_labels = np.transpose(gt_labels_array) # shape = Y x frame
         pred_labels = np.transpose(pred_labels_array) #shape = Y x frame

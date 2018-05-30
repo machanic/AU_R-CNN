@@ -49,12 +49,16 @@ if __name__ == "__main__":
                 if idx >= len(of_list):
                     idx = len(of_list) - 1
                 src_no = of_list[idx]
-                keystr = "Left"
+
+                target_keystr = "Img_LeftCamera"
+                keystr = "LeftVideo"
                 if img_dict == right_dict:
-                    keystr = "Right"
-                src_path = "/home/machen/dataset/DISFA/optical_flow/{}Video".format(keystr) + seq_key+"_comp/" + src_no + ".jpg"
-                target_path = new_dir + keystr +"/" + seq_key + "/" + img_orig + ".jpg"
-                os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                shutil.copyfile(src_path, target_path)
-                # print(" move {0} to {1}".format(src_path, target_path))
+                    keystr = "RightVideo"
+                    target_keystr = "Img_RightCamera"
+                src_path = "/home/machen/dataset/DISFA/optical_flow/{}".format(keystr) + seq_key+"_comp/" + src_no + ".jpg"
+
+                target_path = new_dir + target_keystr +"/" + seq_key + "/" + img_orig + ".jpg"
+                # os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                # shutil.copyfile(src_path, target_path)
+                print(" move {0} to {1}".format(src_path, target_path))
 

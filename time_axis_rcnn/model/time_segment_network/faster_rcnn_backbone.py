@@ -34,12 +34,8 @@ class FasterBackbone(chainer.Chain):
                 self.conv_layers.append("conv_layer_{0}".format(i))
 
 
-    def __call__(self, x, AU_group_id_array, seq_len):
-        output_list = []
-        for batch_idx, group_id in enumerate(AU_group_id_array):
-            x_inside_batch = F.expand_dims(x[batch_idx], axis=0)  # 1,C,W
-            for conv_layer in self.conv_layers:
-                x_inside_batch = F.relu(getattr(self, conv_layer)(x_inside_batch))
-            output_list.append(x_inside_batch)
-            assert not self.xp.isnan(self.xp.sum(x_inside_batch.data)), x_inside_batch.data
-        return F.concat(output_list, axis=0)  # B, C, W
+    def __call__(self, x): # x shape = (B, C, W)
+        for conv_layer in self.conv_layers:
+            x = F.relu(getattr(self, conv_layer)(x))  # B, C, W
+        assert not self.xp.isnan(self.xp.sum(x.data)), x.data
+        return x  # B, C, W

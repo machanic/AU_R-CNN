@@ -89,16 +89,15 @@ class AU_RCNN_Resnet101(AU_RCNN):
     def __init__(self,
                  pretrained_model=None,
                  min_size=512, max_size=512,
-                 n_class=12, classify_mode=False, use_roi_align=False,
+                 use_roi_align=False,
                  use_optical_flow_input=False, temporal_length=10
                  ):
-        self.n_class = n_class
         self.temporal_length = temporal_length
         self.use_optical_flow_input = use_optical_flow_input
         extractor = ResnetFeatureExtractor(use_optical_flow_input, temporal_length)
         head = ResRoIHead(
             roi_size=14, spatial_scale=1. / self.feat_stride,
-            n_class=n_class, classify_mode=classify_mode, use_roi_align=use_roi_align
+            use_roi_align=use_roi_align
             # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
         )
         super(AU_RCNN_Resnet101, self).__init__(
@@ -238,25 +237,19 @@ class ResRoIHead(chainer.Chain):
 
     """
 
-    def __init__(self, roi_size, spatial_scale, n_class, classify_mode=False, use_roi_align=False):
+    def __init__(self, roi_size, spatial_scale, use_roi_align=False):
         # n_class includes the background
         super(ResRoIHead, self).__init__()
         self.use_roi_align = use_roi_align
         self.roi_size = roi_size
         self.spatial_scale = spatial_scale  # 这个很关键,一般都是1/16.0
         self.activation = dict()
-        self.classify_mode = classify_mode
 
         with self.init_scope():
             self.res5 = Block(3, 1024, 512, 2048)
-            self.score = L.Linear(2048, n_class)
             self.functions = collections.OrderedDict([
                 ('res5',  [self.res5]),
             ])
-            self.functions["avg_pool"] = [functools.partial(F.average_pooling_2d, ksize=7, stride=1)]
-            if classify_mode:
-                self.functions["reshape"] = [functools.partial(F.reshape, shape=(-1, 2048))]
-                self.functions["score"] = [self.score]
 
 
     def __call__(self, x, rois, roi_indices):
@@ -286,8 +279,6 @@ class ResRoIHead(chainer.Chain):
         for key, funcs in self.functions.items():
             for func in funcs:
                 h = func(h)
-        if not self.classify_mode:
-            h = F.reshape(h, (-1, 2048))
         return h
 
 

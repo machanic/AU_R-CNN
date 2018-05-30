@@ -51,6 +51,7 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
                  proposal_target_creator=ProposalTargetCreator(), loc_normalize_mean=(0., 0.),
                  loc_normalize_std=(0.1, 0.2)):
         super(TimeSegmentRCNNTrainChain, self).__init__()
+
         with self.init_scope():
             self.faster_head_module = faster_head_module
             self.faster_extractor_backbone = faster_extractor_backbone
@@ -122,18 +123,16 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
             labels = labels.data
 
         B, _, W = featuremap_1d.shape  # because W across mini-batch must be same, thus we need
-        AU_group_id_arr = seg_info[:, 0]  # shape = (B,)
 
-        features = self.faster_extractor_backbone(featuremap_1d, AU_group_id_arr, W)
+        features = self.faster_extractor_backbone(featuremap_1d)
 
         # rpn_scores shape = (N, W * A, 2)
         # rpn_locs shape = (N, W * A, 2)
         # rois  = (R, 2), R 是跨越各个batch的，也就是跨越各个AU group的，每个AU group相当于独立的一张图片
         # roi_indices = (R,)
         # anchor shape =  (W, A, 2)
-
         rpn_locs, rpn_scores, anchor = self.spn_module(
-            features, AU_group_id_arr, W, 1.0)
+            features, 1.0)
         rois, roi_indices = self.nms_process(B, W, anchor.shape[1], rpn_scores, rpn_locs, anchor)
 
         # Sample RoIs and forward，下面这句话才是1:3 sample
@@ -169,7 +168,7 @@ class TimeSegmentRCNNTrainChain(chainer.Chain):
         roi_loc = roi_cls_loc[self.xp.arange(n_sample), gt_roi_label]
         roi_loc_loss = _fast_rcnn_loc_loss(
             roi_loc, gt_roi_loc, gt_roi_label, self.roi_sigma)
-
+        assert roi_score.shape[0] == gt_roi_label.shape[0]
         roi_cls_loss = F.softmax_cross_entropy(roi_score, gt_roi_label)  # multi-label 问题分类用sigmoid cross entropy
         accuracy = F.accuracy(roi_score, gt_roi_label)
         loss = rpn_loc_loss + rpn_cls_loss + roi_loc_loss + roi_cls_loss

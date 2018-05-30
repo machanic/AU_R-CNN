@@ -146,39 +146,6 @@ class AU_RCNN(chainer.Chain):
         return roi_scores, rois, roi_indices
 
 
-    def prepare(self, img, mean):
-        """Preprocess an image for feature extraction.
-
-        The length of the shorter edge is scaled to :obj:`self.min_size`.
-        After the scaling, if the length of the longer edge is longer than
-        :obj:`self.max_size`, the image is scaled to fit the longer edge
-        to :obj:`self.max_size`.
-
-        After resizing the image, the image is subtracted by a mean image value
-        :obj:`self.mean`.
-
-        Args:
-            img (~numpy.ndarray): An image. This is in TCHW and RGB format.
-                The range of its value is :math:`[0, 255]`. where T is sequence length
-
-        Returns:
-            ~numpy.ndarray:
-            A preprocessed image.
-
-        """
-
-        _, H, W = img.shape
-
-        scale = self.min_size / min(H, W)
-
-        if scale * max(H, W) > self.max_size:
-            scale = self.max_size / max(H, W)
-
-        img = resize_img(img, (int(H * scale), int(W * scale)))
-
-        img = (img - mean).astype(np.float32, copy=False)
-        return img
-
     def fetch_labels_from_scores(self, xp, raw_score):
         '''
         R' is bbox count in one image

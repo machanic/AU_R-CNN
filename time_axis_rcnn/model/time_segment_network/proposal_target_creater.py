@@ -97,6 +97,7 @@ class ProposalTargetCreator(object):
         gt_segments = cuda.to_cpu(gt_segments)
         labels = cuda.to_cpu(labels) # shape = (B, R')
         batch_seg_info = cuda.to_cpu(batch_seg_info)
+        assert batch_seg_info.ndim == 2
         mini_batch = gt_segments.shape[0]
         assert mini_batch == labels.shape[0]
         batch_rois =[]
@@ -147,6 +148,7 @@ class ProposalTargetCreator(object):
 
             # Compute offsets and scales to match sampled RoIs to the GTs.
             gt_roi_loc = encode_segment_target(sample_roi, gt_seg[gt_assignment[keep_index]])  # shape = N, 2
+            assert gt_roi_loc.shape[1] == 2, gt_roi_loc.shape
             gt_roi_loc = ((gt_roi_loc - np.array(loc_normalize_mean, np.float32)
                            ) / np.array(loc_normalize_std, np.float32))
 

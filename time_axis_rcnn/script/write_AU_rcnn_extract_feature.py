@@ -1,12 +1,13 @@
 import sys
 from collections import OrderedDict
 
+from numpy import random
 
 sys.path.insert(0, '/home/machen/face_expr')
 
 from chainer.datasets import TransformDataset
 
-from time_axis_rcnn.extensions.special_converter import concat_examples_not_video_seq_id
+from time_axis_rcnn.extensions.special_converter import concat_examples_not_string
 
 from chainer.iterators import SerialIterator, MultiprocessIterator
 
@@ -14,14 +15,13 @@ from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 from two_stream_rgb_flow import transforms
 import argparse
 from AU_rcnn.links.model.faster_rcnn.faster_rcnn_resnet101 import FasterRCNNResnet101
-from AU_rcnn.links.model.faster_rcnn.faster_rcnn_vgg import FasterRCNNVGG16
 
 from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
 from two_stream_rgb_flow.model.wrap_model.wrapper import Wrapper
 from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor
 from two_stream_rgb_flow.constants.enum_type import TwoStreamMode
 
-from time_axis_rcnn.datasets.AU_video_dataset import AU_video_dataset, AUDataset
+from time_axis_rcnn.datasets.AU_dataset import AUDataset
 import config
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 from time_axis_rcnn.model.dump_feature_model.dump_feature_model import DumpRoIFeature
@@ -34,17 +34,29 @@ import numpy as np
 
 class Transform(object):
 
-    def __init__(self, au_rcnn, mean_rgb_path, mean_flow_path):
-        self.au_rcnn = au_rcnn
+    def __init__(self, L, mean_rgb_path, mean_flow_path, mirror=True):
+        self.mirror = mirror
         self.mean_rgb = np.load(mean_rgb_path)
-        self.mean_flow = np.load(mean_flow_path)
+        self.mean_rgb = self.mean_rgb.astype(np.float32)
+        self.mean_flow = np.tile(np.expand_dims(np.load(mean_flow_path),  axis=0), reps=(L, 1, 1, 1))[:, :2, :, :]
+        self.mean_flow = self.mean_flow.astype(np.float32)
 
     def __call__(self, in_data):
-        rgb_img, flow_img, bbox, label, seq_key = in_data
-        rgb_img = self.au_rcnn.prepare(rgb_img, self.mean_rgb)
-        flow_img = self.au_rcnn.prepare(flow_img, self.mean_flow)
+        rgb_img, flow_img_list, bbox, label, rgb_path = in_data  # flow_img_list shape = (T, C, H, W), and bbox = (F,4)
+        rgb_img = rgb_img - self.mean_rgb
+        assert flow_img_list.shape == self.mean_flow.shape
+        flow_imgs = flow_img_list - self.mean_flow
+
         assert len(np.where(bbox < 0)[0]) == 0
-        return rgb_img, flow_img, bbox, label, seq_key
+        # horizontally flip and random shift box
+        if self.mirror:
+            rgb_img = rgb_img[:, :, ::-1]
+            flow_imgs = flow_imgs[:, :, :, ::-1] # (T, C, H, W) where W is flipped
+            bbox = transforms.flip_bbox(
+                bbox, (rgb_img.shape[0], rgb_img.shape[1]), x_flip=True)
+
+        return rgb_img, flow_imgs, bbox, label, rgb_path
+
 
 
 def extract_mode(model_file_name):
@@ -88,6 +100,7 @@ def main():
                         help='each batch size will be a new file')
     parser.add_argument('--gpu', '-g', type=int, default=0,
                         help='gpu that used to extract feature')
+    parser.add_argument("--mirror", action="store_true", help="whether to mirror")
     parser.add_argument("--out_dir", '-o', default="/home/machen/dataset/extract_features/")
     parser.add_argument("--model", '-m', help="the AU R-CNN pretrained model file to load to extract feature")
     parser.add_argument("--trainval_test", '-tt', help="train or test")
@@ -120,31 +133,21 @@ def main():
     T = return_dict["T"]
 
     class_num = len(config.paper_use_BP4D) if database == "BP4D" else len(config.paper_use_DISFA)
+    paper_report_label_idx = sorted(list(config.AU_SQUEEZE.keys()))
     if use_paper_num_label:
         paper_report_label, class_num = squeeze_label_num_report(database, True)
         paper_report_label_idx = list(paper_report_label.keys())
 
-
-
-    # if backbone == 'resnet101':
-    #     model = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE),
-    #                                       pretrained_model=backbone,
-    #                                       mean_file=args.mean_rgb,
-    #                                       use_lstm=False,
-    #                                       extract_len=1000, fix=False)
     assert two_stream_mode == TwoStreamMode.rgb_flow
     if two_stream_mode ==TwoStreamMode.rgb_flow:
         au_rcnn_train_chain_list = []
         au_rcnn_rgb = AU_RCNN_Resnet101(pretrained_model=backbone,
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                        classify_mode=False, n_class=class_num,
                                         use_roi_align=roi_align,
                                         use_optical_flow_input=False, temporal_length=T)
 
         au_rcnn_optical_flow = AU_RCNN_Resnet101(pretrained_model=backbone,
                                                  min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                                 classify_mode=False,
-                                                 n_class=class_num,
                                                  use_roi_align=roi_align,
                                                  use_optical_flow_input=True, temporal_length=T)
 
@@ -153,8 +156,8 @@ def main():
 
         au_rcnn_train_chain_list.append(au_rcnn_train_chain_rgb)
         au_rcnn_train_chain_list.append(au_rcnn_train_chain_optical_flow)
-        model = Wrapper(au_rcnn_train_chain_list, None, database, T,
-                        two_stream_mode=two_stream_mode, gpus=[args.gpu, args.gpu], train_mode=False)
+        model = Wrapper(au_rcnn_train_chain_list, class_num, database, T,
+                        two_stream_mode=two_stream_mode, gpus=[args.gpu, args.gpu])
 
     assert os.path.exists(args.model)
     print("loading model file : {}".format(args.model))
@@ -167,31 +170,34 @@ def main():
 
     split_names = ["trainval", "test"]
     for split_name in split_names:
-        img_dataset = AUDataset(database=database,
+        img_dataset = AUDataset(database=database, L=T,
                                 fold=fold, split_name=split_name,
                                 split_index=split_idx, mc_manager=mc_manager,
-                                train_all_data=False)
+                                train_all_data=False,
+                                paper_report_label_idx=paper_report_label_idx)
+        mirror_list = [False,]
+        if args.mirror and split_name == 'trainval':
+            mirror_list.append(True)
+        for mirror in mirror_list:
+            train_dataset = TransformDataset(img_dataset, Transform(T, mean_rgb_path=args.mean_rgb,
+                                                                    mean_flow_path=args.mean_flow, mirror=mirror))
 
-        train_video_data = AU_video_dataset(au_image_dataset=img_dataset,
-                                            sample_frame=T,
-                                            paper_report_label_idx=paper_report_label_idx)
 
-        train_video_data = TransformDataset(train_video_data, Transform(au_rcnn_rgb, mean_rgb_path=args.mean_rgb,
-                                                                        mean_flow_path=args.mean_flow))
+            if args.proc_num > 1:
+                dataset_iter = MultiprocessIterator(train_dataset, batch_size=args.batch_size,
+                                 n_processes=args.proc_num,
+                                 repeat=False, shuffle=False, n_prefetch=10, shared_mem=10000000)
+            else:
+                dataset_iter = SerialIterator(train_dataset, batch_size=args.batch_size,
+                                              repeat=False, shuffle=False)
 
-        dataset_iter = SerialIterator(train_video_data, batch_size=args.batch_size * T,
-                                            repeat=False, shuffle=False)
-        if args.proc_num > 0:
-            dataset_iter = MultiprocessIterator(train_video_data, batch_size=args.batch_size * T,
-                             n_processes=args.proc_num,
-                             repeat=False, shuffle=False, n_prefetch=10, shared_mem=10000000)
 
-        with chainer.no_backprop_mode(), chainer.using_config('cudnn_deterministic', True), chainer.using_config(
-            'train', False):
-            model_dump = DumpRoIFeature(dataset_iter, model, args.gpu, database,
-                                        converter=lambda batch, device: concat_examples_not_video_seq_id(batch, device, padding=0),
-                                        output_path=args.out_dir, trainval_test=split_name, fold_split_idx=split_idx)
-            model_dump.evaluate()
+            with chainer.no_backprop_mode(), chainer.using_config('cudnn_deterministic', True), chainer.using_config(
+                'train', False):
+                model_dump = DumpRoIFeature(dataset_iter, model, args.gpu, database,
+                                            converter=lambda batch, device: concat_examples_not_string(batch, device, padding=0),
+                                            output_path=args.out_dir, trainval_test=split_name, fold_split_idx=split_idx, mirror_data=mirror)
+                model_dump.evaluate()
 
 if __name__ == "__main__":
 

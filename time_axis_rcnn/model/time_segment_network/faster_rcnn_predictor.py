@@ -24,6 +24,8 @@ import numpy as np
 import chainer
 from chainer import cuda
 import chainer.functions as F
+
+from time_axis_rcnn.model.time_segment_network.faster_rcnn_train_chain import TimeSegmentRCNNTrainChain
 from time_axis_rcnn.model.time_segment_network.util.bbox.bbox_util import decode_segment_target
 from time_axis_rcnn.model.time_segment_network.util.bbox.non_maximum_suppression import non_maximum_suppression
 from collections import defaultdict
@@ -91,12 +93,15 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
     ):
         super(TimeSegmentRCNNPredictor, self).__init__()
         with self.init_scope():
-            self.feature_backbone = feature_backbone
-            self.spn = spn
-            self.head = head
+            self.train_chain = TimeSegmentRCNNTrainChain(feature_backbone, head, spn)
+            self.feature_backbone = self.train_chain.faster_extractor_backbone
+            self.spn = self.train_chain.spn_module
+            self.head = self.train_chain.faster_head_module
 
         self.loc_normalize_mean = loc_normalize_mean
         self.loc_normalize_std = loc_normalize_std
+        self.use_preset("evaluate")
+
 
     @property
     def n_class(self):
@@ -104,7 +109,7 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
         return self.head.n_class
 
     # only used by predict
-    def __call__(self, x, seg_info):
+    def __call__(self, x):
         """Forward Faster R-CNN.
 
         Scaling paramter :obj:`scale` is used by RPN to determine the
@@ -124,37 +129,35 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
 
         Args:
             x (~chainer.Variable): 1D feature image variable. (B,C,W)
-            seg_info (chainer.Variable) shape = (B,2)
 
         Returns:
             Variable, Variable, array, array:
             Returns tuple of four values listed below.
 
             * **roi_cls_locs**: Offsets and scalings for the proposed RoIs. \
-                Its shape is :math:`(R', (L + 1) \\times 4)`.
+                Its shape is :math:`(R', (L + 1) \\times 2)`.
             * **roi_scores**: Class predictions for the proposed RoIs. \
                 Its shape is :math:`(R', L + 1)`.
             * **rois**: RoIs proposed by RPN. Its shape is \
-                :math:`(R', 4)`.
+                :math:`(R', 2)`.
             * **roi_indices**: Batch indices of RoIs. Its shape is \
                 :math:`(R',)`.
 
         """
-        ww = x.shape[2]
+        batch, channel, ww = x.shape
         # x, AU_group_id_array, seq_len, scale=1.
-        AU_group_id_array = seg_info[:, 0]
-        h = self.feature_backbone(x, AU_group_id_array, ww)
+        h = self.feature_backbone(x)
         # rpn_scores shape = (N, W * A, 2)
         # rpn_locs shape = (N, W * A, 2)
         # rois  = (R, 2), R 是跨越各个batch的，也就是跨越各个AU group的，每个AU group相当于独立的一张图片
         # roi_indices = (R,)
         # anchor shape =  (W, A, 2)
-
-        rpn_locs, rpn_scores, rois, roi_indices, anchor =\
-            self.spn(h, AU_group_id_array, ww)
+        rpn_locs, rpn_scores, anchor = self.spn(h, 1.0)
+        rois, roi_indices = self.train_chain.nms_process(batch, ww, anchor.shape[1], rpn_scores, rpn_locs, anchor)
         roi_cls_locs, roi_scores = self.head(
-            h, rois, roi_indices)
+            x, rois, roi_indices)
         return roi_cls_locs, roi_scores, rois, roi_indices
+
         # roi_cls_loc = (S, class*2), roi_score = (S, class), rois = (R, 2), roi_indices=(R,)
 
     def use_preset(self, preset):
@@ -186,35 +189,35 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
 
     def _suppress(self, raw_cls_bbox, raw_score):
         # raw_cls_bbox = R, class * 2; raw_score = R, class
-        bbox = list()
+        segments = list()
         label = list()
         score = list()
         # skip cls_id = 0 because it is the background class
         for l in range(1, self.n_class):
-            cls_bbox_l = raw_cls_bbox.reshape(-1, self.n_class, 2)[:, l, :] # R, 2
+            cls_seg_l = raw_cls_bbox.reshape(-1, self.n_class, 2)[:, l, :] # R, 2
             prob_l = raw_score[:, l] # shape = R, raw_score is output of sigmoid function value
             mask = prob_l > self.score_thresh  # R
-            cls_bbox_l = cls_bbox_l[mask]  # R', 2, R' 有可能是0
+            cls_seg_l = cls_seg_l[mask]  # R', 2,   R' 有可能是0
             prob_l = prob_l[mask]  # R'
             keep = non_maximum_suppression(
-                cls_bbox_l, self.nms_thresh, prob_l) # 每个分类内部NMS
-            bbox.append(cls_bbox_l[keep])
-            score.append(prob_l[keep])
+                cls_seg_l, self.nms_thresh, prob_l) # 每个分类内部NMS
+            segments.append(cuda.to_cpu(cls_seg_l[keep]))
+            score.append(cuda.to_cpu(prob_l[keep]))
             # The labels are in [0, self.n_class - 2]. 抛去完全背景的1个label
             label.append((l - 1) * np.ones((len(keep),)))
 
-        bbox = np.concatenate(bbox, axis=0).astype(np.float32)  # R', 2
+        segments = np.concatenate(segments, axis=0).astype(np.float32)  # R', 2
         label = np.concatenate(label, axis=0).astype(np.int32)  # R'
         score = np.concatenate(score, axis=0).astype(np.float32)  # R'
-        return bbox, label, score
+        return segments, label, score
 
-    def predict(self, feature_1D, seg_info):
+    def predict(self, featuremap_1D):
         """Detect segments from timeline.
 
         This method predicts objects for each image.
 
         Args:
-            feature_1D (iterable of numpy.ndarray): Arrays holding pre-extracted features. shape=(B, C, W)
+            featuremap_1D (iterable of numpy.ndarray): Arrays holding pre-extracted features. shape=(B, C, W)
 
         Returns:
            tuple of lists:
@@ -233,16 +236,16 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
 
         """
 
-        bboxes = list()
+        segment_list = list()
         labels = list()
         scores = list()
-        seq_len = feature_1D.shape[2]
-        for feature_inside_batch in feature_1D:
+        seq_len = featuremap_1D.shape[2]
+        for feature_inside_batch in featuremap_1D:
             with chainer.function.no_backprop_mode():
-                x_var = chainer.Variable(self.xp.asarray(feature_inside_batch[None]))
+                x_var = F.expand_dims(feature_inside_batch, axis=0)
                 # roi_cls_loc = (R, class*2), roi_score = (R, class), rois = (R, 2), roi_indices=(R,)
                 roi_cls_locs, roi_scores, rois, _ = self.__call__(
-                    x_var, seg_info)
+                    x_var)
                 assert roi_cls_locs.shape[0] == rois.shape[0]
             # We are assuming that batch size is 1.
             roi_cls_loc = roi_cls_locs.data
@@ -267,12 +270,12 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
                 cls_bbox, 0, seq_len)  # 开眼了
 
             prob = F.softmax(roi_score).data
-            raw_cls_bbox = cuda.to_cpu(cls_bbox)  # R, class * 2
-            raw_prob = cuda.to_cpu(prob)  # R, class
+            raw_cls_bbox = cuda.to_gpu(cls_bbox)  # R, class * 2
+            raw_prob = cuda.to_gpu(prob)  # R, class
             # the number of foreground ROIs are constant until they are NMSed
-            bbox, label, score = self._suppress(raw_cls_bbox, raw_prob)
-            bboxes.append(bbox)
+            segments, label, score = self._suppress(raw_cls_bbox, raw_prob)
+            segment_list.append(segments)
             labels.append(label)
             scores.append(score)
 
-        return bboxes, labels, scores
+        return segment_list, labels, scores  # list of (R,2) list of (R,) list of R
