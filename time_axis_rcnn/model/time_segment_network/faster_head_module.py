@@ -19,7 +19,8 @@ class FasterHeadModule(chainer.Chain):
 
         self.roi_size = roi_size
         with self.init_scope():
-            self.fc6 = L.Linear(in_channels * roi_size, 1024)
+            # self.reduce_dim_conv = L.ConvolutionND(1, in_channels, in_channels//2, ksize=1, stride=1) FIXME
+            self.fc6 = L.Linear((in_channels) * roi_size, 1024) # FIXME
             self.fc7 = L.Linear(1024, 1024)
             self.cls_loc = L.Linear(1024, n_class * 2)
             self.score = L.Linear(1024, n_class)
@@ -41,7 +42,7 @@ class FasterHeadModule(chainer.Chain):
             roi_indices (array): An array containing indices of featuremap_1d to
                 which bounding boxes correspond to. Its shape is :math:`(R',)`.
         """
-
+        # x = F.relu(self.reduce_dim_conv(x))
         roi_indices = roi_indices.astype(np.float32)
         indices_and_rois = self.xp.concatenate(
             (roi_indices[:, None], rois), axis=1)

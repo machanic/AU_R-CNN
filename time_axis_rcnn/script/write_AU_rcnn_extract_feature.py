@@ -43,6 +43,8 @@ class Transform(object):
 
     def __call__(self, in_data):
         rgb_img, flow_img_list, bbox, label, rgb_path = in_data  # flow_img_list shape = (T, C, H, W), and bbox = (F,4)
+        if rgb_img is None:
+            return None, None, None, None, rgb_path
         rgb_img = rgb_img - self.mean_rgb
         assert flow_img_list.shape == self.mean_flow.shape
         flow_imgs = flow_img_list - self.mean_flow
@@ -107,7 +109,6 @@ def main():
     parser.add_argument("--database", default="BP4D")
     parser.add_argument('--use_memcached', action='store_true',
                         help='whether use memcached to boost speed of fetch crop&mask')
-    parser.add_argument('--stack_frames', type=int, default=1)
     parser.add_argument('--proc_num', type=int, default=10)
     parser.add_argument('--memcached_host', default='127.0.0.1')
     parser.add_argument('--mean_rgb', default=config.ROOT_PATH + "BP4D/idx/mean_rgb.npy", help='image mean .npy file')
@@ -168,36 +169,34 @@ def main():
             model.to_gpu(args.gpu)
 
 
-    split_names = ["trainval", "test"]
-    for split_name in split_names:
-        img_dataset = AUDataset(database=database, L=T,
-                                fold=fold, split_name=split_name,
-                                split_index=split_idx, mc_manager=mc_manager,
-                                train_all_data=False,
-                                paper_report_label_idx=paper_report_label_idx)
-        mirror_list = [False,]
-        if args.mirror and split_name == 'trainval':
-            mirror_list.append(True)
-        for mirror in mirror_list:
-            train_dataset = TransformDataset(img_dataset, Transform(T, mean_rgb_path=args.mean_rgb,
-                                                                    mean_flow_path=args.mean_flow, mirror=mirror))
+    img_dataset = AUDataset(database=database, L=T,
+                            fold=fold, split_name=args.trainval_test,
+                            split_index=split_idx, mc_manager=mc_manager,
+                            train_all_data=False,
+                            paper_report_label_idx=paper_report_label_idx, jump_exists=True, npz_dir=args.out_dir)
+    mirror_list = [False,]
+    if args.mirror and args.trainval_test == 'trainval':
+        mirror_list.append(True)
+    for mirror in mirror_list:
+        train_dataset = TransformDataset(img_dataset, Transform(T, mean_rgb_path=args.mean_rgb,
+                                                                mean_flow_path=args.mean_flow, mirror=mirror))
 
 
-            if args.proc_num > 1:
-                dataset_iter = MultiprocessIterator(train_dataset, batch_size=args.batch_size,
-                                 n_processes=args.proc_num,
-                                 repeat=False, shuffle=False, n_prefetch=10, shared_mem=10000000)
-            else:
-                dataset_iter = SerialIterator(train_dataset, batch_size=args.batch_size,
-                                              repeat=False, shuffle=False)
+        if args.proc_num > 1:
+            dataset_iter = MultiprocessIterator(train_dataset, batch_size=args.batch_size,
+                             n_processes=args.proc_num,
+                             repeat=False, shuffle=False, n_prefetch=10, shared_mem=10000000)
+        else:
+            dataset_iter = SerialIterator(train_dataset, batch_size=args.batch_size,
+                                          repeat=False, shuffle=False)
 
 
-            with chainer.no_backprop_mode(), chainer.using_config('cudnn_deterministic', True), chainer.using_config(
-                'train', False):
-                model_dump = DumpRoIFeature(dataset_iter, model, args.gpu, database,
-                                            converter=lambda batch, device: concat_examples_not_string(batch, device, padding=0),
-                                            output_path=args.out_dir, trainval_test=split_name, fold_split_idx=split_idx, mirror_data=mirror)
-                model_dump.evaluate()
+        with chainer.no_backprop_mode(), chainer.using_config('cudnn_deterministic', True), chainer.using_config(
+            'train', False):
+            model_dump = DumpRoIFeature(dataset_iter, model, args.gpu, database,
+                                        converter=lambda batch, device: concat_examples_not_string(batch, device, padding=0),
+                                        output_path=args.out_dir, trainval_test=args.trainval_test, fold_split_idx=split_idx, mirror_data=mirror)
+            model_dump.evaluate()
 
 if __name__ == "__main__":
 

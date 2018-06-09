@@ -90,13 +90,13 @@ class AU_RCNN_Resnet101(AU_RCNN):
                  pretrained_model=None,
                  min_size=512, max_size=512,
                  mean_file=None, n_class=12, classify_mode=False, use_roi_align=False, use_feature_map_res45=False, use_feature_map_res5=False,
-                 use_optical_flow_input=False, temporal_length=10
+                 temporal_length=10
                  ):
         self.n_class = n_class
         self.mean_file = mean_file
         self.temporal_length = temporal_length
-        self.use_optical_flow_input = use_optical_flow_input
-        extractor = ResnetFeatureExtractor(use_optical_flow_input, temporal_length)
+        self.use_optical_flow_input = False
+        extractor = ResnetFeatureExtractor(False, temporal_length)
         head = ResRoIHead(
             roi_size=14, spatial_scale=1. / self.feat_stride,
             n_class=n_class, classify_mode=classify_mode, use_roi_align=use_roi_align, use_feature_map_res45=use_feature_map_res45,

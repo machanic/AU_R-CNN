@@ -273,8 +273,7 @@ def main():
 
     train_video_data = AU_video_dataset(au_image_dataset=img_dataset,
                                         sample_frame=args.sample_frame, train_mode=(args.two_stream_mode != TwoStreamMode.optical_flow),
-                                        debug_mode=args.debug,
-                                        paper_report_label_idx=paper_report_label_idx, fetch_use_parrallel_iterator=True)
+                                        paper_report_label_idx=paper_report_label_idx,)
 
     Transform = Transform3D
 

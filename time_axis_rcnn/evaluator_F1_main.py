@@ -3,22 +3,23 @@ import sys
 
 from chainer.dataset import concat_examples
 
+
+sys.path = sys.path[1:]
+sys.path.append("/home/machen/face_expr")
 from time_axis_rcnn.extensions.special_converter import concat_examples_not_string
 from time_axis_rcnn.model.time_segment_network.faster_head_module import FasterHeadModule
 from time_axis_rcnn.model.time_segment_network.faster_rcnn_backbone import FasterBackbone
 from time_axis_rcnn.model.time_segment_network.segment_proposal_network import SegmentProposalNetwork
+from time_axis_rcnn.model.time_segment_network.tcn_backbone import TcnBackbone
 from time_axis_rcnn.model.time_segment_network.wrapper_predictor import WrapperPredictor
 from two_stream_rgb_flow.extensions.special_converter import concat_examples_not_labels
 
-sys.path = sys.path[1:]
-sys.path.append("/home/machen/face_expr")
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 
 from chainer.iterators import SerialIterator
 from time_axis_rcnn.model.time_segment_network.faster_rcnn_predictor import TimeSegmentRCNNPredictor
 import chainer
-from time_axis_rcnn.constants.enum_type import TwoStreamMode
-
+from time_axis_rcnn.constants.enum_type import TwoStreamMode, FasterBackboneType
 
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import os
@@ -32,7 +33,7 @@ from time_axis_rcnn.extensions.AU_evaluator import ActionUnitEvaluator
 #  time_axis_rcnn_BP4D_3_fold_1@use_paper_num_label@rgb_flow@30_model.npz
 def extract_mode(model_file_name):
     model_file_name = os.path.basename(model_file_name)
-    pattern = re.compile('time_axis_rcnn_(.*?)_(.*?)_fold_(.*?)@(.*?)@(.*?)@(.*?)_model\.npz', re.DOTALL)
+    pattern = re.compile('time_axis_rcnn_(.*?)_(.*?)_fold_(.*?)@(.*?)@(.*?)@(.*?)@(.*?)_model\.npz', re.DOTALL)
     matcher = pattern.match(model_file_name)
     return_dict = OrderedDict()
     if matcher:
@@ -48,6 +49,7 @@ def extract_mode(model_file_name):
         return_dict["use_paper_num_label"] = use_paper_num_label
         return_dict["two_stream_mode"] = two_stream_mode
         return_dict["conv_layers"] = conv_layers
+        return_dict["faster_backbone_type"] = FasterBackboneType[matcher.group(7)]
     return return_dict
 
 
@@ -57,8 +59,6 @@ def main():
                         help='GPU ID (negative value indicates CPU)')  # open_crf layer only works for CPU mode
     parser.add_argument("--model", "-m", help="pretrained model file path") # which contains pretrained target
     parser.add_argument('--proc_num', type=int, default=10, help="multiprocess fetch data process number")
-    parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
-                        help='spatial/ temporal/ spatial_temporal')
     parser.add_argument("--data_dir", type=str, default="/home/machen/dataset/extract_features")
     parser.add_argument('--batch', '-b', type=int, default=1,
                         help='mini batch size')
@@ -75,8 +75,9 @@ def main():
     use_paper_num_label = mode_dict["use_paper_num_label"]
     conv_layers = mode_dict["conv_layers"]
     two_stream_mode = mode_dict["two_stream_mode"]
+    faster_backbone_type = mode_dict["faster_backbone_type"]
     T = 10
-    data_dir = args.data_dir + "/{0}_{1}_fold_{2}/train".format(database, fold, split_idx)
+    data_dir = args.data_dir + "/{0}_{1}_fold_{2}/test".format(database, fold, split_idx)
 
     adaptive_AU_database(database)
     paper_report_label, class_num = squeeze_label_num_report(database, use_paper_num_label)
@@ -95,7 +96,10 @@ def main():
         {1}
         ======================================
         """.format(args.model, json.dumps(model_print_dict, sort_keys=True, indent=8)))
-    faster_extractor_backbone = FasterBackbone(conv_layers, 2048, 1024)
+    if faster_backbone_type == FasterBackboneType.conv1d:
+        faster_extractor_backbone = FasterBackbone(conv_layers, 2048, 1024)
+    elif faster_backbone_type == FasterBackboneType.tcn:
+        faster_extractor_backbone = TcnBackbone(conv_layers, 2048, 1024)
     faster_head_module = FasterHeadModule(2048, class_num + 1, 7)  # note that the class number here must include background
     initialW = chainer.initializers.Normal(0.001)
     spn = SegmentProposalNetwork(1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)

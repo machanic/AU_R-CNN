@@ -1,3 +1,4 @@
+import cv2
 import random
 
 import chainer
@@ -8,12 +9,12 @@ from collections import defaultdict, OrderedDict
 import config
 from dataset_toolkit.compress_utils import get_zip_ROI_AU, get_AU_couple_child
 from img_toolkit.face_mask_cropper import FaceMaskCropper
-
+import glob
 # obtain the cropped face image and bounding box and ground truth label for each box
 class AUDataset(chainer.dataset.DatasetMixin):
 
     def __init__(self, database, L, fold, split_name, split_index, mc_manager, train_all_data,
-                 pretrained_target="",paper_report_label_idx=None):
+                 pretrained_target="",paper_report_label_idx=None, jump_exists=True, npz_dir=""):
         self.database = database
         self.split_name = split_name
         self.L = L  # used for the optical flow image fetch at before L/2 and after L/2
@@ -24,6 +25,8 @@ class AUDataset(chainer.dataset.DatasetMixin):
         self.pretrained_target = pretrained_target
         self.dir = config.DATA_PATH[database] # BP4D/DISFA/ BP4D_DISFA
         self.paper_report_label_idx = paper_report_label_idx
+        self.fold = fold
+        self.split_index = split_index
         if train_all_data:
             id_list_file_path = os.path.join(self.dir + "/idx/{}_fold".format(fold),
                                              "full_pretrain.txt")
@@ -31,6 +34,8 @@ class AUDataset(chainer.dataset.DatasetMixin):
             id_list_file_path = os.path.join(self.dir + "/idx/{0}_fold".format(fold),
                                              "id_{0}_{1}.txt".format(split_name, split_index))
         self.result_data = []
+        self.jump_exists = jump_exists
+        self.npz_dir = npz_dir
 
         print("idfile:{}".format(id_list_file_path))
         with open(id_list_file_path, "r") as file_obj:
@@ -92,6 +97,20 @@ class AUDataset(chainer.dataset.DatasetMixin):
             for _ in box_list:
                 label.append(AU_bin)
 
+    def get_npz_name(self, out_dir, database, fold, split_idx, sequence_key):
+        sequence_key = sequence_key.replace("/","_")
+        if self.split_name != "test":
+            train_keyword = "train"
+            file_name = out_dir + os.path.sep + "{0}_{1}_fold_{2}".format(database, fold,
+                                                                          split_idx) \
+                        + "/{}/".format(train_keyword) + sequence_key + "#*"
+        else:
+            file_name = out_dir + os.path.sep + "{0}_{1}_fold_{2}".format(database, fold,
+                                                                          split_idx) \
+                        + "/test/" + sequence_key + "#*"
+        return len(glob.glob(file_name)) > 0
+
+
     def get_example(self, i):
         '''
         Returns a color image and bounding boxes. The image is in CHW format.
@@ -103,37 +122,62 @@ class AUDataset(chainer.dataset.DatasetMixin):
         if i > len(self.result_data):
             raise IndexError("Index too large")
         rgb_path,_, AU_set, database = self.result_data[i]
+
+        if self.get_npz_name(self.npz_dir, database, self.fold, self.split_index, self.extract_sequence_key(rgb_path).replace("/","_")):
+            return None, None, None, None, rgb_path
+
         flow_path_list = self.collect_flow_image_paths(i)
+
+        key_prefix = self.database + "|"
+        if self.pretrained_target is not None and len(self.pretrained_target) > 0:
+            key_prefix = self.pretrained_target + "|"
+
+        flow_face_list = []
+        for flow_dict in flow_path_list:
+            adjacent_rgb_path = flow_dict["rgb"]
+            adjacent_flow_path = flow_dict["flow"]
+            try:
+                # FIXME read too slow, use the same rgb path to accelerate speed . but this trick is not accurate
+                flow_face, _ = FaceMaskCropper.get_cropface_and_box(adjacent_flow_path, adjacent_rgb_path,
+                                                                    channel_first=True,
+                                                                    mc_manager=self.mc_manager,
+                                                                    key_prefix=key_prefix)
+                flow_face = flow_face[:2, :, :]  # 2, H, W
+                flow_face_list.append(flow_face)  # only use two channel x and y of optical flow image
+            except IndexError:
+                print("image path : {} not get box".format(adjacent_rgb_path))
+                flow_face = cv2.imread(adjacent_flow_path)
+                flow_face = cv2.resize(flow_face, config.IMG_SIZE)
+                flow_face = np.transpose(flow_face, axes=(2, 0, 1))
+                flow_face = flow_face[:2, :, :]
+                flow_face_list.append(flow_face)
+
+        flow_face_list = np.stack(flow_face_list)  # T, C, H, W
+        if len(flow_face_list) < self.L:
+            rest_pad_len = self.L - len(flow_face_list)
+            flow_face_list = np.pad(flow_face_list, ((0, rest_pad_len), (0, 0), (0, 0), (0, 0)), 'mean')
+        assert flow_face_list.shape[0] == self.L
+
         try:
             # print("begin fetch cropped image and bbox {}".format(img_path))
-            key_prefix = self.database + "|"
-            if self.pretrained_target is not None and len(self.pretrained_target) > 0:
-                key_prefix = self.pretrained_target + "|"
-
             rgb_face, AU_box_dict = FaceMaskCropper.get_cropface_and_box(rgb_path, rgb_path,
                                                                          channel_first=True,
                                                                          mc_manager=self.mc_manager,
                                                                          key_prefix=key_prefix)
-            flow_face_list = []
-            for flow_dict in flow_path_list:
-                adjacent_rgb_path = flow_dict["rgb"]
-                adjacent_flow_path = flow_dict["flow"]
-                flow_face, _ = FaceMaskCropper.get_cropface_and_box(adjacent_flow_path, adjacent_rgb_path,
-                                                                             channel_first=True,
-                                                                             mc_manager=self.mc_manager,
-                                                                             key_prefix=key_prefix)
-                flow_face = flow_face[:2, :, :]
-                flow_face_list.append(flow_face)
-            flow_face_list = np.stack(flow_face_list)  # T, C, H, W
-            if len(flow_face_list) < self.L:
-                rest_pad_len = self.L - len(flow_face_list)
-                flow_face_list = np.pad(flow_face_list, ((0, rest_pad_len), (0,0), (0,0), (0,0)), 'mean')
-            assert flow_face_list.shape[0]==self.L
-
         except IndexError:
-            # print("read image error:{}".format(read_img_path))
-            # return AUDataset.get_example(self, i-1)  # 不得已为之
-            raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(rgb_path))
+            print("image path : {} not get box".format(rgb_path))
+            label = np.zeros(len(config.AU_SQUEEZE), dtype=np.int32)
+            for AU in AU_set:
+                np.put(label, config.AU_SQUEEZE.inv[AU], 1)
+            if self.paper_report_label_idx:
+                label = label[self.paper_report_label_idx]
+
+            rgb_face = np.transpose(cv2.resize(cv2.imread(rgb_path), config.IMG_SIZE), (2, 0, 1))
+
+            whole_bbox = np.tile(np.array([1, 1, config.IMG_SIZE[1] - 1, config.IMG_SIZE[0] - 1], dtype=np.float32),
+                                 (config.BOX_NUM[database], 1))
+            whole_label = np.tile(label, (config.BOX_NUM[database], 1))
+            return rgb_face, flow_face_list, whole_bbox, whole_label, rgb_path
 
 
         current_AU_couple = defaultdict(set)  # key = AU couple, value = AU 用于合并同一个区域的不同AU

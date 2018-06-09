@@ -11,18 +11,28 @@ from time_axis_rcnn.constants.enum_type import TwoStreamMode
 
 class NpzFeatureDataset(chainer.dataset.DatasetMixin):
 
-    def __init__(self, directory, database, two_stream_mode, T):
+    def __init__(self, directory, database, two_stream_mode, T, use_mirror_data=False):
         super(NpzFeatureDataset, self).__init__()
         self.database = database
         self.directory = directory
         self.T = T
         self.two_stream_mode = two_stream_mode
         self.file_list = []
-        for file_name in sorted(os.listdir(directory), key=lambda f: (f[:f.rindex("#")],
-                                                                      int(f[f.rindex("#")+1:f.rindex(".")]))):
-            abs_file_path = directory + os.path.sep + file_name
-            self.file_list.append(abs_file_path)
+        directorys = [directory]
+        if use_mirror_data:
+            directorys.append(directory.replace("train","train_mirror"))
+        for directory in directorys:
+            if os.path.exists(directory):
+                for file_name in sorted(os.listdir(directory), key=lambda f: (f[:f.rindex("#")],
+                                                                              int(f[f.rindex("#")+1:f.rindex(".")]))):
+                    abs_file_path = directory + os.path.sep + file_name
+                    self.file_list.append(abs_file_path)
+
+
         print("loading done, total file: {}".format(len(self)))
+
+
+
     def __len__(self):
         return len(self.file_list)
 
@@ -60,12 +70,16 @@ class NpzFeatureDataset(chainer.dataset.DatasetMixin):
             flow_start_idx = start_idx * flow_scale
             flow_end_idx = end_idx * flow_scale
             gt_segments_flow[idx] = np.array([flow_start_idx, flow_end_idx], dtype=np.float32)
+            if len(AU_idx_list) > 1:
+                print(AU_idx_list)
             single_label = random.choice(AU_idx_list)
             seg_labels[idx] = single_label # 0 == fg_class number #1, not the background
             gt_segments_rgb[idx] = np.array([start_idx, end_idx], dtype=np.float32)
 
         segment_num = len(all_start_end_range)
-        assert segment_num > 0, "file_path: {} not segment found".format(file_path)
+        # assert segment_num > 0, "file_path: {} not segment found".format(file_path)
         # print("read {}".format(file_path))
+        if segment_num == 0:
+            pass
         return feature.transpose(), gt_segments_rgb, gt_segments_flow,\
                   np.array([AU_group_id, segment_num],dtype=np.int32), seg_labels, orig_label, file_path

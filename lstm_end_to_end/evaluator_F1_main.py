@@ -10,7 +10,7 @@ from chainer.iterators import MultiprocessIterator
 from lstm_end_to_end.model.AU_rcnn.au_rcnn_resnet50 import AU_RCNN_Resnet50
 from collections_toolkit.memcached_manager import PyLibmcManager
 from lstm_end_to_end.extensions.AU_evaluator import ActionUnitEvaluator
-from I3D_rcnn.datasets.AU_dataset import AUDataset
+from lstm_end_to_end.datasets.AU_dataset import AUDataset
 from lstm_end_to_end.model.roi_space_time_net.space_time_conv_lstm import SpaceTimeConv
 from lstm_end_to_end.model.roi_space_time_net.space_time_seperate_fc_lstm import SpaceTimeSepFcLSTM
 from lstm_end_to_end.model.roi_space_time_net.space_time_seperate_conv_lstm import SpaceTimeSepConv
@@ -27,7 +27,7 @@ from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import os
 from collections import OrderedDict
 import json
-from I3D_rcnn.datasets.AU_video_dataset import AU_video_dataset
+from lstm_end_to_end.datasets.AU_video_dataset import AU_video_dataset
 import re
 import config
 import numpy as np
@@ -102,7 +102,7 @@ def main():
     parser.add_argument('--proc_num', type=int, default=10, help="multiprocess fetch data process number")
     parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
                         help='spatial/ temporal/ spatial_temporal')
-    parser.add_argument('--batch', '-b', type=int, default=10,
+    parser.add_argument('--batch', '-b', type=int, default=5,
                         help='mini batch size')
     args = parser.parse_args()
     if not args.model.endswith("model.npz"):
@@ -149,7 +149,6 @@ def main():
                                     use_roi_align=use_roi_align, use_feature_map_res45=use_feature_map,
                                     use_feature_map_res5=(
                                     conv_rnn_type != ConvRNNType.fc_lstm or conv_rnn_type == ConvRNNType.sep_conv_lstm),
-                                    use_optical_flow_input=(args.two_stream_mode == TwoStreamMode.optical_flow),
                                     temporal_length=sample_frame)
 
 
@@ -184,7 +183,7 @@ def main():
         loss_head_module = space_time_sep_conv_lstm
 
     model = Wrapper(au_rcnn_train_chain, loss_head_module, database, sample_frame,
-                        use_feature_map=use_feature_map, two_stream_mode=args.two_stream_mode)
+                        use_feature_map=use_feature_map,gpu=args.gpu)
     chainer.serializers.load_npz(args.model, model)
     print("loading {}".format(args.model))
     if args.gpu >= 0:

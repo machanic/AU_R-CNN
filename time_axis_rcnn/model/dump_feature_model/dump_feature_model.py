@@ -69,7 +69,7 @@ class DumpRoIFeature(Evaluator):
             rgb_box_feature = np.stack(rgb_trans[AU_group_id])
 
             count_non_zero = len(np.nonzero(labels_trans[AU_group_id])[0])
-            if count_non_zero == 0:
+            if count_non_zero == 0 and self.trainval_test == "trainval":
                 continue
             out_filepath = self.get_npz_name(AU_group_id, self.trainval_test, self.output_path, self.database,
                                              3,  self.fold_split_idx, seq_key)
@@ -113,6 +113,10 @@ class DumpRoIFeature(Evaluator):
             print("processing :{}".format(idx))
             batch = self.converter(batch, -1)
             rgb_faces, flow_faces, bboxes, labels, rgb_path_list = batch  # rgb_faces shape = B, C, H, W; bboxes shape = B, F, 4; labels shape = B, F, 12
+            if rgb_faces is None:
+                print("continue jump : {}".format(rgb_path_list[0]))
+                continue
+
             xp = chainer.cuda.get_array_module(rgb_faces)
             last_rgb_path = rgb_path_list[0]
             for idx, rgb_path in enumerate(rgb_path_list[1:]):
@@ -135,6 +139,7 @@ class DumpRoIFeature(Evaluator):
                 rgb_faces = chainer.Variable(chainer.cuda.to_gpu(rgb_faces.astype('f'), self.device))
                 flow_faces = chainer.Variable(chainer.cuda.to_gpu(flow_faces.astype('f'), self.device))
                 bboxes = chainer.Variable(chainer.cuda.to_gpu(bboxes.astype('f'), self.device))
+
             if sequence_key != last_sequence_key:  # 换video了
                 if len(fuse_roi_feature_list) == 0:
                     print("all feature cannot obtain {}".format(last_sequence_key))

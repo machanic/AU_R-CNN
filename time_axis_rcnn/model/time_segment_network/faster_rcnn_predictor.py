@@ -197,6 +197,8 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
             cls_seg_l = raw_cls_bbox.reshape(-1, self.n_class, 2)[:, l, :] # R, 2
             prob_l = raw_score[:, l] # shape = R, raw_score is output of sigmoid function value
             mask = prob_l > self.score_thresh  # R
+            if np.all(np.logical_not(cuda.to_cpu(mask))):
+                continue
             cls_seg_l = cls_seg_l[mask]  # R', 2,   R' 有可能是0
             prob_l = prob_l[mask]  # R'
             keep = non_maximum_suppression(
@@ -205,10 +207,14 @@ class TimeSegmentRCNNPredictor(chainer.Chain):
             score.append(cuda.to_cpu(prob_l[keep]))
             # The labels are in [0, self.n_class - 2]. 抛去完全背景的1个label
             label.append((l - 1) * np.ones((len(keep),)))
-
-        segments = np.concatenate(segments, axis=0).astype(np.float32)  # R', 2
-        label = np.concatenate(label, axis=0).astype(np.int32)  # R'
-        score = np.concatenate(score, axis=0).astype(np.float32)  # R'
+        if segments:
+            segments = np.concatenate(segments, axis=0).astype(np.float32)  # R', 2
+            label = np.concatenate(label, axis=0).astype(np.int32)  # R'
+            score = np.concatenate(score, axis=0).astype(np.float32)  # R'
+        else:
+            segments = np.array([])
+            label = np.array([])
+            score = np.array([])
         return segments, label, score
 
     def predict(self, featuremap_1D):

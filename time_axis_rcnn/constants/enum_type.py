@@ -10,6 +10,12 @@ class TwoStreamMode(Enum):
     def __str__(self):
         return self.value
 
+class FasterBackboneType(Enum):
+    conv1d = "conv1d"
+    tcn = "tcn"
+    def __str__(self):
+        return self.value
+
 class OptimizerType(Enum):
     AdaGrad = 'AdaGrad'
     RMSprop = "RMSprop"

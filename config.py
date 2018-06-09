@@ -42,6 +42,7 @@ ENHANCE_BALANCE_PATH = {
 
 ANCHOR_SIZE = [30, 40, 65, 70, 120, 140, 180]
 
+
 AU_GROUP_TOWER_INDEX = {
     0: [2],
     1: [3],

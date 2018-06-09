@@ -108,6 +108,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
         if i > len(self.result_data):
             raise IndexError("Index too large")
         img_path, from_img_path, AU_set, database_name = self.result_data[i]
+
         if not os.path.exists(img_path):
             raise IndexError("image file_path: {} not exist!".format(img_path))
 
@@ -130,7 +131,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
 
         except IndexError:
             print("crop image error:{}".format(read_img_path))
-            raise
+            return None, None, None, None
             #return self.get_example(i-1)  # 不得已为之
 
             # raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(read_img_path))

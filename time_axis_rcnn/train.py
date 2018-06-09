@@ -1,15 +1,18 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
-
+import sys
+sys.path.insert(0, '/home/machen/face_expr')
 import cProfile
 import pstats
 import random
-import sys
+
 
 from chainer.datasets import TransformDataset
 
-sys.path.insert(0, '/home/machen/face_expr')
 
+
+
+from time_axis_rcnn.extensions.special_converter import concat_examples_not_string
 
 try:
     import matplotlib
@@ -17,10 +20,11 @@ try:
 except ImportError:
     pass
 
-from time_axis_rcnn.constants.enum_type import OptimizerType
+from time_axis_rcnn.constants.enum_type import OptimizerType, FasterBackboneType
 from time_axis_rcnn.datasets.npz_feature_dataset import NpzFeatureDataset
 from time_axis_rcnn.model.time_segment_network.faster_head_module import FasterHeadModule
 from time_axis_rcnn.model.time_segment_network.faster_rcnn_backbone import FasterBackbone
+from time_axis_rcnn.model.time_segment_network.tcn_backbone import TcnBackbone
 from time_axis_rcnn.model.time_segment_network.faster_rcnn_train_chain import TimeSegmentRCNNTrainChain
 from time_axis_rcnn.model.time_segment_network.segment_proposal_network import SegmentProposalNetwork
 from time_axis_rcnn.constants.enum_type import TwoStreamMode
@@ -31,7 +35,6 @@ import os
 
 import chainer
 from chainer import training
-from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
 from chainer.iterators import MultiprocessIterator, SerialIterator
@@ -44,7 +47,7 @@ class Transform(object):
 
     def __call__(self, in_data):
         # feature shape = (2048, N)
-        feature, gt_segments_rgb, gt_segments_flow, seg_info, seg_labels, orig_label = in_data
+        feature, gt_segments_rgb, gt_segments_flow, seg_info, seg_labels, orig_label, _ = in_data
         if self.mirror:
             x_flip = random.choice([True, False])
             if x_flip:
@@ -83,7 +86,7 @@ def main():
     parser.add_argument("--fold", '-fd', type=int, default=3)
     parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
                         help='rgb_flow/ optical_flow/ rgb')
-
+    parser.add_argument("--faster_backbone", type=FasterBackboneType,choices=list(FasterBackboneType), help='tcn/conv1d')
     parser.add_argument("--data_dir", type=str, default="/extract_features")
     parser.add_argument("--conv_layers", type=int, default=10)
     parser.add_argument("--split_idx",'-sp', type=int, default=1)
@@ -108,8 +111,13 @@ def main():
     paper_report_label, class_num = squeeze_label_num_report(args.database, args.use_paper_num_label)
     paper_report_label_idx = list(paper_report_label.keys())
 
+    if args.faster_backbone == FasterBackboneType.tcn:
+        Bone = TcnBackbone
+    elif args.faster_backbone == FasterBackboneType.conv1d:
+        Bone = FasterBackbone
+
     if args.two_stream_mode == TwoStreamMode.rgb or args.two_stream_mode == TwoStreamMode.optical_flow:
-        faster_extractor_backbone = FasterBackbone(args.conv_layers, args.feature_dim, 1024)
+        faster_extractor_backbone = Bone(args.conv_layers, args.feature_dim, 1024)
         faster_head_module = FasterHeadModule(args.feature_dim, class_num + 1, args.roi_size)  # note that the class number here must include background
         initialW = chainer.initializers.Normal(0.001)
         spn = SegmentProposalNetwork(1024, n_anchors=len(config.ANCHOR_SIZE), initialW=initialW)
@@ -117,7 +125,7 @@ def main():
         model = Wrapper(train_chain, two_stream_mode=args.two_stream_mode)
 
     elif args.two_stream_mode == TwoStreamMode.rgb_flow:
-        faster_extractor_backbone = FasterBackbone(args.conv_layers, args.feature_dim, 1024)
+        faster_extractor_backbone = Bone(args.conv_layers, args.feature_dim, 1024)
         faster_head_module = FasterHeadModule(args.feature_dim, class_num + 1,
                                               args.roi_size)  # note that the class number here must include background
         initialW = chainer.initializers.Normal(0.001)
@@ -154,7 +162,7 @@ def main():
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
     data_dir = args.data_dir + "/{0}_{1}_fold_{2}/train".format(args.database, args.fold, args.split_idx)
-    dataset = NpzFeatureDataset(data_dir, args.database, two_stream_mode=args.two_stream_mode,T=10.0)
+    dataset = NpzFeatureDataset(data_dir, args.database, two_stream_mode=args.two_stream_mode,T=10.0, use_mirror_data=True)
 
     dataset = TransformDataset(dataset, Transform(mirror=True))
 
@@ -170,16 +178,16 @@ def main():
     use_paper_classnum = "use_paper_num_label" if args.use_paper_num_label else "all_avail_label"
 
     model_file_name = args.out + os.path.sep + \
-                             'time_axis_rcnn_{0}_{1}_fold_{2}@{3}@{4}@{5}_model.npz'.format(args.database,
+                             'time_axis_rcnn_{0}_{1}_fold_{2}@{3}@{4}@{5}@{6}_model.npz'.format(args.database,
                                                                                 args.fold, args.split_idx,
                                                                                 use_paper_classnum, args.two_stream_mode,
-                                                                                            args.conv_layers)
+                                                                                            args.conv_layers, args.faster_backbone)
     print(model_file_name)
     pretrained_optimizer_file_name = args.out + os.path.sep +\
-                             'time_axis_rcnn_{0}_{1}_fold_{2}@{3}@{4}@{5}_optimizer.npz'.format(args.database,
+                             'time_axis_rcnn_{0}_{1}_fold_{2}@{3}@{4}@{5}@{6}_optimizer.npz'.format(args.database,
                                                                                 args.fold, args.split_idx,
                                                                                  use_paper_classnum, args.two_stream_mode,
-                                                                                                args.conv_layers)
+                                                                                                args.conv_layers,args.faster_backbone)
     print(pretrained_optimizer_file_name)
 
     if os.path.exists(pretrained_optimizer_file_name):
@@ -192,7 +200,7 @@ def main():
 
     print("only one GPU({0}) updater".format(args.gpu))
     updater = chainer.training.StandardUpdater(train_iter, optimizer, device=args.gpu,
-                          converter=lambda batch, device: concat_examples(batch, device, padding=0))
+                          converter=lambda batch, device: concat_examples_not_string(batch, device, padding=0))
 
     trainer = training.Trainer(
         updater, (args.epoch, 'epoch'), out=args.out)
@@ -207,8 +215,8 @@ def main():
         trigger=(args.snapshot, 'epoch'))
 
     log_interval = 100, 'iteration'
-    print_interval = 10, 'iteration'
-    plot_interval = 10, 'iteration'
+    print_interval = 100, 'iteration'
+    plot_interval = 100, 'iteration'
     if args.optimizer != "Adam" and args.optimizer != "AdaDelta":
         trainer.extend(chainer.training.extensions.ExponentialShift('lr', 0.1),
                        trigger=(20, 'epoch'))
@@ -217,7 +225,7 @@ def main():
     if args.optimizer != "AdaDelta":
         trainer.extend(chainer.training.extensions.observe_lr(),
                        trigger=log_interval)
-    trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,log_name="log_{0}_{1}_fold_{2}_{3}.log".format(
+    trainer.extend(chainer.training.extensions.LogReport(trigger=log_interval,log_name="log_{0}_{1}_{2}_fold_{3}_{4}.log".format(args.faster_backbone,
                                                                                         args.database, args.fold, args.split_idx,
                                                                                         use_paper_classnum)))
     trainer.extend(chainer.training.extensions.PrintReport(

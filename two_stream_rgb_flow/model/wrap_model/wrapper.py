@@ -28,6 +28,7 @@ class Wrapper(chainer.Chain):
                 self.conv_reduce = L.Convolution2D(2048 * 2, 2048, 1, 1, pad=0, nobias=True).to_gpu(gpus[0])
 
             self.fc = L.Linear(2048, 1024).to_gpu(gpus[0])
+            self.n_class = n_class
             self.score = L.Linear(1024, n_class).to_gpu(gpus[0])
 
 
@@ -53,9 +54,16 @@ class Wrapper(chainer.Chain):
         return rgb_feature, flow_feature, roi_feature
 
 
-    def predict(self, roi_features):  # B, T, F, 12
-        with chainer.cuda.get_device_from_array(roi_features.data) as device:
-            pred = chainer.cuda.to_cpu(roi_features.data)  # B, T, F, class_num
+    def predict(self, roi_feature):  # B, F, 2048, 7, 7
+        with chainer.cuda.get_device_from_array(roi_feature.data) as device:
+            batch, frame_box, channel, roi_height, roi_width = roi_feature.shape
+            roi_feature = F.reshape(roi_feature, shape=(batch * frame_box, channel, roi_height, roi_width))
+            roi_feature = F.average_pooling_2d(roi_feature, ksize=7, stride=1)
+            roi_feature = roi_feature.reshape(batch * frame_box, 2048)
+            predict_score = F.relu(self.fc(roi_feature))
+            predict_score = self.score(predict_score)
+            predict_score = predict_score.reshape(batch, frame_box, self.n_class)
+            pred = chainer.cuda.to_cpu(predict_score.data)  # B, F, 12
             pred = (pred > 0).astype(np.int32)
             return pred
 

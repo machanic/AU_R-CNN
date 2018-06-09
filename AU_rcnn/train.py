@@ -24,6 +24,7 @@ from AU_rcnn import transforms
 
 from AU_rcnn.datasets.AU_dataset import AUDataset
 from chainer.dataset import concat_examples
+from AU_rcnn.extensions.special_converter import concat_examples_not_none
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 from AU_rcnn.updater.update_bptt import BPTTUpdater
 import config
@@ -54,6 +55,8 @@ class Transform(object):
             img, bbox, label, img_id = in_data
         else:
             img, bbox, label, AU_couple_lst = in_data
+        if img is None:
+            return None, None, None
         _, H, W = img.shape
         img = self.faster_rcnn.prepare(img)
         _, o_H, o_W = img.shape
@@ -127,7 +130,7 @@ def main():
     parser.add_argument('--batch_size', '-bs', type=int, default=20)
     parser.add_argument('--snapshot', '-snap', type=int, default=1000)
     parser.add_argument('--need_validate', action='store_true', help='do or not validate during training')
-    parser.add_argument('--mean', default=config.ROOT_PATH+"BP4D/idx/mean_no_enhance.npy", help='image mean .npy file')
+    parser.add_argument('--mean', default=config.ROOT_PATH+"BP4D/idx/mean_rgb.npy", help='image mean .npy file')
     parser.add_argument('--feature_model', default="resnet101", help="vgg or resnet101 for train")
     parser.add_argument('--use_lstm', action='store_true', help='use LSTM or Linear in head module')  #LSTM 模式没办法用balance方法增加少类的box
     parser.add_argument('--extract_len', type=int, default=1000)
@@ -206,7 +209,7 @@ def main():
                 test_data = AUDataset(database=args.database, fold=args.fold,
                                               split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
                                               use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
-                test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=args.use_lstm))
+                test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=False))
                 if args.proc_num == 1:
                     test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=False)
                 else:
@@ -218,7 +221,7 @@ def main():
                 gpu = int(args.gpu) if "," not in args.gpu else int(args.gpu[:args.gpu.index(",")])
                 chainer.cuda.get_device_from_id(gpu).use()
                 faster_rcnn.to_gpu(gpu)
-                evaluator = AUEvaluator(test_iter, faster_rcnn, lambda batch, device: concat_examples(batch, device, padding=-99),
+                evaluator = AUEvaluator(test_iter, faster_rcnn, lambda batch, device: concat_examples_not_none(batch, device, padding=-99),
                                         args.database, "/home/machen/face_expr", device=gpu)
                 observation = evaluator.evaluate()
                 with open(args.out + os.sep + "evaluation_split_{}_result_train_mode.json".format(args.split_idx), "w") as file_obj:
@@ -243,7 +246,7 @@ def main():
                 chainer.cuda.get_device_from_id(gpu).use()
                 faster_rcnn.to_gpu(gpu)
                 evaluator = AUEvaluator(test_iter, faster_rcnn,
-                                        lambda batch, device: concat_examples(batch, device, padding=-99),
+                                        lambda batch, device: concat_examples_not_none(batch, device, padding=-99),
                                         args.database, "/home/machen/face_expr", device=gpu)
                 observation = evaluator.evaluate()
                 with open(args.out + os.sep + "evaluation_split_{}_result_test_mode.json".format(args.split_idx), "w") as file_obj:

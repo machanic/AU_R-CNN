@@ -6,7 +6,7 @@ sys.path = sys.path[1:]
 sys.path.append("/home/machen/face_expr")
 from dataset_toolkit.squeeze_label_num_report import squeeze_label_num_report
 
-from chainer.iterators import MultiprocessIterator
+from chainer.iterators import MultiprocessIterator, SerialIterator
 from two_stream_rgb_flow.datasets.AU_dataset import AUDataset
 from collections_toolkit.memcached_manager import PyLibmcManager
 from two_stream_rgb_flow.extensions.AU_evaluator import ActionUnitEvaluator
@@ -17,40 +17,33 @@ from chainer.datasets import TransformDataset
 import chainer
 
 from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_resnet101 import AU_RCNN_Resnet101
-from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor, AU_RCNN_TrainChainLoss
+from two_stream_rgb_flow.model.AU_rcnn.au_rcnn_train_chain import AU_RCNN_ROI_Extractor
 
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import os
 from collections import OrderedDict
 import json
-from two_stream_rgb_flow.datasets.AU_video_dataset import AU_video_dataset
 import re
 import config
 import numpy as np
 from two_stream_rgb_flow.extensions.special_converter import concat_examples_not_labels
 
-class Transform3D(object):
+class Transform(object):
 
-    def __init__(self, au_rcnn, mean_rgb_path, mean_flow_path, mirror=True):
-        self.au_rcnn = au_rcnn
-        self.mirror = mirror
+    def __init__(self, L, mean_rgb_path, mean_flow_path):
         self.mean_rgb = np.load(mean_rgb_path)
-        self.mean_flow = np.load(mean_flow_path)
+        self.mean_rgb = self.mean_rgb.astype(np.float32)
+        self.mean_flow = np.tile(np.expand_dims(np.load(mean_flow_path),  axis=0), reps=(L, 1, 1, 1))[:, :2, :, :]
+        self.mean_flow = self.mean_flow.astype(np.float32)
 
     def __call__(self, in_data):
-        rgb_img, flow_img, bbox, label = in_data
-        rgb_img = self.au_rcnn.prepare(rgb_img, self.mean_rgb)
-        flow_img = self.au_rcnn.prepare(flow_img, self.mean_flow)
+        rgb_img, flow_img_list, bbox, label = in_data  # flow_img_list shape = (T, C, H, W), and bbox = (F,4)
+        rgb_img = rgb_img - self.mean_rgb
+        assert flow_img_list.shape == self.mean_flow.shape
+        flow_img = flow_img_list - self.mean_flow
+
         assert len(np.where(bbox < 0)[0]) == 0
         # horizontally flip and random shift box
-        if self.mirror:
-            rgb_img, params = transforms.random_flip(
-                rgb_img, x_random=True, return_param=True)
-            if params['x_flip']:
-                flow_img = flow_img[:,:,::-1]
-            bbox = transforms.flip_bbox(
-                bbox, (rgb_img.shape[0], rgb_img.shape[1]), x_flip=params['x_flip'])
-
         return rgb_img, flow_img, bbox, label
 
 
@@ -133,7 +126,6 @@ def main():
             pretrained_model = backbone
             au_rcnn = AU_RCNN_Resnet101(pretrained_model=pretrained_model,
                                         min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                         classify_mode=True, n_class=class_num,
                                         use_roi_align=use_roi_align,
                                         use_optical_flow_input=(two_stream_mode == TwoStreamMode.optical_flow),
                                         temporal_length=T)
@@ -142,15 +134,12 @@ def main():
         else: # rgb_flow mode
             au_rcnn_rgb = AU_RCNN_Resnet101(pretrained_model=backbone,
                                             min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                             classify_mode=True, n_class=class_num,
                                             use_roi_align=use_roi_align,
                                             use_optical_flow_input=False, temporal_length=T)
 
 
             au_rcnn_optical_flow = AU_RCNN_Resnet101(pretrained_model=backbone,
                                                      min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
-                                                      classify_mode=True,
-                                                     n_class=class_num,
                                                      use_roi_align=use_roi_align,
                                                      use_optical_flow_input=True, temporal_length=T)
             au_rcnn_train_chain_rgb = AU_RCNN_ROI_Extractor(au_rcnn_rgb)
@@ -159,9 +148,8 @@ def main():
             au_rcnn_train_chain_list.append(au_rcnn_train_chain_optical_flow)
             au_rcnn = au_rcnn_rgb
 
-    loss_head_module = AU_RCNN_TrainChainLoss()
-    model = Wrapper(au_rcnn_train_chain_list, loss_head_module, database, T,
-                    two_stream_mode=two_stream_mode, gpus=[args.gpu, args.gpu], train_mode=False)
+    model = Wrapper(au_rcnn_train_chain_list, class_num, database, T,
+                    two_stream_mode=two_stream_mode, gpus=[args.gpu, args.gpu])
 
     chainer.serializers.load_npz(args.model, model)
     print("loading {}".format(args.model))
@@ -169,18 +157,17 @@ def main():
         chainer.cuda.get_device_from_id(args.gpu).use()
 
     mc_manager = PyLibmcManager(args.memcached_host)
-    img_dataset = AUDataset(database=database,
-                            fold=fold, split_name='trainval',
+    img_dataset = AUDataset(database=database, L=T,
+                            fold=fold, split_name='test',
                             split_index=split_idx, mc_manager=mc_manager,
-                            train_all_data=False)
+                            train_all_data=False, two_stream_mode=two_stream_mode, paper_report_label_idx=paper_report_label_idx)
 
-    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=T, train_mode=False,  #FIXME
-                    paper_report_label_idx=paper_report_label_idx)
-
-    video_dataset = TransformDataset(video_dataset, Transform3D(au_rcnn, mirror=False,mean_rgb_path=args.mean_rgb,
+    video_dataset = TransformDataset(img_dataset, Transform(L=T,mean_rgb_path=args.mean_rgb,
                                                                     mean_flow_path=args.mean_flow))
-
-    test_iter = MultiprocessIterator(video_dataset, batch_size=T * args.batch,
+    if args.proc_num == 1:
+        test_iter = SerialIterator(video_dataset, batch_size=args.batch, repeat=False, shuffle=False)
+    else:
+        test_iter = MultiprocessIterator(video_dataset, batch_size=args.batch,
                                        n_processes=args.proc_num,
                                        repeat=False, shuffle=False, n_prefetch=10, shared_mem=10000000)
 

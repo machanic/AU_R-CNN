@@ -65,9 +65,9 @@ def non_maximum_suppression(seg, thresh, score=None,
     assert seg.ndim == 2, seg.ndim
     assert seg.shape[1] == 2
     x_min, x_max = xp.split(seg, 2, axis=1)
-    zeros = xp.zeros((seg.shape[0], 1), dtype=seg.dtype)
     ones = xp.ones((seg.shape[0], 1), dtype=seg.dtype)
-    bbox = xp.concatenate((zeros, x_min, ones, x_max), axis=1)
+    twos = 2 * xp.ones((seg.shape[0], 1), dtype=seg.dtype)
+    bbox = xp.concatenate((ones, x_min, twos, x_max), axis=1)
     if xp == np:
         return _non_maximum_suppression_cpu(bbox, thresh, score, limit)
     else:

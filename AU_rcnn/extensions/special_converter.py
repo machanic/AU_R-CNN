@@ -22,6 +22,8 @@ def to_device(device, x):
     Returns:
         Converted array.
     """
+    if x is None:
+        return None
     if device is None:
         return x
     elif device < 0:
@@ -30,7 +32,7 @@ def to_device(device, x):
         return cuda.to_gpu(x, device)
 
 
-def concat_examples_not_string(batch, device=None, padding=None):
+def concat_examples_not_none(batch, device=None, padding=None):
     """Concatenates a list of examples into array(s).
     Dataset iterator yields a list of examples. If each example is an array,
     this function concatenates them along the newly-inserted first axis (called
@@ -76,22 +78,16 @@ def concat_examples_not_string(batch, device=None, padding=None):
         padding = [padding] * len(first_elem) # len(first_elem) is 5
 
     for i in six.moves.range(len(first_elem)): # for:  rgb_face, flow_face, bbox, label, rgb_path
-        if i >= len(first_elem) - 1:  #  rgb_path
-            result.append(
-                [example[i] for example in batch])  # label and rgb_path will be a list inside batch dimension
-
-        else:
-            if batch[0][i] is None:
-                result.append(None)
-            else:
-                result.append(to_device(device, _concat_arrays(
-                [example[i] for example in batch], padding[i])))    # other element is a numpy array
+        result.append(to_device(device, _concat_arrays(
+            [example[i] for example in batch if example[i] is not None], padding[i])))  # other element is a numpy array
     return tuple(result)
 
 
 def _concat_arrays(arrays, padding):
     # Convert `arrays` to numpy.ndarray if `arrays` consists of the built-in
     # types such as int or float.
+    if not arrays:
+        return None
     if not isinstance(arrays[0], numpy.ndarray) and\
        not isinstance(arrays[0], cuda.ndarray):
         arrays = numpy.asarray(arrays)

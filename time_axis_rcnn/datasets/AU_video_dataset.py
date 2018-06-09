@@ -77,6 +77,8 @@ class AU_video_dataset(chainer.dataset.DatasetMixin):
             assert len(self.result_data) == previous_data_length
 
 
+
+
     def get_example(self, i):
         rgb_path, flow_path, AU_set, database_name = self.result_data[i]
         video_seq_id = self.extract_sequence_key(rgb_path)

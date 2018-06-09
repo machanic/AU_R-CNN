@@ -46,13 +46,14 @@ def stats_frequency(label_matrix_dict):
 
 
 if __name__ == "__main__":
-    adaptive_AU_database("BP4D", False)
-    label_matrix_dict =read_idx_file("/home/machen/dataset/BP4D/idx/3_fold/id_trainval_1.txt")
+    adaptive_AU_database("DISFA", False)
+    label_matrix_dict = read_idx_file("/home/machen/dataset/DISFA/idx/3_fold/id_all.txt")
     average_dict, AU_segment_count = stats_frequency(label_matrix_dict)
-    for AU, mean in sorted(average_dict.items(), key=lambda e:e[1]):
-        if AU in config.paper_use_BP4D:
+    print("duration:")
+    for AU, mean in sorted(average_dict.items(), key=lambda e:int(e[0])):
+        if AU in config.paper_use_DISFA:
             print(AU, mean)
-
-    for AU, seg_count in sorted(AU_segment_count.items(), key=lambda e:e[1]):
-        if AU in config.paper_use_BP4D:
+    print("segment count:")
+    for AU, seg_count in sorted(AU_segment_count.items(), key=lambda e:int(e[0])):
+        if AU in config.paper_use_DISFA:
             print(AU, seg_count)

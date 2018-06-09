@@ -7,7 +7,6 @@ import config
 from time_axis_rcnn.model.time_segment_network.dilated_convolution_1d import DilatedConvolution1D
 from time_axis_rcnn.model.time_segment_network.util.links.convolution_nd import ConvolutionND
 
-
 class FasterBackbone(chainer.Chain):
 
     def __init__(self, conv_layer_num, in_channels, out_channels):
