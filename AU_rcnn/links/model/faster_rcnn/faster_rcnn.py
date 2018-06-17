@@ -20,6 +20,7 @@
 from __future__ import division
 
 import chainer
+import cv2
 import numpy as np
 from chainer import cuda
 
@@ -30,7 +31,7 @@ from AU_rcnn.utils.bbox.bbox_iou import bbox_iou
 from AU_rcnn.utils.bin_label_translate import AUbin_label_translate
 from collections_toolkit.ordered_set import OrderedSet
 
-
+import config
 
 class FasterRCNN(chainer.Chain):
 
@@ -95,7 +96,7 @@ class FasterRCNN(chainer.Chain):
             self.extractor = extractor
             self.head = head
 
-        self.mean = mean
+        self.mean = np.resize(mean,(3,min_size,min_size))
         self.min_size = min_size
         self.max_size = max_size
         self.proposal_target_creator = ProposalTargetCreator()

@@ -89,7 +89,7 @@ class FasterRCNNVGG16(FasterRCNN):
     def __init__(self,
                  n_fg_class=None,
                  pretrained_model=None,
-                 min_size=512, max_size=512,
+                 min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[0],
                  vgg_initialW=None,
                  score_initialW=None,
                  mean_file=None,

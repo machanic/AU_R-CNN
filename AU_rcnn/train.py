@@ -156,6 +156,7 @@ def main():
     parser.add_argument("--prefix", '-prefix', default="", help="_beta, for example 3_fold_beta")
     parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
     parser.add_argument("--test_config", action='store_true')
+    parser.add_argument("--img_resolution", type=int, default=512)
     args = parser.parse_args()
     if not os.path.exists(args.pid):
         os.makedirs(args.pid)
@@ -165,8 +166,7 @@ def main():
         file_obj.write(pid)
         file_obj.flush()
 
-
-
+    config.IMG_SIZE = (args.img_resolution, args.img_resolution)
 
     print('GPU: {}'.format(args.gpu))
     if args.is_pretrained:
@@ -186,13 +186,13 @@ def main():
         faster_rcnn = FasterRCNNVGG16(n_fg_class=len(config.AU_SQUEEZE),
                                       pretrained_model=args.pretrained_model,
                                       mean_file=args.mean,
-                                      use_lstm=args.use_lstm,
+                                      use_lstm=args.use_lstm, min_size=args.img_resolution,max_size=args.img_resolution,
                                       extract_len=args.extract_len, fix=args.fix)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
     elif args.feature_model == 'resnet101':
         faster_rcnn = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE),
                                       pretrained_model=args.pretrained_model,
                                       mean_file=args.mean,
-                                      use_lstm=args.use_lstm,
+                                      use_lstm=args.use_lstm, min_size=args.img_resolution,max_size=args.img_resolution,
                                       extract_len=args.extract_len, fix=args.fix)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
     elif args.feature_model == "mobilenet_v1":
         faster_rcnn = FasterRCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
@@ -206,7 +206,7 @@ def main():
     if args.eval_mode:
         if not args.test_config:
             with chainer.no_backprop_mode():
-                test_data = AUDataset(database=args.database, fold=args.fold,
+                test_data = AUDataset(database=args.database, fold=args.fold,img_resolution=args.img_resolution,
                                               split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
                                               use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
                 test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=False))
@@ -229,7 +229,7 @@ def main():
                     file_obj.flush()
         else:
             with chainer.no_backprop_mode(), chainer.using_config("train",False):
-                test_data = AUDataset(database=args.database, fold=args.fold,
+                test_data = AUDataset(database=args.database, fold=args.fold, img_resolution=args.img_resolution,
                                       split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
                                       use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix,
                                       pretrained_target=args.pretrained_target)
@@ -257,7 +257,7 @@ def main():
 
 
 
-    train_data = AUDataset(database=args.database,
+    train_data = AUDataset(database=args.database,img_resolution=args.img_resolution,
                            fold=args.fold, split_name='trainval',
                            split_index=args.split_idx, mc_manager=mc_manager, use_lstm=args.use_lstm, train_all_data=args.is_pretrained,
                            prefix=args.prefix, pretrained_target=args.pretrained_target

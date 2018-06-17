@@ -97,7 +97,7 @@ def main():
     parser.add_argument("--model", "-m", help="pretrained model file path") # which contains pretrained target
     parser.add_argument("--pretrained_model", "-pre", default="resnet101")
     parser.add_argument("--memcached_host", default="127.0.0.1")
-    parser.add_argument('--mean', default=config.ROOT_PATH + "BP4D/idx/mean_no_enhance.npy",
+    parser.add_argument('--mean', default=config.ROOT_PATH + "BP4D/idx/mean_rgb.npy",
                         help='image mean .npy file')
     parser.add_argument('--proc_num', type=int, default=10, help="multiprocess fetch data process number")
     parser.add_argument('--two_stream_mode', type=TwoStreamMode, choices=list(TwoStreamMode),
@@ -196,7 +196,7 @@ def main():
                             split_index=split_idx, mc_manager=mc_manager,
                             train_all_data=False)
 
-    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=True,  #FIXME
+    video_dataset = AU_video_dataset(au_image_dataset=img_dataset, sample_frame=sample_frame, train_mode=False,  #FIXME
                     paper_report_label_idx=paper_report_label_idx,fetch_use_parrallel_iterator=True)
 
     video_dataset = TransformDataset(video_dataset, Transform3D(au_rcnn, mirror=False))
@@ -211,14 +211,14 @@ def main():
 
 
     with chainer.no_backprop_mode(),chainer.using_config('cudnn_deterministic',True),chainer.using_config('train',False):
-        npz_path = os.path.dirname(args.model) + os.sep + "pred_" + os.path.basename(args.model)[:os.path.basename(args.model).rindex("_")] + ".npz"
+        npz_path = os.path.dirname(args.model) + os.path.sep + "pred_" + os.path.basename(args.model)[:os.path.basename(args.model).rindex("_")] + ".npz"
         print("npz_path: {}".format(npz_path))
         au_evaluator = ActionUnitEvaluator(test_iter, model, args.gpu, database=database,
                                            paper_report_label=paper_report_label,
                                            converter=lambda batch, device: concat_examples_not_labels(batch, device, padding=0),
                                            sample_frame=sample_frame, output_path=npz_path)
         observation = au_evaluator.evaluate()
-        with open(os.path.dirname(args.model) + os.sep + "evaluation_result_{0}.json".format(os.path.basename(args.model)\
+        with open(os.path.dirname(args.model) + os.path.sep + "evaluation_result_{0}.json".format(os.path.basename(args.model)\
                                                                             [:os.path.basename(args.model).rindex("_")]
                                                            ), "w") as file_obj:
             file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))

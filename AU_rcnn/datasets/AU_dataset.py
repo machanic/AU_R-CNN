@@ -7,14 +7,14 @@ import numpy as np
 import config
 from dataset_toolkit.compress_utils import get_zip_ROI_AU, get_AU_couple_child
 from img_toolkit.face_mask_cropper import FaceMaskCropper
-
-from collections_toolkit.ordered_default_dict import DefaultOrderedDict
+import random
 
 # obtain the cropped face image and bounding box and ground truth label for each box
 class AUDataset(chainer.dataset.DatasetMixin):
 
-    def __init__(self, database, fold, split_name, split_index, mc_manager, use_lstm, train_all_data, prefix="", pretrained_target=""):
+    def __init__(self, img_resolution, database, fold, split_name, split_index, mc_manager, use_lstm, train_all_data, prefix="", pretrained_target=""):
         self.database = database
+        self.img_resolution = img_resolution
         self.split_name = split_name
         self.use_lstm = use_lstm
         self.au_couple_dict = get_zip_ROI_AU()
@@ -121,7 +121,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
 
             img_id = "/".join((read_img_path.split("/")[-3], read_img_path.split("/")[-2],
                                read_img_path.split("/")[-1][:read_img_path.split("/")[-1].index(".")]))
-            key_prefix = self.database+"|"
+            key_prefix = self.database +"@{}".format(self.img_resolution) +"|"
             if self.pretrained_target is not None and len(self.pretrained_target) > 0:
                 key_prefix = self.pretrained_target+"|"
 
@@ -131,8 +131,8 @@ class AUDataset(chainer.dataset.DatasetMixin):
 
         except IndexError:
             print("crop image error:{}".format(read_img_path))
-            return None, None, None, None
-            #return self.get_example(i-1)  # 不得已为之
+            # return None, None, None, None
+            return self.get_example(random.randint(0, len(self)-1))  # 不得已为之
 
             # raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(read_img_path))
         # print("fetch over")

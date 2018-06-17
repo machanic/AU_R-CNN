@@ -70,8 +70,7 @@ class NpzFeatureDataset(chainer.dataset.DatasetMixin):
             flow_start_idx = start_idx * flow_scale
             flow_end_idx = end_idx * flow_scale
             gt_segments_flow[idx] = np.array([flow_start_idx, flow_end_idx], dtype=np.float32)
-            if len(AU_idx_list) > 1:
-                print(AU_idx_list)
+
             single_label = random.choice(AU_idx_list)
             seg_labels[idx] = single_label # 0 == fg_class number #1, not the background
             gt_segments_rgb[idx] = np.array([start_idx, end_idx], dtype=np.float32)

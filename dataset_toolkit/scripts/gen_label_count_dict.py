@@ -17,7 +17,7 @@ def gen_dict(root_dir):
                     if AU != "0":
                         AU_count[AU] += 1
 
-    for AU,count in sorted(AU_count.items(),key=lambda e:e[1],reverse=True):
+    for AU,count in sorted(AU_count.items(),key=lambda e:int(e[0]),reverse=False):
         print("{0}={1} {2}".format(AU,count, (all_count - count)/count ))
 
 if __name__ == "__main__":
