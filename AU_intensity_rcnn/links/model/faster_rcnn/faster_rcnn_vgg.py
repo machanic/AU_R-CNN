@@ -1,15 +1,12 @@
-import collections
-import numpy as np
-import os
 import chainer
 import chainer.functions as F
 import chainer.links as L
+import collections
+import numpy as np
 from chainer.links import VGG16Layers
-from AU_rcnn.links.model.faster_rcnn.faster_rcnn import FasterRCNN
 
-from AU_rcnn.utils import download_model
 import config
-from chainer.links.caffe.caffe_function import CaffeFunction
+from AU_intensity_rcnn.links.model.faster_rcnn.faster_rcnn import FasterRCNN
 
 
 class FasterRCNNVGG16(FasterRCNN):
@@ -78,7 +75,6 @@ class FasterRCNNVGG16(FasterRCNN):
         },
         'imagenet': {
             'path': "{}/caffe_model/VGG_ILSVRC_16_layers.npz".format(config.ROOT_PATH)
-            # 'url': "http://www.robots.ox.ac.uk/%7Evgg/software/very_deep/caffe/VGG_ILSVRC_16_layers.caffemodel"
         },
         'vgg_face': {
             'path': '{}/caffe_model/vgg_face.npz'.format(config.ROOT_PATH),
@@ -94,7 +90,6 @@ class FasterRCNNVGG16(FasterRCNN):
                  score_initialW=None,
                  mean_file=None,
                  extract_len=None,
-                 fix=False
                  ):
         if n_fg_class is None:
             if pretrained_model not in self._models:
@@ -106,7 +101,7 @@ class FasterRCNNVGG16(FasterRCNN):
         if vgg_initialW is None and pretrained_model:
             vgg_initialW = chainer.initializers.constant.Zero()
 
-        extractor = VGG16FeatureExtractor(initialW=vgg_initialW, fix=fix)
+        extractor = VGG16FeatureExtractor(initialW=vgg_initialW)
         head = VGG16RoIHead(
             n_fg_class,  # 注意:全0表示背景。010101才表示多label，因此无需一个特别的0的神经元节点
             roi_size=7, spatial_scale=1. / self.feat_stride, # 1/ 16.0 means after extract feature map, the map become 1/16 of original image, ROI bbox also needs shrink
@@ -125,41 +120,14 @@ class FasterRCNNVGG16(FasterRCNN):
             max_size=max_size
         )
 
-        if pretrained_model in self._models and 'url' in self._models[pretrained_model]:
-            path = download_model(self._models[pretrained_model]['url'])
-            chainer.serializers.load_npz(path, self)
-        elif pretrained_model == 'vgg':  # 只会走到这一elif里
+        if pretrained_model == 'vgg':  # 只会走到这一elif里
             print("loading:{} imagenet pretrained model".format(self._models['imagenet']['path']))
-
             model_path = self._models['imagenet']['path']
-            if model_path.endswith(".caffemodel"):
-                caffe_model = CaffeFunction(model_path)
-                chainer_model = VGG16Layers(pretrained_model=None)
-                self._transfer_vgg(caffe_model, chainer_model)
-                chainer_model_save_path = "{}/VGG_ILSVRC_16_layers.npz".format(os.path.dirname(model_path))
-                chainer.serializers.save_npz(chainer_model_save_path, chainer_model)
-                self._copy_imagenet_pretrained_vgg16(path=chainer_model_save_path)
-            elif model_path.endswith(".npz"):
+            if model_path.endswith(".npz"):
                 self._copy_imagenet_pretrained_vgg16(path=model_path)
-
-        elif pretrained_model == "vgg_face":
-            model_path = self._models['vgg_face']['path']
-            if model_path.endswith(".caffemodel"):
-                caffe_model = CaffeFunction(model_path)
-                chainer_model = VGG16Layers(pretrained_model=None)
-                self._transfer_vgg(caffe_model, chainer_model)
-                chainer_model_save_path = "{}/vgg_face.npz".format(os.path.dirname(model_path))
-                chainer.serializers.save_npz(chainer_model_save_path, chainer_model)
-                self._copy_imagenet_pretrained_vgg16(path=chainer_model_save_path)
-            elif model_path.endswith(".npz"):
-                if os.path.exists(model_path):
-                    print("loading vgg_face {}".format(model_path))
-                    self._copy_imagenet_pretrained_vgg16(path=model_path)
-
-
         elif pretrained_model.endswith("npz"):
             print("loading :{} to AU R-CNN VGG16".format(pretrained_model))
-            chainer.serializers.load_npz(pretrained_model, self)  #FIXME 我修改了最后加了一层fc8， 变成1024维向量，但是无法load
+            chainer.serializers.load_npz(pretrained_model, self)
 
 
     def _transfer_vgg(self, src, dst):
@@ -211,7 +179,7 @@ class FasterRCNNVGG16(FasterRCNN):
         self.extractor.conv5_3.copyparams(pretrained_model.conv5_3)
         self.head.fc6.copyparams(pretrained_model.fc6)
         self.head.fc7.copyparams(pretrained_model.fc7)
-        self.head.lstm8.copyparams(pretrained_model.fc8)
+        self.head.fc8.copyparams(pretrained_model.fc8)
 
 
 
@@ -242,13 +210,12 @@ class VGG16RoIHead(chainer.Chain):
             self.fc7 = L.Linear(4096, 4096, initialW=vgg_initialW)
             if extract_len is None:
                 extract_len = 1000
-
-            self.lstm8 = L.Linear(4096, extract_len, initialW=vgg_initialW)
+            self.fc8 = L.Linear(4096, extract_len, initialW=vgg_initialW)
             self.score = L.Linear(extract_len, n_class, initialW=score_initialW)
         self.functions = collections.OrderedDict([
             ('fc6', [self.fc6, F.relu]),
             ("fc7", [self.fc7, F.relu]),
-            ("fc", [self.lstm8]),
+            ("fc8", [self.fc8]),
             ("relu", [F.relu]),
             ("score", [self.score]),
         ])
@@ -257,9 +224,7 @@ class VGG16RoIHead(chainer.Chain):
         self.spatial_scale = spatial_scale
         self.activation = dict()
 
-
-
-    def __call__(self, x, rois, roi_indices, layers=["fc"]):
+    def __call__(self, x, rois, roi_indices, layers=["fc8"]):
         """Forward the chain.
 
         We assume that there are :math:`N` batches.
@@ -302,7 +267,7 @@ class VGG16FeatureExtractor(chainer.Chain):
 
     """
 
-    def __init__(self, initialW=None, fix=False):
+    def __init__(self, initialW=None):
         super(VGG16FeatureExtractor, self).__init__()
         with self.init_scope():
             self.conv1_1 = L.Convolution2D(3, 64, 3, 1, 1, initialW=initialW)
@@ -349,20 +314,13 @@ class VGG16FeatureExtractor(chainer.Chain):
             ('conv5_3', [self.conv5_3, F.relu]),
         ])
         self.activation = {}
-        self.fix = fix
 
     def __call__(self, x,  layers=[None]):
         target_layers = set(layers)
         h = x
-
         for idx, (key, funcs) in enumerate(self.functions.items()):
-            if self.fix and idx <= 5:  # fix conv1_* and conv2_*
-                with chainer.no_backprop_mode():
-                    for func in funcs:
-                        h = func(h)
-            else:
-                for func in funcs:
-                    h = func(h)
+            for func in funcs:
+                h = func(h)
             if key in target_layers:
                 self.activation[key] = h
                 target_layers.remove(key)

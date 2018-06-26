@@ -25,10 +25,25 @@ from CNN.datasets.image_dataset import ImageDataset
 from chainer.dataset import concat_examples
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
 import config
-from chainer.training import extensions
 from chainer.iterators import MultiprocessIterator, SerialIterator
 from CNN.extensions.AU_evaluator import AUEvaluator
 import json
+
+class OccludeTransform(object):
+    def __init__(self, occlude):
+        self.occlude = occlude
+    def __call__(self, in_data):
+        img, label = in_data
+        if self.occlude == "upper":
+            img[:, img.shape[1] // 2:, :] = 0
+        elif self.occlude == "lower":
+            img[:, :img.shape[1] // 2, :] = 0
+        elif self.occlude == "left":
+            img[:, :, img.shape[1] // 2:] = 0
+        elif self.occlude == "right":
+            img[:, :, :img.shape[1] // 2] = 0
+        return img, label
+
 
 class Transform(object):
 
@@ -98,7 +113,9 @@ def main():
     parser.add_argument("--is_pretrained", action="store_true", help="whether is to pretrain BP4D later will for DISFA dataset or not")
     parser.add_argument("--pretrained_target", '-pt', default="", help="whether pretrain label set will use DISFA or not")
     parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
-    parser.add_argument("--test_config", action='store_true')
+    parser.add_argument('--test_model', default="", help='test model for evaluation')
+    parser.add_argument('--occlude', default='',
+                        help='whether to use occlude face of upper/left/right/lower/none to test')
     parser.add_argument("--img_resolution", type=int, default=512)
     args = parser.parse_args()
     config.IMG_SIZE = (args.img_resolution, args.img_resolution)
@@ -127,34 +144,39 @@ def main():
     model = TrainChain(resnet101)
 
     if args.eval_mode:
-        if not args.test_config:
-            with chainer.no_backprop_mode():
+        with chainer.no_backprop_mode(), chainer.using_config("train",False):
+            if args.occlude:
                 test_data = ImageDataset(database=args.database, fold=args.fold,
-                                              split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
-                                              train_all_data=False, pretrained_target=args.pretrained_target, img_resolution=args.img_resolution)
-                test_data = TransformDataset(test_data, Transform(mean_rgb_path=args.mean,mirror=False))
+                                         split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
+                                         train_all_data=False, pretrained_target=args.pretrained_target,
+                                         img_resolution=args.img_resolution)
+                test_data = TransformDataset(test_data, Transform(mean_rgb_path=args.mean, mirror=False))
+                assert args.occlude in ["upper","lower", "left", "right"]
+                test_data = TransformDataset(test_data, OccludeTransform(args.occlude))
+
                 if args.proc_num == 1:
-                    test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=False)
+                    test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=True)
                 else:
                     test_iter = MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
-                                                                       repeat=False, shuffle=False,
-                                                                       n_prefetch=10, shared_mem=10000000)
-                single_model_file_name = args.out + os.path.sep + '{0}_{1}_fold_{2}_{3}_model.npz'.format(args.database,
-                                                                                                          args.fold,
-                                                                                                          args.split_idx,
-                                                                                                          args.feature_model)
+                                                     repeat=False, shuffle=True,
+                                                     n_prefetch=10, shared_mem=10000000)
+                single_model_file_name = args.test_model
                 chainer.serializers.load_npz(single_model_file_name, resnet101)
-                gpu = int(args.gpu) if "," not in args.gpu else int(args.gpu[:args.gpu.index(",")])
+                gpu = int(args.gpu)
                 chainer.cuda.get_device_from_id(gpu).use()
                 resnet101.to_gpu(gpu)
-                evaluator = AUEvaluator(test_iter, resnet101, lambda batch, device: concat_examples(batch, device, padding=0),
-                                        args.database, "/home/machen/face_expr", device=gpu)
+                evaluator = AUEvaluator(test_iter, resnet101,
+                                        lambda batch, device: concat_examples(batch, device, padding=0),
+                                        args.database, "/home/machen/face_expr", device=gpu, npz_out_path=args.out
+                                        + os.path.sep + "npz_occlude_{0}_split_{1}.npz".format(args.occlude, args.split_idx))
                 observation = evaluator.evaluate()
-                with open(args.out + os.path.sep + "evaluation_split_{}_result_train_mode.json".format(args.split_idx), "w") as file_obj:
+                with open(
+                        args.out + os.path.sep + "evaluation_occlude_{0}_fold_{1}_result_test_mode.json".format(args.occlude,
+                                                                                                           args.split_idx),
+                        "w") as file_obj:
                     file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
                     file_obj.flush()
-        else:
-            with chainer.no_backprop_mode(), chainer.using_config("train",False):
+            else:
                 test_data = ImageDataset(database=args.database, fold=args.fold,
                                          split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
                                          train_all_data=False, pretrained_target=args.pretrained_target, img_resolution=args.img_resolution)
@@ -165,10 +187,7 @@ def main():
                     test_iter = MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
                                                      repeat=False, shuffle=False,
                                                      n_prefetch=10, shared_mem=10000000)
-                single_model_file_name = args.out + os.path.sep + '{0}_{1}_fold_{2}_{3}_model.npz'.format(args.database,
-                                                                                                          args.fold,
-                                                                                                          args.split_idx,
-                                                                                                          args.feature_model)
+                single_model_file_name = args.test_model
                 chainer.serializers.load_npz(single_model_file_name, resnet101)
 
                 gpu = int(args.gpu) if "," not in args.gpu else int(args.gpu[:args.gpu.index(",")])
@@ -176,7 +195,8 @@ def main():
                 resnet101.to_gpu(gpu)
                 evaluator = AUEvaluator(test_iter, resnet101,
                                         lambda batch, device: concat_examples(batch, device, padding=0),
-                                        args.database, "/home/machen/face_expr", device=gpu)
+                                        args.database, "/home/machen/face_expr", device=gpu, npz_out_path=args.out
+                                                                + os.path.sep + "npz_split_{}.npz".format(args.split_idx))
                 observation = evaluator.evaluate()
                 with open(args.out + os.path.sep + "evaluation_split_{}_result_train_mode.json".format(args.split_idx),
                           "w") as file_obj:

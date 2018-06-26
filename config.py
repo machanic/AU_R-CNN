@@ -5,7 +5,7 @@ import cv2
 from bidict import bidict
 
 ROOT_PATH = "/home/machen/dataset/"
-# ROOT_PATH = "D:/work/S-RNN++/data/"
+# ROOT_PATH = "G:/Facial AU detection dataset/"
 
 DATA_PATH = {
     "ck+": ROOT_PATH + "/CK+",
@@ -42,6 +42,7 @@ ENHANCE_BALANCE_PATH = {
 
 ANCHOR_SIZE = [30, 40, 65, 70, 120, 140, 180]
 
+AU_INTENSITY_DICT = bidict({0: "6", 1: "10", 2: "12", 3:"14", 4:"17"})
 
 AU_GROUP_TOWER_INDEX = {
     0: [2],

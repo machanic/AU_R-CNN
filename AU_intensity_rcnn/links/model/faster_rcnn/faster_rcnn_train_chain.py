@@ -5,9 +5,7 @@ import chainer.functions as F
 
 from chainer import cuda
 import config
-import random
-from AU_rcnn.utils.bbox.bbox_iou import bbox_iou
-from dataset_toolkit.AU_balance_toolkit import load_AU_count,AU_repeat_level
+from scipy.stats.stats import pearsonr
 
 class FasterRCNNTrainChain(chainer.Chain):
 
@@ -35,13 +33,8 @@ class FasterRCNNTrainChain(chainer.Chain):
 
     def __init__(self, faster_rcnn):
         super(FasterRCNNTrainChain, self).__init__()
-        self.neg_pos_ratio = 3
         with self.init_scope():
             self.faster_rcnn = faster_rcnn
-
-
-    def reset_state(self):
-        self.faster_rcnn.head.reset_state()
 
     def __call__(self, imgs, bboxes, labels):
         """Forward Faster R-CNN and calculate losses.
@@ -93,7 +86,7 @@ class FasterRCNNTrainChain(chainer.Chain):
                     label = labels[n]  # label仍然是一个list，表示一个图内部的label
                     # 若其中的一个label为-99 表示是padding的值，此时该bbox是[-99,-99,-99,-99]
                     bbox = bbox[bbox != xp.array(-99)].reshape(-1, 4)
-                    label = label[label != xp.array(-99)].reshape(-1, len(config.AU_SQUEEZE))
+                    label = label[label != xp.array(-99)].reshape(-1, len(config.AU_INTENSITY_DICT))
                     assert label.shape[0] == bbox.shape[0] and bbox.shape[0] > 0
                     # Sample RoIs and forward
                     sample_roi = bbox
@@ -113,49 +106,14 @@ class FasterRCNNTrainChain(chainer.Chain):
 
             roi_score = self.faster_rcnn.head(
                 features, sample_roi_lst, sample_roi_index_lst)
+            gt_roi_label = gt_roi_label.astype(xp.float32)
             # Losses for outputs of the head.
             assert roi_score.shape[0] == gt_roi_label.shape[0]
-
-            # 算sigmoid的时候，从gt中挑选=1的元素，然后从pred=1 但gt=0中挑选元素，如果还不够再从剩下的随机挑选凑够x 3倍的=0元素，最后算sigmoid cross entropy
-            union_gt = set()  # union of prediction positive and ground truth positive
-            cpu_gt_roi_label = chainer.cuda.to_cpu(gt_roi_label)
-            gt_pos_index = np.nonzero(cpu_gt_roi_label)
-            cpu_pred_score = (chainer.cuda.to_cpu(roi_score.data) > 0).astype(np.int32)
-            pred_pos_index = np.nonzero(cpu_pred_score)
-            len_gt_pos = len(gt_pos_index[0]) if len(gt_pos_index[0]) > 0 else 1
-            neg_pick_count = self.neg_pos_ratio * len_gt_pos
-            gt_pos_index_set = set(list(zip(*gt_pos_index)))
-            pred_pos_index_set = set(list(zip(*pred_pos_index)))
-            union_gt.update(gt_pos_index_set)
-            union_gt.update(pred_pos_index_set)
-            false_positive_index = np.asarray(list(pred_pos_index_set - gt_pos_index_set))  # shape = n x 2
-            gt_pos_index_lst = list(gt_pos_index_set)
-            if neg_pick_count <= len(false_positive_index):
-                choice_fp = np.random.choice(np.arange(len(false_positive_index)), size=neg_pick_count, replace=False)
-                gt_pos_index_lst.extend(list(map(tuple,false_positive_index[choice_fp].tolist())))
-            else:
-                gt_pos_index_lst.extend(list(map(tuple, false_positive_index.tolist())))
-                rest_pick_count = neg_pick_count - len(false_positive_index)
-                gt_neg_index = np.where(cpu_gt_roi_label == 0)
-                gt_neg_index_set = set(list(zip(*gt_neg_index)))
-                gt_neg_index_set = gt_neg_index_set - set(gt_pos_index_lst)  # remove already picked
-                gt_neg_index_array = np.asarray(list(gt_neg_index_set))
-                choice_rest = np.random.choice(np.arange(len(gt_neg_index_array)), size=rest_pick_count, replace=False)
-                gt_pos_index_lst.extend(list(map(tuple,gt_neg_index_array[choice_rest].tolist())))
-            # TODO need class imbalance? NO
-
-            pick_index = list(zip(*gt_pos_index_lst))
-            if len(union_gt) == 0:
-                accuracy_pick_index = np.where(cpu_gt_roi_label)
-            else:
-                accuracy_pick_index = list(zip(*union_gt))
-            accuracy = F.binary_accuracy(roi_score[list(accuracy_pick_index[0]), list(accuracy_pick_index[1])],
-                                         gt_roi_label[list(accuracy_pick_index[0]), list(accuracy_pick_index[1])])
-            loss = F.sigmoid_cross_entropy(roi_score[list(pick_index[0]), list(pick_index[1])],
-                                               gt_roi_label[list(pick_index[0]), list(pick_index[1])])  # 支持多label
-
+            pearson_correlation, _ = pearsonr(np.reshape(chainer.cuda.to_cpu(roi_score.data),-1),
+                                              np.reshape(chainer.cuda.to_cpu(gt_roi_label),-1))
+            loss = F.mean_squared_error(roi_score, gt_roi_label)
             chainer.reporter.report({
-                                     'loss': loss, "accuracy": accuracy},
+                                     'loss': loss, "pearson_correlation" : pearson_correlation},
                                     self)
         return loss
 

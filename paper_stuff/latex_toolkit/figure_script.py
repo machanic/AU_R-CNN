@@ -30,21 +30,21 @@ def generate_landmark_image(database_name, face_img_path=None, face_img=None):
     trn_img = face_img
     if face_img is None:
         trn_img = cv2.imread(face_img_path, cv2.IMREAD_COLOR)
-    landmark, _, _, landmark_txt = land.landmark(image=trn_img, ret_txt=True)
-    roi_polygons = land.split_ROI(landmark)
-    for roi_no, polygon_vertex_arr in roi_polygons.items():
-        # if int(roi_no) == 40 or int(roi_no) == 41:
-        polygon_vertex_arr[0, :] = np.round(polygon_vertex_arr[0, :])
-        polygon_vertex_arr[1, :] = np.round(polygon_vertex_arr[1, :])
-        polygon_vertex_arr = sort_clockwise(polygon_vertex_arr.tolist())
-        cv2.polylines(trn_img, [polygon_vertex_arr], True, 	(34,34,178), thickness=2)
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(trn_img, str(roi_no), tuple(np.mean(polygon_vertex_arr,axis=0).astype(np.int32)),
-                    font,0.6,(0,255,255),thickness=1)
-    for i, x_y in landmark_txt.items():
-        x, y = x_y
-        cv2.putText(trn_img, str(i), (x, y), font, 0.4, (255, 255, 255), 1)
-    return trn_img
+    landmark_dict, _, new_image = land.landmark(image=trn_img, need_txt_img=True)
+    roi_polygons = land.split_ROI(landmark_dict)
+    # for roi_no, polygon_vertex_arr in roi_polygons.items():
+    #     # if int(roi_no) == 40 or int(roi_no) == 41:
+    #     polygon_vertex_arr[0, :] = np.round(polygon_vertex_arr[0, :])
+    #     polygon_vertex_arr[1, :] = np.round(polygon_vertex_arr[1, :])
+    #     polygon_vertex_arr = sort_clockwise(polygon_vertex_arr.tolist())
+    #     cv2.polylines(trn_img, [polygon_vertex_arr], True, 	(34,34,178), thickness=2)
+    #     font = cv2.FONT_HERSHEY_SIMPLEX
+    #     cv2.putText(trn_img, str(roi_no), tuple(np.mean(polygon_vertex_arr,axis=0).astype(np.int32)),
+    #                 font,0.6,(0,255,255),thickness=1)
+    # for i, x_y in landmark_txt.items():
+    #     x, y = x_y
+    #     cv2.putText(trn_img, str(i), (x, y), font, 0.4, (255, 255, 255), 1)
+    return new_image
 
 MASK_CONTAIN = {
     (199,21,133)
@@ -187,7 +187,9 @@ if __name__ == "__main__":
     # cv2.imwrite("D:/Structural RNN++ paper/latex/figure/ROI_face.jpg", trn_img)
     # exit(0)
     # imgs = ["D:/1084.jpg", "D:/007.jpg"]
-    check_box_and_cropface("/home2/mac/dataset//BP4D/BP4D-training//M009/T4/0753.jpg")
+    landmark_img = generate_landmark_image("BP4D", "D:/face.jpg")
+    cv2.imwrite("D:/face2.jpg", landmark_img)
+    # check_box_and_cropface("/home2/mac/dataset//BP4D/BP4D-training//M009/T4/0753.jpg")
     # from collections import defaultdict
     #
     # couple_mask_dict = defaultdict(list)

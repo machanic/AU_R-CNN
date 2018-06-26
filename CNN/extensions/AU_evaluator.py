@@ -17,9 +17,10 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
     default_name = "AU_RCNN_validation"
     priority = chainer.training.PRIORITY_WRITER
 
-    def __init__(self,  iterator, target, concat_example_func, database, output_dir, device):
+    def __init__(self,  iterator, target, concat_example_func, database, output_dir, device, npz_out_path):
         super(AUEvaluator, self).__init__(iterator, target, converter=concat_example_func,device=device)
         self.paper_use_AU = []
+        self.npz_out_path = npz_out_path
         if database == "BP4D":
             self.paper_use_AU = config.paper_use_BP4D
         elif database == "DISFA":
@@ -42,6 +43,9 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
             filter(lambda idx: config.AU_SQUEEZE[idx] in self.paper_use_AU, list(config.AU_SQUEEZE.keys())))
 
         print(list(config.AU_SQUEEZE[idx] for idx in use_idx))
+        npz_pred = []
+        npz_gt = []
+        npz_pred_score = []
         for idx, batch in enumerate(it):
 
             batch = self.converter(batch, device=self.device)
@@ -52,8 +56,13 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
             xp = chainer.cuda.get_array_module(imgs)
 
             imgs = chainer.Variable(imgs)
-            preds = target.predict(imgs)  # B, class_num
+            preds, scores = target.predict(imgs)  # B, class_num
+
             labels = chainer.cuda.to_cpu(labels)  # B, class_num
+
+            npz_pred.extend(preds)
+            npz_gt.extend(labels)
+            npz_pred_score.extend(scores)
 
             all_gt_index = set()
             pos_pred = np.nonzero(preds)
@@ -97,4 +106,9 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
         with reporter.scope(observation):
             reporter.report(report, target)
             reporter.report(summary.compute_mean(), target)
+
+        npz_pred = np.array(npz_pred)
+        npz_gt = np.array(npz_gt)
+        npz_pred_score = np.array(npz_pred_score)
+        np.savez(self.npz_out_path, pred=npz_pred, gt=npz_gt, pred_score = npz_pred_score)
         return observation

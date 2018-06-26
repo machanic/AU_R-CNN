@@ -1,6 +1,8 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
 import sys
+
+
 sys.path.insert(0, '/home/machen/face_expr')
 from AU_rcnn.links.model.faster_rcnn.faster_rcnn_mobilenet_v1 import FasterRCNN_MobilenetV1
 
@@ -39,24 +41,32 @@ import json
 # 8. 使用memcached
 # *5.支持微信接口操作训练（回掉函数）用itchat
 
+class OccludeTransform(object):
+
+    def __init__(self, occlude):
+        self.occlude = occlude
+    def __call__(self, in_data):
+        img, bbox, label = in_data
+        if self.occlude == "upper":
+            img[:, img.shape[1] // 2:, :] = 0
+        elif self.occlude == "lower":
+            img[:, :img.shape[1] // 2, :] = 0
+        elif self.occlude == "left":
+            img[:, :, img.shape[1] // 2:] = 0
+        elif self.occlude == "right":
+            img[:, :, :img.shape[1] // 2] = 0
+        return img, bbox, label
+
+
 class Transform(object):
 
-    def __init__(self, faster_rcnn, mirror=True, shift=False, use_lstm=False):
+    def __init__(self, faster_rcnn, mirror=True):
         self.faster_rcnn = faster_rcnn
         self.mirror = mirror
-        self.use_lstm = use_lstm
-        self.shift = shift
-
-    def reset_state(self):
-        self.faster_rcnn.head.reset_state()
 
     def __call__(self, in_data):
-        if self.use_lstm:
-            img, bbox, label, img_id = in_data
-        else:
-            img, bbox, label, AU_couple_lst = in_data
-        if img is None:
-            return None, None, None
+
+        img, bbox, label = in_data
         _, H, W = img.shape
         img = self.faster_rcnn.prepare(img)
         _, o_H, o_W = img.shape
@@ -68,31 +78,7 @@ class Transform(object):
                 img, x_random=True, return_param=True)
             bbox = transforms.flip_bbox(
                 bbox, (o_H, o_W), x_flip=params['x_flip'])
-            if self.shift and not self.use_lstm:
-                nonzero_label_idx_arr = np.unique(np.nonzero(label)[0])
-                if len(nonzero_label_idx_arr) > 0:
-                    random_shift_box = []
-                    random_shift_label = []
-                    # choice_idx_arr = np.random.choice(nonzero_label_idx_arr, size=len(nonzero_label_idx_arr),replace=False)
-                    for idx, box in enumerate(bbox[nonzero_label_idx_arr]):
-                        box_idx = nonzero_label_idx_arr[idx]
-                        AU_couple = AU_couple_lst[box_idx]
-                        current_shift = config.BOX_SHIFT[AU_couple]
-                        y_min,x_min,y_max,x_max = box
-                        y_min += random.randint(current_shift[0][0], current_shift[0][1])
-                        x_min += random.randint(current_shift[1][0], current_shift[1][1])
-                        y_max += random.randint(current_shift[2][0], current_shift[2][1])
-                        x_max += random.randint(current_shift[3][0], current_shift[3][1])
-                        random_box = np.asarray([y_min,x_min,y_max,x_max], dtype=np.float32)
-                        random_box[random_box<0] = 0
-                        random_box[random_box>img.shape[1]] = img.shape[1]
-                        current_label = label[box_idx]
-                        random_shift_box.append(random_box)
-                        random_shift_label.append(current_label)
-                    bbox = np.concatenate((bbox, np.asarray(random_shift_box)))
-                    label = np.concatenate((label, np.asarray(random_shift_label)))
-        if self.use_lstm:
-            return img, bbox, label, img_id
+
         return img, bbox, label
 
 
@@ -132,17 +118,14 @@ def main():
     parser.add_argument('--need_validate', action='store_true', help='do or not validate during training')
     parser.add_argument('--mean', default=config.ROOT_PATH+"BP4D/idx/mean_rgb.npy", help='image mean .npy file')
     parser.add_argument('--feature_model', default="resnet101", help="vgg or resnet101 for train")
-    parser.add_argument('--use_lstm', action='store_true', help='use LSTM or Linear in head module')  #LSTM 模式没办法用balance方法增加少类的box
     parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument('--optimizer', default='RMSprop', help='optimizer: RMSprop/AdaGrad/Adam/SGD/AdaDelta')
     parser.add_argument('--pretrained_model', default='resnet101', help='imagenet/vggface/resnet101/*.npz')
     parser.add_argument('--pretrained_model_args', nargs='+', type=float,
                         help='you can pass in "1.0 224" or "0.75 224"')
-    parser.add_argument('--use_wechat', action='store_true', help='whether use wechat to control or not')
     parser.add_argument('--use_memcached', action='store_true', help='whether use memcached to boost speed of fetch crop&mask') #
     parser.add_argument('--memcached_host', default='127.0.0.1')
     parser.add_argument('--AU_count', default='AU_occr_count.dict', help="label balance dict file path for replicate for label balance")
-    parser.add_argument('--random_shift','-shift', action='store_true', help='whether to random shift the bounding box or not')
     parser.add_argument("--fold", '-fd', type=int, default=3)
     parser.add_argument("--split_idx",'-sp', type=int, default=1)
     parser.add_argument("--snap_individual", action="store_true", help="whether to snapshot each individual epoch/iteration")
@@ -153,10 +136,12 @@ def main():
     parser.add_argument("--is_pretrained", action="store_true", help="whether is to pretrain BP4D later will for DISFA dataset or not")
     parser.add_argument("--pretrained_target", '-pt', default="", help="whether pretrain label set will use DISFA or not")
     parser.add_argument("--fix", '-fix', action="store_true", help="whether to fix first few conv layers or not")
+    parser.add_argument('--occlude',  default='',
+                        help='whether to use occlude face of upper/left/right/lower/none to test')
     parser.add_argument("--prefix", '-prefix', default="", help="_beta, for example 3_fold_beta")
     parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
-    parser.add_argument("--test_config", action='store_true')
     parser.add_argument("--img_resolution", type=int, default=512)
+    parser.add_argument("--FERA", action='store_true', help='whether to use FERA data split train and validate')
     args = parser.parse_args()
     if not os.path.exists(args.pid):
         os.makedirs(args.pid)
@@ -186,55 +171,61 @@ def main():
         faster_rcnn = FasterRCNNVGG16(n_fg_class=len(config.AU_SQUEEZE),
                                       pretrained_model=args.pretrained_model,
                                       mean_file=args.mean,
-                                      use_lstm=args.use_lstm, min_size=args.img_resolution,max_size=args.img_resolution,
+                                       min_size=args.img_resolution,max_size=args.img_resolution,
                                       extract_len=args.extract_len, fix=args.fix)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
     elif args.feature_model == 'resnet101':
         faster_rcnn = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE),
                                       pretrained_model=args.pretrained_model,
                                       mean_file=args.mean,
-                                      use_lstm=args.use_lstm, min_size=args.img_resolution,max_size=args.img_resolution,
+                                       min_size=args.img_resolution,max_size=args.img_resolution,
                                       extract_len=args.extract_len, fix=args.fix)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
     elif args.feature_model == "mobilenet_v1":
         faster_rcnn = FasterRCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
                                       min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],
                                       mean_file=args.mean,  n_class=len(config.AU_SQUEEZE)
                                       )
-    if args.use_lstm:
-        faster_rcnn.reset_state()
-    batch_size = args.batch_size if not args.use_lstm else 1
+
+    batch_size = args.batch_size
 
     if args.eval_mode:
-        if not args.test_config:
-            with chainer.no_backprop_mode():
-                test_data = AUDataset(database=args.database, fold=args.fold,img_resolution=args.img_resolution,
-                                              split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
-                                              use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix, pretrained_target=args.pretrained_target)
-                test_data = TransformDataset(test_data, Transform(faster_rcnn, mirror=False, shift=False,use_lstm=False))
-                if args.proc_num == 1:
-                    test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=False)
-                else:
-                    test_iter = MultiprocessIterator(test_data, batch_size=1, n_processes=args.proc_num,
-                                                                       repeat=False, shuffle=False,
-                                                                       n_prefetch=10, shared_mem=10000000)
-
-
-                gpu = int(args.gpu) if "," not in args.gpu else int(args.gpu[:args.gpu.index(",")])
-                chainer.cuda.get_device_from_id(gpu).use()
-                faster_rcnn.to_gpu(gpu)
-                evaluator = AUEvaluator(test_iter, faster_rcnn, lambda batch, device: concat_examples_not_none(batch, device, padding=-99),
-                                        args.database, "/home/machen/face_expr", device=gpu)
-                observation = evaluator.evaluate()
-                with open(args.out + os.sep + "evaluation_split_{}_result_train_mode.json".format(args.split_idx), "w") as file_obj:
-                    file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
-                    file_obj.flush()
-        else:
-            with chainer.no_backprop_mode(), chainer.using_config("train",False):
+        with chainer.no_backprop_mode(), chainer.using_config("train",False):
+            if args.occlude:
                 test_data = AUDataset(database=args.database, fold=args.fold, img_resolution=args.img_resolution,
                                       split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
-                                      use_lstm=args.use_lstm, train_all_data=False, prefix=args.prefix,
-                                      pretrained_target=args.pretrained_target)
+                                      train_all_data=False, prefix=args.prefix,
+                                      pretrained_target=args.pretrained_target, is_FERA=args.FERA)
+                assert args.occlude in ["upper","lower", "left", "right"]
+                transform_test_data = TransformDataset(test_data,
+                                             Transform(faster_rcnn, mirror=False))
+                transform_test_data = TransformDataset(transform_test_data, OccludeTransform(args.occlude))
+
+                if args.proc_num == 1:
+                    test_iter = SerialIterator(transform_test_data, 1, repeat=False, shuffle=True)
+                else:
+                    test_iter = MultiprocessIterator(transform_test_data, batch_size=1, n_processes=args.proc_num,
+                                                     repeat=False, shuffle=True,
+                                                     n_prefetch=10, shared_mem=10000000)
+                gpu = int(args.gpu)
+                chainer.cuda.get_device_from_id(gpu).use()
+                faster_rcnn.to_gpu(gpu)
+                evaluator = AUEvaluator(test_iter, faster_rcnn,
+                                        lambda batch, device: concat_examples_not_none(batch, device, padding=-99),
+                                        args.database, "/home/machen/face_expr", device=gpu, npz_out_path=args.out
+                                        + os.path.sep + "npz_occlude_{0}_split_{1}.npz".format(args.occlude, args.split_idx))
+                observation = evaluator.evaluate()
+                with open(
+                        args.out + os.path.sep + "evaluation_occlude_{0}_fold_{1}_result_test_mode.json".format(args.occlude,
+                                                                                                           args.split_idx),
+                        "w") as file_obj:
+                    file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
+                    file_obj.flush()
+            else:
+                test_data = AUDataset(database=args.database, fold=args.fold, img_resolution=args.img_resolution,
+                                      split_name='test', split_index=args.split_idx, mc_manager=mc_manager,
+                                       train_all_data=False, prefix=args.prefix,
+                                      pretrained_target=args.pretrained_target, is_FERA=args.FERA)
                 test_data = TransformDataset(test_data,
-                                             Transform(faster_rcnn, mirror=False, shift=False, use_lstm=args.use_lstm))
+                                             Transform(faster_rcnn, mirror=False))
                 if args.proc_num == 1:
                     test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=True)
                 else:
@@ -247,9 +238,10 @@ def main():
                 faster_rcnn.to_gpu(gpu)
                 evaluator = AUEvaluator(test_iter, faster_rcnn,
                                         lambda batch, device: concat_examples_not_none(batch, device, padding=-99),
-                                        args.database, "/home/machen/face_expr", device=gpu)
+                                        args.database, "/home/machen/face_expr", device=gpu, npz_out_path=args.out
+                                                                + os.path.sep + "npz_split_{}.npz".format(args.split_idx))
                 observation = evaluator.evaluate()
-                with open(args.out + os.sep + "evaluation_split_{}_result_test_mode.json".format(args.split_idx), "w") as file_obj:
+                with open(args.out + os.path.sep + "evaluation_split_{}_result_test_mode.json".format(args.split_idx), "w") as file_obj:
                     file_obj.write(json.dumps(observation, indent=4, separators=(',', ': ')))
                     file_obj.flush()
         return
@@ -259,25 +251,23 @@ def main():
 
     train_data = AUDataset(database=args.database,img_resolution=args.img_resolution,
                            fold=args.fold, split_name='trainval',
-                           split_index=args.split_idx, mc_manager=mc_manager, use_lstm=args.use_lstm, train_all_data=args.is_pretrained,
-                           prefix=args.prefix, pretrained_target=args.pretrained_target
+                           split_index=args.split_idx, mc_manager=mc_manager, train_all_data=args.is_pretrained,
+                           prefix=args.prefix, pretrained_target=args.pretrained_target, is_FERA=args.FERA
                            )
 
 
-    train_data = TransformDataset(train_data, Transform(faster_rcnn,mirror=True,shift=args.random_shift,
-                                                        use_lstm=args.use_lstm))
+    train_data = TransformDataset(train_data, Transform(faster_rcnn,mirror=True))
 
     # train_iter = chainer.iterators.SerialIterator(train_data, batch_size, repeat=True, shuffle=False)
 
-    shuffle = True if not args.use_lstm else False
+    shuffle = True
     if args.proc_num == 1:
         train_iter = SerialIterator(train_data, batch_size, True, shuffle)
     else:
         train_iter = MultiprocessIterator(train_data,  batch_size=batch_size, n_processes=args.proc_num,
                                       repeat=True, shuffle=shuffle, n_prefetch=10,shared_mem=31457280)
 
-    model = FasterRCNNTrainChain(faster_rcnn, use_sigmoid_cross_entropy=args.use_sigmoid_cross_entropy,
-                                 database=args.database, AU_count_name=args.AU_count)
+    model = FasterRCNNTrainChain(faster_rcnn)
 
 
     if "," in args.gpu:
@@ -304,7 +294,7 @@ def main():
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
     optimizer_name = args.optimizer
-    lstm_str = "lstm" if args.use_lstm else "linear"
+    lstm_str = "linear"
 
     if not os.path.exists(args.out):
         os.makedirs(args.out)
@@ -333,10 +323,7 @@ def main():
             print("loading pretrained snapshot:{}".format(single_model_file_name))
             chainer.serializers.load_npz(single_model_file_name, model.faster_rcnn)
 
-    if args.use_lstm:
-        updater = BPTTUpdater(train_iter, optimizer, args.bptt_steps, device=int(args.gpu),
-                              converter=lambda batch, device: concat_examples(batch, device, padding=-99))
-    elif "," in args.gpu:
+    if "," in args.gpu:
         gpu_dict = {"main": int(args.gpu.split(",")[0])} # many gpu will use
         for slave_gpu in args.gpu.split(",")[1:]:
             gpu_dict[slave_gpu] = int(slave_gpu)
@@ -418,10 +405,9 @@ def main():
 
         validate_data = AUDataset(database=args.database, fold=args.fold,
                                   split_name='valid', split_index=args.split_idx, mc_manager=mc_manager,
-                                  use_lstm=args.use_lstm, train_all_data=False, pretrained_target=args.pretrained_target)
+                                   train_all_data=False, pretrained_target=args.pretrained_target, is_FERA=args.FERA)
 
-        validate_data = TransformDataset(validate_data, Transform(faster_rcnn, mirror=False,shift=args.random_shift,
-                                                                  use_lstm=args.use_lstm))
+        validate_data = TransformDataset(validate_data, Transform(faster_rcnn, mirror=False))
 
         if args.proc_num == 1:
             validate_iter = SerialIterator(validate_data, batch_size, repeat=False, shuffle=False)

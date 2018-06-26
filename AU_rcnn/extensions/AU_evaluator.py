@@ -17,8 +17,9 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
     default_name = "AU_RCNN_validation"
     priority = chainer.training.PRIORITY_WRITER
 
-    def __init__(self,  iterator, target, concat_example_func, database, output_dir, device):
+    def __init__(self,  iterator, target, concat_example_func, database, output_dir, device, npz_out_path):
         super(AUEvaluator, self).__init__(iterator, target, converter=concat_example_func,device=device)
+        self.npz_out_path = npz_out_path
         self.paper_use_AU = []
         if database == "BP4D":
             self.paper_use_AU = config.paper_use_BP4D
@@ -42,35 +43,29 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
             filter(lambda idx: config.AU_SQUEEZE[idx] in self.paper_use_AU, list(config.AU_SQUEEZE.keys())))
 
         print(list(config.AU_SQUEEZE[idx] for idx in use_idx))
+
+        npz_pred = []
+        npz_gt = []
+        npz_pred_score = []
         for idx, batch in enumerate(it):
 
             batch = self.converter(batch, device=self.device)
 
             imgs, bbox, labels = batch
-            if imgs is None:
-                continue
-            xp = chainer.cuda.get_array_module(imgs)
-
-            new_imgs = []
-            new_bbox = []
-            new_labels = []
-            for img,box,label in zip(imgs,bbox,labels):
-                if img is not None:
-                    new_imgs.append(img)
-                    new_bbox.append(box)
-                    new_labels.append(label)
-            imgs, bbox, labels = xp.stack(new_imgs), xp.stack(new_bbox), xp.stack(new_labels)
-
             imgs = chainer.Variable(imgs)
             bbox = chainer.Variable(bbox)
             if bbox.shape[1] != config.BOX_NUM[self.database]:
                 print("error box num {0} != {1}".format(bbox.shape[1], config.BOX_NUM[self.database]))
                 continue
-            preds, _ = target.predict(imgs, bbox)  # R', class_num
+            preds, scores = target.predict(imgs, bbox)  # R', class_num
             preds = preds.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B, F, Y
-
+            scores = scores.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B,F,Y
             preds = chainer.cuda.to_cpu(preds) # B, F, Y, where B always = 1
             labels = chainer.cuda.to_cpu(labels)  # B, F, Y
+            scores = chainer.cuda.to_cpu(scores)  # B, F, Y
+            npz_pred.extend(preds)
+            npz_gt.extend(labels)
+            npz_pred_score.extend(scores)
             preds = np.bitwise_or.reduce(preds, axis=1)  # shape = B, Y
             gt_labels = np.bitwise_or.reduce(labels, axis=1) # shape = B, Y
 
@@ -99,15 +94,15 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
                 gt_label = AU_gt_label[AU_squeeze_idx]
                 # met_E = get_F1_event(gt_label, pred_label)
                 met_F = get_F1_frame(gt_label, pred_label)
-                roc =get_ROC(gt_label, pred_label)
+                roc = get_ROC(gt_label, pred_label)
                 f1 = f1_score(gt_label, pred_label)
-                report["f1_frame"][AU] = met_F.f1f
+                # report["f1_frame"][AU] = met_F.f1f
                 report["f1_score"][AU] = f1
-                assert f1 == met_F.f1f
+                # assert f1 == met_F.f1f
                 report["AUC"][AU] = roc.auc
                 report["accuracy"][AU] = met_F.accuracy
                 # report["f1_event"][AU] = np.median(met_E.f1EventCurve)
-                summary.add({"f1_frame_avg": f1})
+                summary.add({"f1_score_avg": f1})
                 summary.add({"AUC_avg": roc.auc})
                 summary.add({"accuracy_avg": met_F.accuracy})
                 # summary.add({"f1_event_avg": np.median(met_E.f1EventCurve)})
@@ -115,4 +110,9 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
         with reporter.scope(observation):
             reporter.report(report, target)
             reporter.report(summary.compute_mean(), target)
+
+        npz_gt = np.array(npz_gt)  # N, F, 12
+        npz_pred = np.array(npz_pred) # N, F, 12
+        npz_pred_score = np.array(npz_pred_score)
+        np.savez(self.npz_out_path, gt=npz_gt, pred=npz_pred, pred_score=npz_pred_score)
         return observation

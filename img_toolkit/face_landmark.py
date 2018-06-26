@@ -47,9 +47,9 @@ class FaceLandMark(object, metaclass=Singleton):
             new_image = image.copy()
             for i in range(1, 68):
                 cv2.putText(new_image, str(i), (shape.part(i).x,
-                                                shape.part(i).y), font, 0.4, (255, 255, 255), 1)
+                                                shape.part(i).y), font, 1, (255, 255, 255), 3)
                 cv2.circle(new_image, (shape.part(i).x, shape.part(i).y),
-                           1, (0, 0, 255), thickness=1)
+                           1, (0, 0, 255), thickness=3)
         return {i: (shape.part(i).x, shape.part(i).y)
                     for i in range(1, 68)}, image, new_image
 

@@ -117,9 +117,9 @@ class ResNet(chainer.Chain):
 
     def predict(self, imgs):
         score = self.__call__(imgs)
-        pred = chainer.cuda.to_cpu(score.data)
-        pred = (pred > 0).astype(np.int32)
-        return pred  # (B, 12)
+        score = chainer.cuda.to_cpu(score.data)
+        pred = (score > 0).astype(np.int32)
+        return pred, score # (B, 12)
 
 
     def __call__(self, x):

@@ -6,7 +6,7 @@ import chainer.functions as F
 import chainer.links as L
 from chainer.links import ResNet101Layers
 import functools
-from AU_rcnn.links.model.faster_rcnn.faster_rcnn import FasterRCNN
+from AU_intensity_rcnn.links.model.faster_rcnn.faster_rcnn import FasterRCNN
 import config
 from chainer import initializers
 
@@ -93,20 +93,14 @@ class FasterRCNNResnet101(FasterRCNN):
                  score_initialW=None,
                  mean_file=None,
                  extract_len=None,
-                 fix=False
                  ):
-        if n_fg_class is None:
-            if pretrained_model not in self._models:
-                raise ValueError(
-                    'The n_fg_class needs to be supplied as an argument')
-            # n_fg_class = self._models[pretrained_model]['n_fg_class'] # 修改成我传入多少是多少,因为n_fg_class要与AU数一样多
-            n_fg_class = len(config.AU_SQUEEZE)
+
         if score_initialW is None:
             score_initialW = chainer.initializers.Normal(0.01)
         if fc_initialW is None and pretrained_model:
             fc_initialW = chainer.initializers.constant.Zero()
 
-        extractor = ResnetFeatureExtractor(fix=fix)
+        extractor = ResnetFeatureExtractor()
         self.extract_len = extract_len
         head = ResRoIHead(
             n_fg_class,  # 注意:全0表示背景。010101才表示多label，因此无需一个特别的0的神经元节点
@@ -237,7 +231,7 @@ class ResRoIHead(chainer.Chain):
     """
 
     def __init__(self, n_class, roi_size, spatial_scale,
-                 fc_initialW=None, score_initialW=None, extract_len=None):
+                 fc_initialW=None, score_initialW=None,  extract_len=None):
         # n_class includes the background
         super(ResRoIHead, self).__init__()
         if extract_len is None:
@@ -302,7 +296,7 @@ class ResnetFeatureExtractor(chainer.Chain):
 
     """
 
-    def __init__(self, fix):
+    def __init__(self):
         super(ResnetFeatureExtractor, self).__init__()
         with self.init_scope():
             self.conv1 = L.Convolution2D(3, 64, 7, 2, 3, initialW=initializers.HeNormal(), nobias=True)
@@ -310,19 +304,11 @@ class ResnetFeatureExtractor(chainer.Chain):
             self.res2 = Block(3, 64, 64, 256, 1)
             self.res3 = Block(4, 256, 128, 512)
             self.res4 = Block(23, 512, 256, 1024)
-        self.fix = fix
 
     def __call__(self, x):
-
-        if self.fix:
-            with chainer.no_backprop_mode():
-                h = self.bn1(self.conv1(x))
-                h = F.max_pooling_2d(F.relu(h), 3, stride=2)
-                h = self.res2(h)
-        else:
-            h = self.bn1(self.conv1(x))
-            h = F.max_pooling_2d(F.relu(h), 3, stride=2)
-            h = self.res2(h)
+        h = self.bn1(self.conv1(x))
+        h = F.max_pooling_2d(F.relu(h), 3, stride=2)
+        h = self.res2(h)
         h = self.res3(h)
         h = self.res4(h)
         return h

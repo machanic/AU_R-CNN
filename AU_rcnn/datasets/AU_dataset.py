@@ -2,6 +2,7 @@ import os
 from collections import defaultdict, OrderedDict
 
 import chainer
+import cv2
 import numpy as np
 
 import config
@@ -12,11 +13,11 @@ import random
 # obtain the cropped face image and bounding box and ground truth label for each box
 class AUDataset(chainer.dataset.DatasetMixin):
 
-    def __init__(self, img_resolution, database, fold, split_name, split_index, mc_manager, use_lstm, train_all_data, prefix="", pretrained_target=""):
+    def __init__(self, img_resolution, database, fold, split_name, split_index, mc_manager,  train_all_data,
+                 prefix="", pretrained_target="", is_FERA=False):
         self.database = database
         self.img_resolution = img_resolution
         self.split_name = split_name
-        self.use_lstm = use_lstm
         self.au_couple_dict = get_zip_ROI_AU()
         self.mc_manager = mc_manager
         self.au_couple_child_dict = get_AU_couple_child(self.au_couple_dict)
@@ -28,6 +29,14 @@ class AUDataset(chainer.dataset.DatasetMixin):
                                              "full_pretrain.txt")
         else:
             id_list_file_path = os.path.join(self.dir + "/idx/{0}_fold{1}".format(fold, prefix), "id_{0}_{1}.txt".format(split_name, split_index))
+
+        if is_FERA:
+            if split_name == "trainval":
+                id_list_file_path = os.path.join(self.dir + "/idx/{0}_fold{1}".format(fold, prefix),
+                                             "FERA15_train.txt")
+            else:
+                id_list_file_path = os.path.join(self.dir + "/idx/{0}_fold{1}".format(fold, prefix),
+                                                 "FERA15_validate.txt")
         self.result_data = []
 
         self.video_offset = OrderedDict()
@@ -131,8 +140,18 @@ class AUDataset(chainer.dataset.DatasetMixin):
 
         except IndexError:
             print("crop image error:{}".format(read_img_path))
-            # return None, None, None, None
-            return self.get_example(random.randint(0, len(self)-1))  # 不得已为之
+            label = np.zeros(len(config.AU_SQUEEZE), dtype=np.int32)
+            for AU in AU_set:
+                np.put(label, config.AU_SQUEEZE.inv[AU], 1)
+            face = np.transpose(cv2.resize(cv2.imread(read_img_path), config.IMG_SIZE), (2, 0, 1))
+
+            whole_bbox = np.tile(np.array([1, 1, config.IMG_SIZE[1] - 1, config.IMG_SIZE[0] - 1], dtype=np.float32),
+                                 (config.BOX_NUM[database_name], 1))
+            whole_label = np.tile(label, (config.BOX_NUM[database_name], 1))
+
+            return face, whole_bbox, whole_label
+
+            # return self.get_example(random.randint(0, len(self)-1))  # 不得已为之
 
             # raise IndexError("fetch crooped face and mask error:{} ! face landmark may not found.".format(read_img_path))
         # print("fetch over")
@@ -179,6 +198,4 @@ class AUDataset(chainer.dataset.DatasetMixin):
         label = np.stack(label).astype(np.int32)
         # bbox, label = self.proposal(bbox, label)  # 必须保证每个batch拿到的box数量一样
         assert bbox.shape[0] == label.shape[0]
-        if self.use_lstm:
-            return cropped_face, bbox, label, img_id  # 注意最后返回的label是压缩过的AU_SQUEEZE长度，并且label是01000100这种每个box一个二进制的ndarray的情况
-        return cropped_face, bbox, label, AU_couple_lst # AU_couple_lst为了random shift bbox
+        return cropped_face, bbox, label # AU_couple_lst为了random shift bbox
