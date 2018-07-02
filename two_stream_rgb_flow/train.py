@@ -51,6 +51,7 @@ class Transform(object):
         self.mean_rgb = self.mean_rgb.astype(np.float32)
         self.mean_flow = np.tile(np.expand_dims(np.load(mean_flow_path),  axis=0), reps=(L, 1, 1, 1))[:, :2, :, :]
         self.mean_flow = self.mean_flow.astype(np.float32)
+        print("two stream loading mean_rgb:{0} , mean_flow:{1}".format(mean_rgb_path, mean_flow_path))
 
     def __call__(self, in_data):
         rgb_img, flow_img_list, bbox, label = in_data  # flow_img_list shape = (T, C, H, W), and bbox = (F,4)

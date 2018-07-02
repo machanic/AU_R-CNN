@@ -53,6 +53,7 @@ class AUDataset(chainer.dataset.DatasetMixin):
                     from_img_path = img_path if from_img_path == "#" else from_img_path
 
                     img_path = config.RGB_PATH[current_database_name] + os.path.sep + img_path  # id file 是相对路径
+
                     from_img_path = config.RGB_PATH[current_database_name] + os.path.sep + from_img_path
 
                     video_id = "/".join([img_path.split("/")[-3], img_path.split("/")[-2]])

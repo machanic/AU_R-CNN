@@ -27,11 +27,6 @@ from chainer import cuda
 from AU_rcnn import transforms
 from AU_rcnn.links.model.faster_rcnn.utils.proposal_target_creator import ProposalTargetCreator
 from AU_rcnn.transforms.image.resize import resize
-from AU_rcnn.utils.bbox.bbox_iou import bbox_iou
-from AU_rcnn.utils.bin_label_translate import AUbin_label_translate
-from collections_toolkit.ordered_set import OrderedSet
-
-import config
 
 class FasterRCNN(chainer.Chain):
 
@@ -106,12 +101,6 @@ class FasterRCNN(chainer.Chain):
     def n_class(self):
         # Total number of classes including the background.
         return self.head.n_class
-
-    def reset_state(self):
-        self.head.reset_state()
-
-
-
 
     def extract(self, image, bbox, layer='res5'): # image shape is C,H,W, bboxes is R,4 where R is box number inside one image
         _, H, W = image.shape

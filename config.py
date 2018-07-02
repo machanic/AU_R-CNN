@@ -4,7 +4,7 @@ from collections import OrderedDict
 import cv2
 from bidict import bidict
 
-ROOT_PATH = "/home/machen/dataset/"
+ROOT_PATH = "/home1/machen/dataset/"
 # ROOT_PATH = "G:/Facial AU detection dataset/"
 
 DATA_PATH = {
@@ -54,6 +54,15 @@ AU_GROUP_TOWER_INDEX = {
     6: [1],
     7: [0, 1]
 }
+
+FAKE_BOX = {
+    "BP4D" : [[30.4,58.1,140.3,222.5],[30.1,297.2,140.9,456.5],[23.9,57.8,139.,455.9],[109.4, 79.8, 264.5, 431.8],
+              [67.0, 147.6, 335.3, 366.3],[198.9, 35.2, 437.0,472.6],[282.7,  57.4, 510.9, 451.9],[378.7,94.5,510.9, 416.6],
+              [282.7,145.5,455.0,368.3]],  # shape = 9,4
+    "DISFA" : [[55.5, 71.3, 168.6, 220.0],[53.5,277.6,167.6,431.4],[48.5,58.7,165.1,444.0],[141.4,86.7,281.5,418.9],
+               [107.8,152.2,348.8,352.8],[236.9,53.5,433.3,454.4],[394.1,106.0,511.0,400.6],[316.4,73.8,511.0,433.4]]  # shape = 8,4
+}
+
 MAX_SEGMENTS_PER_TIMELINE = 100
 
 ANCHOR_STRIDE = 1  # 根据time axis卷积再定

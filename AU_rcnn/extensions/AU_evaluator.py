@@ -58,8 +58,13 @@ class AUEvaluator(chainer.training.extensions.Evaluator):
                 print("error box num {0} != {1}".format(bbox.shape[1], config.BOX_NUM[self.database]))
                 continue
             preds, scores = target.predict(imgs, bbox)  # R', class_num
-            preds = preds.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B, F, Y
-            scores = scores.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B,F,Y
+            try:
+                preds = preds.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B, F, Y
+                scores = scores.reshape(labels.shape[0], labels.shape[1], labels.shape[2])  # shape = B,F,Y
+            except ValueError:
+                print(preds.shape, labels.shape)
+                print(scores.shape, labels.shape)
+                continue
             preds = chainer.cuda.to_cpu(preds) # B, F, Y, where B always = 1
             labels = chainer.cuda.to_cpu(labels)  # B, F, Y
             scores = chainer.cuda.to_cpu(scores)  # B, F, Y

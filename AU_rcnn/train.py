@@ -13,7 +13,6 @@ except ImportError:
     pass
 
 import argparse
-import random
 import numpy as np
 import os
 
@@ -28,18 +27,18 @@ from AU_rcnn.datasets.AU_dataset import AUDataset
 from chainer.dataset import concat_examples
 from AU_rcnn.extensions.special_converter import concat_examples_not_none
 from dataset_toolkit.adaptive_AU_config import adaptive_AU_database
-from AU_rcnn.updater.update_bptt import BPTTUpdater
 import config
 from chainer.training import extensions
 from chainer.iterators import MultiprocessIterator, SerialIterator
 from AU_rcnn.extensions.AU_evaluator import AUEvaluator
+from AU_rcnn.links.model.faster_rcnn.feature_pyramid_network import FPN101
+from AU_rcnn.links.model.faster_rcnn.feature_pyramid_train_chain import FPNTrainChain
 import json
 # new feature support:
 # 1. 支持resnet101/resnet50/VGG的模块切换;  2.支持LSTM/Linear的切换(LSTM用在score前的中间层); 3.支持多GPU切换
 # 4. 支持指定最终用于提取的FC层的输出向量长度， 5.支持是否进行validate（每制定epoch的时候）
 # 6. 支持读取pretrained model从vgg_face或者imagenet的weight 7. 支持优化算法的切换，比如AdaGrad或RMSprop
 # 8. 使用memcached
-# *5.支持微信接口操作训练（回掉函数）用itchat
 
 class OccludeTransform(object):
 
@@ -55,6 +54,16 @@ class OccludeTransform(object):
             img[:, :, img.shape[1] // 2:] = 0
         elif self.occlude == "right":
             img[:, :, :img.shape[1] // 2] = 0
+        return img, bbox, label
+
+
+class FakeBoxTransform(object):
+    def __init__(self, database):
+        self.database = database
+
+    def __call__(self, in_data):
+        img, _, label = in_data  # bbox shape = (9,4)
+        bbox = np.asarray(config.FAKE_BOX[self.database], dtype=np.float32)  # replace fake box, because it is only for prediction, the order doesn't matter
         return img, bbox, label
 
 
@@ -125,11 +134,9 @@ def main():
                         help='you can pass in "1.0 224" or "0.75 224"')
     parser.add_argument('--use_memcached', action='store_true', help='whether use memcached to boost speed of fetch crop&mask') #
     parser.add_argument('--memcached_host', default='127.0.0.1')
-    parser.add_argument('--AU_count', default='AU_occr_count.dict', help="label balance dict file path for replicate for label balance")
     parser.add_argument("--fold", '-fd', type=int, default=3)
     parser.add_argument("--split_idx",'-sp', type=int, default=1)
     parser.add_argument("--snap_individual", action="store_true", help="whether to snapshot each individual epoch/iteration")
-    parser.add_argument("--bptt_steps", '-bptt', type=int, default=20)
     parser.add_argument("--proc_num", "-proc", type=int, default=1)
     parser.add_argument("--use_sigmoid_cross_entropy", "-sigmoid", action="store_true",
                         help="whether to use sigmoid cross entropy or softmax cross entropy")
@@ -142,6 +149,10 @@ def main():
     parser.add_argument('--eval_mode', action='store_true', help='Use test datasets for evaluation metric')
     parser.add_argument("--img_resolution", type=int, default=512)
     parser.add_argument("--FERA", action='store_true', help='whether to use FERA data split train and validate')
+    parser.add_argument('--FPN', action="store_true", help="whether to use feature pyramid network for training and prediction")
+    parser.add_argument('--fake_box', action="store_true", help="whether to use fake average box coordinate to predict")
+    parser.add_argument('--roi_align', action="store_true",
+                        help="whether to use roi_align or roi_pooling")
     args = parser.parse_args()
     if not os.path.exists(args.pid):
         os.makedirs(args.pid)
@@ -167,7 +178,10 @@ def main():
         if mc_manager is None:
             raise IOError("no memcached found listen in {}".format(args.memcached_host))
 
-    if args.feature_model == 'vgg':
+    if args.FPN:
+        faster_rcnn = FPN101(len(config.AU_SQUEEZE), pretrained_resnet=args.pretrained_model, use_roialign=args.roi_align,
+                             mean_path=args.mean,min_size=args.img_resolution,max_size=args.img_resolution)
+    elif args.feature_model == 'vgg':
         faster_rcnn = FasterRCNNVGG16(n_fg_class=len(config.AU_SQUEEZE),
                                       pretrained_model=args.pretrained_model,
                                       mean_file=args.mean,
@@ -226,6 +240,8 @@ def main():
                                       pretrained_target=args.pretrained_target, is_FERA=args.FERA)
                 test_data = TransformDataset(test_data,
                                              Transform(faster_rcnn, mirror=False))
+                if args.fake_box:
+                    test_data = TransformDataset(test_data, FakeBoxTransform(args.database))
                 if args.proc_num == 1:
                     test_iter = SerialIterator(test_data, 1, repeat=False, shuffle=True)
                 else:
@@ -267,7 +283,10 @@ def main():
         train_iter = MultiprocessIterator(train_data,  batch_size=batch_size, n_processes=args.proc_num,
                                       repeat=True, shuffle=shuffle, n_prefetch=10,shared_mem=31457280)
 
-    model = FasterRCNNTrainChain(faster_rcnn)
+    if args.FPN:
+        model = FPNTrainChain(fpn=faster_rcnn)
+    else:
+        model = FasterRCNNTrainChain(faster_rcnn)
 
 
     if "," in args.gpu:

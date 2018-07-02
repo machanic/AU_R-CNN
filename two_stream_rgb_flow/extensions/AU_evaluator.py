@@ -69,7 +69,7 @@ class ActionUnitEvaluator(Evaluator):
 
             roi_feature = model.get_roi_feature(rgb_images, flow_images, bboxes, extract_rgb_flow=False)
 
-            pred_labels = model.predict(roi_feature)  # B * T, F, 12
+            pred_labels = model.predict(roi_feature)  # B, F, 12
             unreduce_pred.extend(pred_labels)  # list of F,D
             pred_labels = np.bitwise_or.reduce(pred_labels, axis=1)  # B, class_number
             unreduce_gt.extend(labels)  # shape  = list of F,D

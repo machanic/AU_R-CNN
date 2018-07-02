@@ -134,7 +134,7 @@ class AU_RCNN_Resnet101(AU_RCNN):
 
     def _copy_imagenet_pretrained_faster(self, path):
         pretrained_model = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE), pretrained_model=path, extract_len=1000,
-                                               fix=True, use_lstm=False)
+                                               fix=True)
         if self.use_optical_flow_input:
             average_conv1_W = np.mean(pretrained_model.extractor.conv1.W.data, axis=1, dtype=np.float32, keepdims=True)
             average_conv1_W = np.tile(average_conv1_W, reps=(1, 2 * self.temporal_length, 1,1))

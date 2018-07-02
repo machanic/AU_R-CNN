@@ -6,7 +6,7 @@ from chainer import cuda
 import config
 
 
-class FasterRCNNTrainChain(chainer.Chain):
+class FPNTrainChain(chainer.Chain):
 
     """Calculate losses for Faster R-CNN and report them.
 
@@ -30,11 +30,12 @@ class FasterRCNNTrainChain(chainer.Chain):
 
     """
 
-    def __init__(self, faster_rcnn):
-        super(FasterRCNNTrainChain, self).__init__()
+    def __init__(self, fpn):
+        super(FPNTrainChain, self).__init__()
         self.neg_pos_ratio = 3
         with self.init_scope():
-            self.faster_rcnn = faster_rcnn
+            self.fpn = fpn
+            self.faster_rcnn = fpn
 
     def __call__(self, imgs, bboxes, labels):
         """Forward Faster R-CNN and calculate losses.
@@ -74,12 +75,10 @@ class FasterRCNNTrainChain(chainer.Chain):
             batch_size = bboxes.shape[0]
 
             _, _, H, W = imgs.shape
-
-            features = self.faster_rcnn.extractor(imgs)
             # Since batch size is one, convert variables to singular form
             if batch_size > 1:
-                sample_roi_lst = []
-                sample_roi_index_lst = []
+                rois = []
+                roi_batch_indices = []
                 gt_roi_label = []
                 for n in range(batch_size):
                     bbox = bboxes[n]  # bbox仍然是一个list，表示一个图内部的bbox
@@ -92,24 +91,26 @@ class FasterRCNNTrainChain(chainer.Chain):
                     sample_roi = bbox
                     sample_roi_index = n * np.ones((len(sample_roi),), dtype=xp.int32)
                     gt_roi_label.extend(label)  # list 可以extend ndarray
-                    sample_roi_lst.extend(sample_roi)
-                    sample_roi_index_lst.extend(sample_roi_index)
-                sample_roi_lst = xp.stack(sample_roi_lst).astype(dtype=xp.float32)
+                    rois.extend(sample_roi)
+                    roi_batch_indices.extend(sample_roi_index)
+                rois = xp.stack(rois).astype(dtype=xp.float32)
                 gt_roi_label = xp.stack(gt_roi_label).astype(dtype=xp.int32)
-                sample_roi_index_lst = xp.asarray(sample_roi_index_lst).astype(dtype=xp.int32)
+                roi_batch_indices = xp.asarray(roi_batch_indices).astype(dtype=xp.int32)
 
             elif batch_size == 1:  # batch_size = 1
                 bbox = bboxes[0]
                 label = labels[0]
-                sample_roi_lst, gt_roi_label = bbox, label
-                sample_roi_index_lst = xp.zeros((len(sample_roi_lst),), dtype=xp.int32)
+                rois, gt_roi_label = bbox, label
+                roi_batch_indices = xp.zeros((len(rois),), dtype=xp.int32)
 
-            roi_score = self.faster_rcnn.head(
-                features, sample_roi_lst, sample_roi_index_lst)
-            # Losses for outputs of the head.
-            assert roi_score.shape[0] == gt_roi_label.shape[0]
+            roi_indices = roi_batch_indices.astype(np.float32)
+            indices_and_rois = self.xp.concatenate(
+                (roi_indices[:, None], rois), axis=1)  # None means np.newaxis, concat along column
+            roi_score = self.fpn(imgs, indices_and_rois)
 
-            # 算sigmoid的时候，从gt中挑选=1的元素，然后从pred=1 但gt=0中挑选元素，如果还不够再从剩下的随机挑选凑够x 3倍的=0元素，最后算sigmoid cross entropy
+            roi_score = roi_score.reshape(-1, self.fpn.classes)
+            assert gt_roi_label.shape[-1] == self.fpn.classes
+
             union_gt = set()  # union of prediction positive and ground truth positive
             cpu_gt_roi_label = chainer.cuda.to_cpu(gt_roi_label)
             gt_pos_index = np.nonzero(cpu_gt_roi_label)
@@ -135,7 +136,6 @@ class FasterRCNNTrainChain(chainer.Chain):
                 gt_neg_index_array = np.asarray(list(gt_neg_index_set))
                 choice_rest = np.random.choice(np.arange(len(gt_neg_index_array)), size=rest_pick_count, replace=False)
                 gt_pos_index_lst.extend(list(map(tuple,gt_neg_index_array[choice_rest].tolist())))
-            # TODO need class imbalance? NO
 
             pick_index = list(zip(*gt_pos_index_lst))
             if len(union_gt) == 0:

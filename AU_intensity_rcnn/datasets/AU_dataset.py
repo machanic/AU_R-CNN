@@ -35,9 +35,6 @@ class AUDataset(chainer.dataset.DatasetMixin):
                     line = line.rstrip()
                     img_path, au_set_str, from_img_path, current_database_name = line.split("\t")
                     AU_intensity = np.fromstring(au_set_str, dtype=np.int32, sep=',')
-                    all_zeros = not np.any(AU_intensity)
-                    if all_zeros and split_name == "trainval":
-                        continue
                     from_img_path = img_path if from_img_path == "#" else from_img_path
                     img_path = config.RGB_PATH[current_database_name] + os.path.sep + img_path  # id file 是相对路径
                     from_img_path = config.RGB_PATH[current_database_name] + os.path.sep + from_img_path
