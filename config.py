@@ -4,8 +4,8 @@ from collections import OrderedDict
 import cv2
 from bidict import bidict
 
-ROOT_PATH = "/home1/machen/dataset/"
-# ROOT_PATH = "G:/Facial AU detection dataset/"
+# ROOT_PATH = "/home/machen/dataset/"
+ROOT_PATH = "G:/dataset/Facial AU detection dataset/"
 
 DATA_PATH = {
     "ck+": ROOT_PATH + "/CK+",

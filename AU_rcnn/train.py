@@ -1,9 +1,9 @@
 #!/usr/local/anaconda3/bin/python3
 from __future__ import division
 import sys
-
-
 sys.path.insert(0, '/home/machen/face_expr')
+
+from AU_rcnn.links.model.faster_rcnn.faster_rcnn_vgg19 import FasterRCNNVGG19
 from AU_rcnn.links.model.faster_rcnn.faster_rcnn_mobilenet_v1 import FasterRCNN_MobilenetV1
 
 try:
@@ -34,6 +34,7 @@ from AU_rcnn.extensions.AU_evaluator import AUEvaluator
 from AU_rcnn.links.model.faster_rcnn.feature_pyramid_network import FPN101
 from AU_rcnn.links.model.faster_rcnn.feature_pyramid_train_chain import FPNTrainChain
 import json
+import os
 # new feature support:
 # 1. 支持resnet101/resnet50/VGG的模块切换;  2.支持LSTM/Linear的切换(LSTM用在score前的中间层); 3.支持多GPU切换
 # 4. 支持指定最终用于提取的FC层的输出向量长度， 5.支持是否进行validate（每制定epoch的时候）
@@ -126,7 +127,7 @@ def main():
     parser.add_argument('--snapshot', '-snap', type=int, default=1000)
     parser.add_argument('--need_validate', action='store_true', help='do or not validate during training')
     parser.add_argument('--mean', default=config.ROOT_PATH+"BP4D/idx/mean_rgb.npy", help='image mean .npy file')
-    parser.add_argument('--feature_model', default="resnet101", help="vgg or resnet101 for train")
+    parser.add_argument('--feature_model', default="resnet101", help="vgg16/vgg19/resnet101 for train")
     parser.add_argument('--extract_len', type=int, default=1000)
     parser.add_argument('--optimizer', default='RMSprop', help='optimizer: RMSprop/AdaGrad/Adam/SGD/AdaDelta')
     parser.add_argument('--pretrained_model', default='resnet101', help='imagenet/vggface/resnet101/*.npz')
@@ -158,9 +159,9 @@ def main():
         os.makedirs(args.pid)
     pid = str(os.getpid())
     pid_file_path = args.pid + os.sep + "{0}_{1}_fold_{2}.pid".format(args.database, args.fold, args.split_idx)
-    with open(pid_file_path, "w") as file_obj:
-        file_obj.write(pid)
-        file_obj.flush()
+    # with open(pid_file_path, "w") as file_obj:
+    #     file_obj.write(pid)
+    #     file_obj.flush()
 
     config.IMG_SIZE = (args.img_resolution, args.img_resolution)
 
@@ -181,18 +182,23 @@ def main():
     if args.FPN:
         faster_rcnn = FPN101(len(config.AU_SQUEEZE), pretrained_resnet=args.pretrained_model, use_roialign=args.roi_align,
                              mean_path=args.mean,min_size=args.img_resolution,max_size=args.img_resolution)
-    elif args.feature_model == 'vgg':
+    elif args.feature_model == 'vgg16':
         faster_rcnn = FasterRCNNVGG16(n_fg_class=len(config.AU_SQUEEZE),
                                       pretrained_model=args.pretrained_model,
                                       mean_file=args.mean,
                                        min_size=args.img_resolution,max_size=args.img_resolution,
                                       extract_len=args.extract_len, fix=args.fix)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
+    elif args.feature_model == 'vgg19':
+        faster_rcnn = FasterRCNNVGG19(n_fg_class=len(config.AU_SQUEEZE),
+                                      pretrained_model=args.pretrained_model,
+                                      mean_file=args.mean,
+                                      min_size=args.img_resolution, max_size=args.img_resolution,
+                                      extract_len=args.extract_len, dataset=args.database, fold=args.fold, split_idx=args.split_idx)
     elif args.feature_model == 'resnet101':
         faster_rcnn = FasterRCNNResnet101(n_fg_class=len(config.AU_SQUEEZE),
                                       pretrained_model=args.pretrained_model,
-                                      mean_file=args.mean,
-                                       min_size=args.img_resolution,max_size=args.img_resolution,
-                                      extract_len=args.extract_len, fix=args.fix)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
+                                      mean_file=args.mean,  min_size=args.img_resolution,max_size=args.img_resolution,
+                                      extract_len=args.extract_len)  # 可改为/home/nco/face_expr/result/snapshot_model.npz
     elif args.feature_model == "mobilenet_v1":
         faster_rcnn = FasterRCNN_MobilenetV1(pretrained_model_type=args.pretrained_model_args,
                                       min_size=config.IMG_SIZE[0], max_size=config.IMG_SIZE[1],

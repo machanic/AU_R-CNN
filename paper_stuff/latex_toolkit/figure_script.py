@@ -79,7 +79,6 @@ def generate_mask_contain_img(database_name, img_path):
             all_child_set.add(child)
     new_face = np.zeros_like(cropped_face)
     for AU in config.AU_ROI.keys():
-
         AU_couple = AU_couple_dict[AU]
         if AU_couple in all_child_set:
             continue
@@ -135,19 +134,21 @@ def generate_AUCouple_ROI_mask_image(database_name, img_path):
     already_fill_AU = set()
     idx = 0
     gen_face_lst = dict()
+    AU_couple_mask = dict()
     for AU in config.AU_ROI.keys():
         AU_couple = AU_couple_dict[AU]
         if AU_couple in already_fill_AU:
             continue
         already_fill_AU.add(AU_couple)
         mask = AU_mask_dict[AU]
+        AU_couple_mask[AU_couple] = mask
         color_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
 
         color_mask[mask != 0] = random.choice(mask_color_lst)
         idx += 1
-        new_face = cv2.add(cropped_face, color_mask)
+        new_face = cv2.addWeighted(cropped_face,0.75, color_mask, 0.25, 0)
         gen_face_lst[AU_couple] = new_face
-    return gen_face_lst
+    return gen_face_lst, AU_couple_mask
 
 def check_box_and_cropface(orig_img_path, channel_first=False):
 
@@ -165,14 +166,10 @@ def check_box_and_cropface(orig_img_path, channel_first=False):
         if current_AU_couple in already_couple:
             continue
         already_couple.add(current_AU_couple)
-
-
         for box in box_ls:
             box  = np.asarray([box])
-
-            box = transforms.flip_bbox(
-                box, (512,512), x_flip=False)
-            x_min,y_min = box[0][1],box[0][0]
+            box = transforms.flip_bbox(box, (512,512), x_flip=False)
+            x_min, y_min = box[0][1],box[0][0]
             x_max, y_max = box[0][3],box[0][2]
             print(box)
             cp_croped = cropped_face.copy()
@@ -187,8 +184,11 @@ if __name__ == "__main__":
     # cv2.imwrite("D:/Structural RNN++ paper/latex/figure/ROI_face.jpg", trn_img)
     # exit(0)
     # imgs = ["D:/1084.jpg", "D:/007.jpg"]
-    landmark_img = generate_landmark_image("BP4D", "D:/face.jpg")
-    cv2.imwrite("D:/face2.jpg", landmark_img)
+    # landmark_img = generate_landmark_image("BP4D", "D:/face.jpg")
+    # cv2.imwrite("D:/face2.jpg", landmark_img)
+
+
+
     # check_box_and_cropface("/home2/mac/dataset//BP4D/BP4D-training//M009/T4/0753.jpg")
     # from collections import defaultdict
     #
@@ -228,12 +228,25 @@ if __name__ == "__main__":
     #     print(all_box_num)
 
     # 生成各种AU couple面具图
-    # root_dir = "D:/Structural RNN++ paper/latex/figure/"
-    # gen_face_lst = generate_AUCouple_ROI_mask_image("BP4D", "D:/Structural RNN++ paper/latex/figure/girl.jpg")
-    # for AU_couple, img in gen_face_lst.items():
-    #     path = root_dir + "AU_mask/AU_{}.png".format(",".join(AU_couple))
-    #     print(path)
-    #     cv2.imwrite(path, img)
+    root_dir = "D:/Structural RNN++ paper/latex/figure/"
+    gen_face_lst,AU_couple_mask = generate_AUCouple_ROI_mask_image("BP4D", "D:/Structural RNN++ paper/latex/figure/girl.jpg")
+    for AU_couple, orig_img in gen_face_lst.items():
+        mask = AU_couple_mask[AU_couple]
+        connect_arr = cv2.connectedComponents(mask, connectivity=8, ltype=cv2.CV_32S)  # mask shape = 1 x H x W
+        component_num = connect_arr[0]
+        label_matrix = connect_arr[1]
+        # convert mask polygon to rectangle
+        for component_label in range(1, component_num):
+            img = orig_img.copy()
+            i_arr, j_arr = np.nonzero(label_matrix==component_label)
+            y_min = np.min(i_arr)
+            y_max = np.max(i_arr)
+            x_min = np.min(j_arr)
+            x_max = np.max(j_arr)
+            cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (255, 255, 255), 2)
+            path = root_dir + "AU_box/AU_{0}_box_{1}.png".format(",".join(AU_couple),component_label)
+            print(path)
+            cv2.imwrite(path, img)
 
 
 

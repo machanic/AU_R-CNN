@@ -18,9 +18,9 @@
 # --------------------------------------------------------
 
 from __future__ import division
-
-import chainer
 import cv2
+import chainer
+
 import numpy as np
 from chainer import cuda
 
