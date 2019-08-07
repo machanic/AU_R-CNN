@@ -1,6 +1,9 @@
 # AU_R-CNN
 code of paper: "AU R-CNN：Encoding Expert Prior Knowledge into R-CNN for Action Unit Detection"
+
 published in Neurocomputing: <https://www.sciencedirect.com/science/article/pii/S0925231219305338>
+
+google drive download link: [PDF](https://drive.google.com/file/d/12JM9e-7yn18xMKXVrGZ_IH35yAe7aTvo/view?usp=sharing). 
 
 Any who uses this code ***must cite*** the following bibtex：
 
