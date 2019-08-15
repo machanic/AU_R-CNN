@@ -5,6 +5,8 @@ published in Neurocomputing: <https://www.sciencedirect.com/science/article/pii/
 
 google drive download link: [PDF](https://drive.google.com/file/d/12JM9e-7yn18xMKXVrGZ_IH35yAe7aTvo/view?usp=sharing). 
 
+All training necessary files can be downloaded from [https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON](https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON).
+
 Any who uses this code ***must cite*** the following bibtex：
 
 ```
