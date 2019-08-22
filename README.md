@@ -1,9 +1,17 @@
 # AU_R-CNN
-code of paper: "AU R-CNN：Encoding Expert Prior Knowledge into R-CNN for Action Unit Detection"
+official implementation code of paper: "AU R-CNN：Encoding Expert Prior Knowledge into R-CNN for Action Unit Detection"
 
 published in Neurocomputing: <https://www.sciencedirect.com/science/article/pii/S0925231219305338>
 
 google drive download link: [PDF](https://drive.google.com/file/d/12JM9e-7yn18xMKXVrGZ_IH35yAe7aTvo/view?usp=sharing). 
+
+dependencies:
+
+```
+chainer 4.0 or above
+dlib
+bidict
+```
 
 All training necessary files can be downloaded from [https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON](https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON).
 
