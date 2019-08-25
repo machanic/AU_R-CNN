@@ -8,10 +8,42 @@ google drive download link: [PDF](https://drive.google.com/file/d/12JM9e-7yn18xM
 dependencies:
 
 ```
+CUDA
+cudnn
+cupy
 chainer 4.0 or above
 dlib
 bidict
+memcached （independent software which is intended to store AU bounding box coordinates, it must be installed for boosting training speed by using cache). 
+pylibmc (python client to store or get AU bounding box coordinates from memcached)
+Opencv  (conda install -c menpo opencv）
+overrides
+cython
+lru_dict
+six
 ```
+
+Anaconda 3.6 version python install example:
+
+1. Use `conda install xxx` or `pip install xxx` to install python library.
+
+2. How to install memcached. Installing memcached like a recursive call, use `pylibmc` dependent on `libmemcached`, `libmemcached` dependent on `memcached`, `memcached` dependent on `libevent`.
+
+```
+sudo apt-get install gcc make binutils
+sudo apt-get install python python-all-dev
+sudo apt-get install memcached
+
+wget https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz
+tar zxf libmemcached-1.0.18.tar.gz
+cd libmemcached-1.0.18
+./configure --prefix=/usr/local/libmemcached
+make &&make install
+LIBMEMCACHED=/usr/local/libmemcached pip install pylibmc
+```
+
+NOTE: if you are using CentOS or Debian. Maybe the version of libevent is low，so you need to install it from source cod. After installing it, you should use this command `ln -s /usr/lib/libevent-1.3.so.1 /usr/local/lib/libevent-1.3.so.1`. enter python in the terminal, and type `import pylibmc`. If there are not error output, then you successfully installed memcached and pylibmc.
+
 
 All training necessary files can be downloaded from [https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON](https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON).
 
