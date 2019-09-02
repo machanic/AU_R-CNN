@@ -5,7 +5,10 @@ published in Neurocomputing: <https://www.sciencedirect.com/science/article/pii/
 
 google drive download link: [PDF](https://drive.google.com/file/d/12JM9e-7yn18xMKXVrGZ_IH35yAe7aTvo/view?usp=sharing). 
 
-dependencies:
+Arxiv version: <https://arxiv.org/abs/1812.05788>
+
+
+software dependencies are listed in the following, where the `dlib` is the most important, you can install it from compiling the source code and remember to use `python setup.py install` to install it to python library. Or you can just use `pip install dlib`.
 
 ```
 CUDA
