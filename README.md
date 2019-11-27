@@ -1,5 +1,5 @@
 # AU_R-CNN
-official implementation code of paper: "AU R-CNN：Encoding Expert Prior Knowledge into R-CNN for Action Unit Detection"
+The official implementation code of paper: "AU R-CNN：Encoding Expert Prior Knowledge into R-CNN for Action Unit Detection"
 
 published in Neurocomputing: <https://www.sciencedirect.com/science/article/pii/S0925231219305338>
 
@@ -7,8 +7,9 @@ google drive download link: [PDF](https://drive.google.com/file/d/12JM9e-7yn18xM
 
 Arxiv version: <https://arxiv.org/abs/1812.05788>
 
+# Software dependencies
 
-software dependencies are listed in the following, where the `dlib` is the most important, you can install it from compiling the source code and remember to use `python setup.py install` to install it to python library. Or you can just use `pip install dlib`.
+The software dependencies are listed in the following, where the `dlib` library is the most important, you can install it from compiling the source code and then use `python setup.py install` to install it. Or you can just type `pip install dlib`.
 
 ```
 CUDA
@@ -30,7 +31,7 @@ Anaconda 3.6 version python install example:
 
 1. Use `conda install xxx` or `pip install xxx` to install python library.
 
-2. How to install memcached. Installing memcached like a recursive call, use `pylibmc` dependent on `libmemcached`, `libmemcached` dependent on `memcached`, `memcached` dependent on `libevent`.
+2. How to install `memcached`. Installing memcached like a recursive call, use `pylibmc` dependent on `libmemcached`, `libmemcached` dependent on `memcached`, `memcached` dependent on `libevent`.
 
 ```
 sudo apt-get install gcc make binutils
@@ -41,14 +42,21 @@ wget https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18
 tar zxf libmemcached-1.0.18.tar.gz
 cd libmemcached-1.0.18
 ./configure --prefix=/usr/local/libmemcached
-make &&make install
+make && make install
 LIBMEMCACHED=/usr/local/libmemcached pip install pylibmc
 ```
 
-NOTE: if you are using CentOS or Debian. Maybe the version of libevent is low，so you need to install it from source cod. After installing it, you should use this command `ln -s /usr/lib/libevent-1.3.so.1 /usr/local/lib/libevent-1.3.so.1`. enter python in the terminal, and type `import pylibmc`. If there are not error output, then you successfully installed memcached and pylibmc.
+NOTE: if you are using CentOS or Debian. Maybe the version of `libevent` is low，so you need to install it from source code. After installing it, you should use the command of `ln -s /usr/lib/libevent-1.3.so.1 /usr/local/lib/libevent-1.3.so.1` to link. Then you can enter `python` in the terminal, and type `import pylibmc` in `python` console. If no error output is displayed, then you successfully installed `memcached` and `pylibmc`.
 
+# Training Necessary Files
 
-All training necessary files can be downloaded from [https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON](https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON).
+All training necessary files can be downloaded from [https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON](https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON). I have also uploaded these files (~1.2G) into [https://github.com/sharpstill/AU_R-CNN/tree/master/necessary_train_files_for_AU_R-CNN](https://github.com/sharpstill/AU_R-CNN/tree/master/necessary_train_files_for_AU_R-CNN), so git clone to download this repository may be time expensive.
+
+# How to train
+
+First, you must modify the `config.py` to modify ***all the file paths*** to be consistent with your machine environment. Then, you must place the downloaded `training necessary files` to the correct folder paths. Finally, the file for training AU R-CNN is located in `AU_rcnn/train.py`. To best of our knowledge, the F1 score of BP4D (3-fold testing protocol) is 63%, this is state-of-the-art result. 
+
+# Citation
 
 Any who uses this code ***must cite*** the following bibtex：
 
