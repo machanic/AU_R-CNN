@@ -50,11 +50,11 @@ NOTE: if you are using CentOS or Debian. Maybe the version of `libevent` is lowï
 
 # Training Necessary Files
 
-All training necessary files can be downloaded from [https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON](https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON). I have also uploaded these files (~1.2G) into [https://github.com/sharpstill/AU_R-CNN/tree/master/necessary_train_files_for_AU_R-CNN](https://github.com/sharpstill/AU_R-CNN/tree/master/necessary_train_files_for_AU_R-CNN), so git clone to download this repository may be time expensive.
+All training necessary files can be downloaded from [https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON](https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON). I have also uploaded these files (~1.3G) into [https://github.com/sharpstill/AU_R-CNN/tree/master/necessary_train_files_for_AU_R-CNN](https://github.com/sharpstill/AU_R-CNN/tree/master/necessary_train_files_for_AU_R-CNN), so git clone to download this repository may be time expensive.
 
 # How to train
 
-First, you must modify the `config.py` to modify ***all the file paths*** to be consistent with your machine environment. Then, you must place the downloaded `training necessary files` to the correct folder paths. Finally, the file for training AU R-CNN is located in `AU_rcnn/train.py`. To best of our knowledge, the F1 score of BP4D (3-fold testing protocol) is 63%, this is state-of-the-art result. 
+First, you must modify the `config.py` to modify ***all the file paths*** to be consistent with your machine environment. Then, you must place the downloaded training necessary files to the correct folder paths. Finally, the file for training AU R-CNN is located in `AU_rcnn/train.py`. To best of our knowledge, the F1 score of BP4D (3-fold testing protocol) is 63%, this is state-of-the-art result. 
 
 # Citation
 

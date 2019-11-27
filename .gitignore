@@ -26,7 +26,6 @@ data
 *.zip
 data
 *.jpg
-*.txt
 *.png
 *.jpeg
 *.mp4
