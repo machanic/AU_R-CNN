@@ -56,6 +56,10 @@ All training necessary files can be downloaded from [https://drive.google.com/op
 
 First, you must modify the `config.py` to modify ***all the file paths*** to be consistent with your machine environment. Then, you must place the downloaded training necessary files to the correct folder paths. Finally, the file for training AU R-CNN is located in `AU_rcnn/train.py`. To best of our knowledge, the F1 score of BP4D (3-fold testing protocol) is 63%, this is state-of-the-art result. 
 
+# Download pre-trained model files
+
+I have uploaded all the pre-trained models into [https://cloud.tsinghua.edu.cn/d/8190d64e83ef43b7ab3f/](https://cloud.tsinghua.edu.cn/d/8190d64e83ef43b7ab3f/), which can be downloaded.
+
 # Citation
 
 Any who uses this code ***must cite*** the following bibtex：
