@@ -7,7 +7,7 @@ google drive download link: [PDF](https://drive.google.com/file/d/12JM9e-7yn18xM
 
 Arxiv version: <https://arxiv.org/abs/1812.05788>
 
-# Software dependencies
+# Software Dependencies
 
 The software dependencies are listed in the following, where the `dlib` library is the most important, you can install it from compiling the source code and then use `python setup.py install` to install it. Or you can just type `pip install dlib`.
 
@@ -52,11 +52,11 @@ NOTE: if you are using CentOS or Debian. Maybe the version of `libevent` is lowï
 
 All training necessary files can be downloaded from [https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON](https://drive.google.com/open?id=1y-yjOPuo7OcXA_bbNIZ0bfmV72mOBXON). I have also uploaded these files (~1.3G) into [https://github.com/sharpstill/AU_R-CNN/tree/master/necessary_train_files_for_AU_R-CNN](https://github.com/sharpstill/AU_R-CNN/tree/master/necessary_train_files_for_AU_R-CNN), so git clone to download this repository may be time expensive.
 
-# How to train
+# How to Train
 
 First, you must modify the `config.py` to modify ***all the file paths*** to be consistent with your machine environment. Then, you must place the downloaded training necessary files to the correct folder paths. Finally, the file for training AU R-CNN is located in `AU_rcnn/train.py`. To best of our knowledge, the F1 score of BP4D (3-fold testing protocol) is 63%, this is state-of-the-art result. 
 
-# Download pre-trained model files
+# Download the Trained Model Files
 
 I have uploaded all the pre-trained models into [https://cloud.tsinghua.edu.cn/d/8190d64e83ef43b7ab3f/](https://cloud.tsinghua.edu.cn/d/8190d64e83ef43b7ab3f/), which can be downloaded. I also uploaded part of the pre-trained models onto [https://drive.google.com/drive/folders/1Q8tx98QIQnT1yz1uSrCxszkobs8MSgrY](https://drive.google.com/drive/folders/1Q8tx98QIQnT1yz1uSrCxszkobs8MSgrY) due the space limitation of Google Drive.
 
