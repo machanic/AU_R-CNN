@@ -58,7 +58,7 @@ First, you must modify the `config.py` to modify ***all the file paths*** to be 
 
 # Download pre-trained model files
 
-I have uploaded all the pre-trained models into [https://cloud.tsinghua.edu.cn/d/8190d64e83ef43b7ab3f/](https://cloud.tsinghua.edu.cn/d/8190d64e83ef43b7ab3f/), which can be downloaded.
+I have uploaded all the pre-trained models into [https://cloud.tsinghua.edu.cn/d/8190d64e83ef43b7ab3f/](https://cloud.tsinghua.edu.cn/d/8190d64e83ef43b7ab3f/), which can be downloaded. I also uploaded part of the pre-trained models onto [https://drive.google.com/drive/folders/1Q8tx98QIQnT1yz1uSrCxszkobs8MSgrY](https://drive.google.com/drive/folders/1Q8tx98QIQnT1yz1uSrCxszkobs8MSgrY) due the space limitation of Google Drive.
 
 # Citation
 
