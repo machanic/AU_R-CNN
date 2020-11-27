@@ -5,7 +5,12 @@ published in Neurocomputing: <https://www.sciencedirect.com/science/article/pii/
 
 google drive download link: [PDF](https://drive.google.com/file/d/12JM9e-7yn18xMKXVrGZ_IH35yAe7aTvo/view?usp=sharing). 
 
-Arxiv version: <https://arxiv.org/abs/1812.05788>
+arXiv version: <https://arxiv.org/abs/1812.05788>
+
+PPT (Slides): [PPT](https://drive.google.com/file/d/1R8QQFdcV91BHDgbvBNOO_acQhLsua0Hd/view?usp=sharing)
+
+# Update
+The PyTorch version of AU R-CNN is coming soon! I currently working on it.
 
 # Citation
 
