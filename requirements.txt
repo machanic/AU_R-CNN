@@ -5,7 +5,7 @@ Cython==0.28.2
 dlib==19.17.0
 lru-dict==1.1.6
 numpy==1.16.0
-opencv-python==4.1.0.25
+opencv-python==4.2.0.32
 overrides==1.9
 pylibmc==1.6.1
 six==1.11.0
